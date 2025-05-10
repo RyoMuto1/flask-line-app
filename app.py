@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import requests
+import logging
 from flask import Flask, render_template, request, redirect, jsonify, session, Response
 from dotenv import load_dotenv
 
@@ -8,6 +9,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+# ルートロガーを DEBUG に設定
+logging.basicConfig(level=logging.DEBUG)
+# Flask のロガーも DEBUG に
+app.logger.setLevel(logging.DEBUG)
+
+
 # セッション用の鍵（本番では環境変数から取得）
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
@@ -146,3 +154,4 @@ def callback():
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+
