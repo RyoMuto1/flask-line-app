@@ -1,19 +1,20 @@
-from flask import Flask, render_template, request, redirect, jsonify, session
+import os
 import sqlite3
 import requests
-import os
+from flask import Flask, render_template, request, redirect, jsonify, session, Response
 from dotenv import load_dotenv
 
-# .envファイル読み込み
+# 環境変数をロード
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # セッション暗号化キー
+# セッション用の鍵（本番では環境変数から取得）
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
-# ✅ LINEメッセージ送信関数
+# LINE Messaging API Push
 def send_line_message(user_id, message):
-    access_token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
-    url = 'https://api.line.me/v2/bot/message/push'
+    access_token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+    url = "https://api.line.me/v2/bot/message/push"
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json'
@@ -22,10 +23,10 @@ def send_line_message(user_id, message):
         'to': user_id,
         'messages': [{'type': 'text', 'text': message}]
     }
-    response = requests.post(url, headers=headers, json=body)
-    print("🔁 LINE Push 結果:", response.status_code, response.text)
+    res = requests.post(url, headers=headers, json=body)
+    app.logger.debug(f"LINE Push Response: {res.status_code} {res.text}")
 
-# データベース初期化
+# DB 初期化
 def init_db():
     conn = sqlite3.connect('orders.db')
     c = conn.cursor()
@@ -40,29 +41,24 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ルート：フォーム表示＆注文処理
 @app.route('/', methods=['GET', 'POST'])
 def order_form():
     if request.method == 'POST':
         name = request.form['name']
         item = request.form['item']
         quantity = int(request.form['quantity'])
-
+        # 保存
         conn = sqlite3.connect('orders.db')
         c = conn.cursor()
-        c.execute(
-            'INSERT INTO orders (name, item, quantity) VALUES (?, ?, ?)',
-            (name, item, quantity)
-        )
+        c.execute('INSERT INTO orders (name,item,quantity) VALUES (?,?,?)', (name, item, quantity))
         conn.commit()
         conn.close()
-
+        # LINEへ送信（サンプル固定ID）
         send_line_message(
-            user_id='Uf7eaddb8bba99098330d4d6ff1c2e5e0',  # 動的対応可
-            message=f'{name}さん、ご注文ありがとうございました！「{item}」を{quantity}個承りました😊'
+            user_id='Uf7eaddb8bba99098330d4d6ff1c2e5e0',
+            message=f'{name}さん、ご注文ありがとう！「{item}」x{quantity} 了解😊'
         )
         return redirect('/thanks')
-
     return render_template('form.html')
 
 @app.route('/thanks')
@@ -73,83 +69,80 @@ def thanks():
 def history():
     conn = sqlite3.connect('orders.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM orders')
+    c.execute('SELECT name,item,quantity FROM orders')
     rows = c.fetchall()
     conn.close()
+    html = '<h2>注文履歴</h2><ul>'
+    for name,item,qty in rows:
+        html += f'<li>{name} さんが「{item}」を {qty} 個</li>'
+    html += '</ul>'
+    return html
 
-    output = '<h2>注文履歴</h2><ul>'
-    for row in rows:
-        output += f'<li>{row[1]}さんが「{row[2]}」を{row[3]}個注文</li>'
-    output += '</ul>'
-    return output
-
-# Webhook（LINE Bot用）
+# LINEからのWebhook受信（疎通確認用）
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    print("📬 webhook hit!", request.json)
-    return jsonify({'status': 'ok'}), 200
+    app.logger.debug('📬 webhook hit: %s', request.get_data())
+    return jsonify({'status':'ok'})
 
-# LINEログイン設定
-LINE_LOGIN_CHANNEL_ID = os.environ.get("LINE_LOGIN_CHANNEL_ID")
-LINE_LOGIN_CHANNEL_SECRET = os.environ.get("LINE_LOGIN_CHANNEL_SECRET")
-LINE_REDIRECT_URI = "https://flask-line-app-essd.onrender.com/callback"
+# LINE Login 設定
+LINE_LOGIN_CHANNEL_ID     = os.environ.get('LINE_LOGIN_CHANNEL_ID')
+LINE_LOGIN_CHANNEL_SECRET = os.environ.get('LINE_LOGIN_CHANNEL_SECRET')
+LINE_REDIRECT_URI         = os.environ.get('LINE_REDIRECT_URI')  # .env に設定
 
 @app.route('/login')
 def login():
-    login_url = (
-        "https://access.line.me/oauth2/v2.1/authorize"
-        "?response_type=code"
-        f"&client_id={LINE_LOGIN_CHANNEL_ID}"
-        f"&redirect_uri={LINE_REDIRECT_URI}"
-        "&scope=profile%20openid"
-        "&state=12345abcde"
-    )
-    return redirect(login_url)
+    params = {
+        'response_type': 'code',
+        'client_id': LINE_LOGIN_CHANNEL_ID,
+        'redirect_uri': LINE_REDIRECT_URI,
+        'scope': 'openid profile',
+        'state': '12345abcde'
+    }
+    url = 'https://access.line.me/oauth2/v2.1/authorize?' + '&'.join(f'{k}={v}' for k,v in params.items())
+    return redirect(url)
 
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
-
     # トークン取得
-    token_url = "https://api.line.me/oauth2/v2.1/token"
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    data = {
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': LINE_REDIRECT_URI,
-        'client_id': LINE_LOGIN_CHANNEL_ID,
-        'client_secret': LINE_LOGIN_CHANNEL_SECRET,
-    }
-    resp = requests.post(token_url, headers=headers, data=data)
-    token_data = resp.json()
-    print("🐛 token_data:", token_data)
-
+    token_res = requests.post(
+        'https://api.line.me/oauth2/v2.1/token',
+        headers={'Content-Type':'application/x-www-form-urlencoded'},
+        data={
+            'grant_type':    'authorization_code',
+            'code':          code,
+            'redirect_uri':  LINE_REDIRECT_URI,
+            'client_id':     LINE_LOGIN_CHANNEL_ID,
+            'client_secret': LINE_LOGIN_CHANNEL_SECRET
+        }
+    )
+    token_data = token_res.json()
+    app.logger.debug('🐛 token_data: %s', token_data)
     id_token = token_data.get('id_token')
     if not id_token:
-        return 'id_tokenが取得できませんでした', 500
-
-    # プロファイル検証
-    verify_url = "https://api.line.me/oauth2/v2.1/verify"
-    params = {'id_token': id_token, 'client_id': LINE_LOGIN_CHANNEL_ID}
-    vresp = requests.get(verify_url, params=params)
-    profile = vresp.json()
-    print("🐛 verify response:", profile)
-
-    user_id = profile.get('sub')
-    user_name = profile.get('name', '名無し')
-    if not user_id:
-        return 'ユーザーIDが取得できませんでした', 500
-
-    # セッション保存
-    session['line_user_id'] = user_id
-    session['line_user_name'] = user_name
-
-    return (
-        f"<h2>ログイン成功！</h2>"
-        f"<p>こんにちは、{user_name}さん！</p>"
-        f"<a href='/'>フォームに戻る</a>"
+        return Response('id_token が取得できませんでした', status=500)
+    # 検証
+    verify_res = requests.get(
+        'https://api.line.me/oauth2/v2.1/verify',
+        params={'id_token': id_token, 'client_id': LINE_LOGIN_CHANNEL_ID}
     )
+    profile = verify_res.json()
+    app.logger.debug('🐛 profile: %s', profile)
+    user_id   = profile.get('sub')
+    user_name = profile.get('name')
+    if not user_id:
+        return Response('ユーザーID(sub) が取得できませんでした', status=500)
+    # セッション保存
+    session['line_user_id']   = user_id
+    session['line_user_name'] = user_name
+    # 表示
+    return f"""
+        <h2>ログイン成功!</h2>
+        <p>こんにちは、{user_name} さん</p>
+        <p>あなたの USER_ID: {user_id}</p>
+        <a href='/'>トップへ</a>
+    """
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
