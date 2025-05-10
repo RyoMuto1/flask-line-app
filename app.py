@@ -140,35 +140,13 @@ def callback():
     # アクセストークン取得
     token_response = requests.post(token_url, headers=headers, data=data)
     token_data = token_response.json()
+    print("🐛 token_data:", token_data)  # ← ここを追加！
+
     id_token = token_data.get("id_token")
 
-    # ユーザー情報を取得
-    verify_url = "https://api.line.me/oauth2/v2.1/verify"
-    verify_params = {
-        "id_token": id_token,
-        "client_id": LINE_LOGIN_CHANNEL_ID
-    }
-    verify_response = requests.get(verify_url, params=verify_params)
-    profile = verify_response.json()
+    if not id_token:
+        return "id_tokenが取得できませんでした", 500
 
-    print("🧪 LINE verify response:", profile)  # ← これで中身を確認！
-
-    # 安全に取り出す
-    line_user_id = profile.get("sub")
-    line_user_name = profile.get("name", "（名前未取得）")
-
-    if not line_user_id:
-        return "ユーザーIDが取得できませんでした", 500
-
-    # セッションに保存
-    session["line_user_id"] = line_user_id
-    session["line_user_name"] = line_user_name
-
-    return f'''
-        <h2>ログイン成功！</h2>
-        <p>こんにちは、{line_user_name}さん！</p>
-        <a href="/">フォームに戻る</a>
-    '''
 
 
 
