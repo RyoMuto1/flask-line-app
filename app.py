@@ -44,25 +44,32 @@ def send_line_message(user_id, message):
     )
     app.logger.debug(f"LINE Push → {res.status_code} {res.text}")
 
-@app.route('/', methods=['GET','POST'])
+@app.route('/', methods=['GET', 'POST'])
 def order_form():
     if request.method == 'POST':
         name     = request.form['name']
         item     = request.form['item']
         quantity = int(request.form['quantity'])
 
+        # DB に保存
         conn = sqlite3.connect('orders.db')
         c    = conn.cursor()
         c.execute(
-            'INSERT INTO orders (name,item,quantity) VALUES (?,?,?)',
+            'INSERT INTO orders (name, item, quantity) VALUES (?, ?, ?)',
             (name, item, quantity)
         )
         conn.commit()
         conn.close()
 
+        # ログイン済みユーザーの LINE ID をセッションから取得
+        line_user_id = session.get('line_user_id')
+        if not line_user_id:
+            # 未ログインならログインページへ
+            return redirect('/login')
+
         # LINE へお知らせ
         send_line_message(
-            user_id='Uf7eaddb8bba99098330d4d6ff1c2e5e0',
+            user_id=line_user_id,
             message=f'{name}さん、ご注文ありがとう！「{item}」 x {quantity} 承りました😊'
         )
 
