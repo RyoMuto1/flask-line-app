@@ -107,3 +107,69 @@ def webhook():
 if __name__ == '__main__':
     init_db()
     app.run(host="0.0.0.0", port=10000)
+
+
+
+import os
+import requests
+from flask import Flask, request, redirect, session, jsonify
+
+from dotenv import load_dotenv
+load_dotenv()
+
+app.secret_key = os.urandom(24)  # セッション暗号化キー
+
+# LINEログインの設定
+LINE_LOGIN_CHANNEL_ID = os.environ.get("LINE_LOGIN_CHANNEL_ID")
+LINE_LOGIN_CHANNEL_SECRET = os.environ.get("LINE_LOGIN_CHANNEL_SECRET")
+LINE_REDIRECT_URI = "https://あなたのrenderURL.onrender.com/callback"  # あなたのURLに置き換えて！
+
+@app.route("/login")
+def login():
+    login_url = (
+        "https://access.line.me/oauth2/v2.1/authorize"
+        "?response_type=code"
+        f"&client_id={LINE_LOGIN_CHANNEL_ID}"
+        f"&redirect_uri={LINE_REDIRECT_URI}"
+        "&scope=profile%20openid"
+        "&state=12345abcde"
+    )
+    return redirect(login_url)
+
+@app.route("/callback")
+def callback():
+    code = request.args.get("code")
+
+    token_url = "https://api.line.me/oauth2/v2.1/token"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": LINE_REDIRECT_URI,
+        "client_id": LINE_LOGIN_CHANNEL_ID,
+        "client_secret": LINE_LOGIN_CHANNEL_SECRET,
+    }
+
+    # アクセストークン取得
+    token_response = requests.post(token_url, headers=headers, data=data)
+    token_data = token_response.json()
+    id_token = token_data.get("id_token")
+
+    # ユーザー情報を取得
+    verify_url = "https://api.line.me/oauth2/v2.1/verify"
+    verify_params = {
+        "id_token": id_token,
+        "client_id": LINE_LOGIN_CHANNEL_ID
+    }
+    verify_response = requests.get(verify_url, params=verify_params)
+    profile = verify_response.json()
+
+    # セッションに保存
+    session["line_user_id"] = profile["sub"]
+    session["line_user_name"] = profile["name"]
+
+    return f'''
+        <h2>ログイン成功！</h2>
+        <p>こんにちは、{profile["name"]}さん！</p>
+        <a href="/">フォームに戻る</a>
+    '''
