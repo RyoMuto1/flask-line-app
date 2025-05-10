@@ -151,15 +151,25 @@ def callback():
     verify_response = requests.get(verify_url, params=verify_params)
     profile = verify_response.json()
 
+    print("🧪 LINE verify response:", profile)  # ← これで中身を確認！
+
+    # 安全に取り出す
+    line_user_id = profile.get("sub")
+    line_user_name = profile.get("name", "（名前未取得）")
+
+    if not line_user_id:
+        return "ユーザーIDが取得できませんでした", 500
+
     # セッションに保存
-    session["line_user_id"] = profile["sub"]
-    session["line_user_name"] = profile["name"]
+    session["line_user_id"] = line_user_id
+    session["line_user_name"] = line_user_name
 
     return f'''
         <h2>ログイン成功！</h2>
-        <p>こんにちは、{profile["name"]}さん！</p>
+        <p>こんにちは、{line_user_name}さん！</p>
         <a href="/">フォームに戻る</a>
     '''
+
 
 
 if __name__ == '__main__':
