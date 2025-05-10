@@ -87,14 +87,17 @@ def webhook():
 
         events = body.get("events", [])
         for event in events:
-            print("🔎 イベント詳細：", event)  # ← NEW!!
+            print("🔎 イベント詳細：", event)
             if event.get("type") == "message":
                 user_id = event["source"]["userId"]
                 print(f"✅ 送信者のuserId: {user_id}")
         return jsonify({"status": "ok"}), 200
     except Exception as e:
-        print("⚠️ エラー：", e)
+        import traceback
+        print("⚠️ エラーが発生しました！")
+        traceback.print_exc()  # エラーの内容をすべて表示！
         return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == '__main__':
