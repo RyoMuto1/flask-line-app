@@ -122,7 +122,7 @@ app.secret_key = os.urandom(24)  # セッション暗号化キー
 # LINEログインの設定
 LINE_LOGIN_CHANNEL_ID = os.environ.get("LINE_LOGIN_CHANNEL_ID")
 LINE_LOGIN_CHANNEL_SECRET = os.environ.get("LINE_LOGIN_CHANNEL_SECRET")
-LINE_REDIRECT_URI = "https://あなたのrenderURL.onrender.com/callback"  # あなたのURLに置き換えて！
+LINE_REDIRECT_URI = "https://flask-line-app-essd.onrender.com/callback"  # あなたのURLに置き換えて！
 
 @app.route("/login")
 def login():
