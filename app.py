@@ -81,15 +81,13 @@ def history():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    if request.method != 'POST':
-        return jsonify({'status': 'invalid method'}), 405
-
     try:
         body = request.get_json(force=True)
         print("📩 Webhook受信内容：", body)
 
         events = body.get("events", [])
         for event in events:
+            print("🔎 イベント詳細：", event)  # ← NEW!!
             if event.get("type") == "message":
                 user_id = event["source"]["userId"]
                 print(f"✅ 送信者のuserId: {user_id}")
@@ -97,6 +95,7 @@ def webhook():
     except Exception as e:
         print("⚠️ エラー：", e)
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     init_db()
