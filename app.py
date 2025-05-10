@@ -104,19 +104,6 @@ def webhook():
     return "ok", 200
 
 
-if __name__ == '__main__':
-    init_db()
-    app.run(host="0.0.0.0", port=10000)
-
-
-
-import os
-import requests
-from flask import Flask, request, redirect, session, jsonify
-
-from dotenv import load_dotenv
-load_dotenv()
-
 app.secret_key = os.urandom(24)  # セッション暗号化キー
 
 # LINEログインの設定
@@ -173,3 +160,9 @@ def callback():
         <p>こんにちは、{profile["name"]}さん！</p>
         <a href="/">フォームに戻る</a>
     '''
+
+
+if __name__ == '__main__':
+    init_db()
+    app.run(host="0.0.0.0", port=10000)
+
