@@ -8,6 +8,7 @@ from flask import (
 )
 from dotenv import load_dotenv
 
+
 # .env をロード
 load_dotenv()
 
