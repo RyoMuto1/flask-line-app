@@ -46,6 +46,10 @@ def send_line_message(user_id, message):
 
 @app.route('/', methods=['GET', 'POST'])
 def order_form():
+    # LINEログインしていない場合はログインページへリダイレクト
+    if not session.get('line_user_id'):
+        return redirect('/login')
+
     if request.method == 'POST':
         name     = request.form['name']
         item     = request.form['item']
@@ -61,15 +65,9 @@ def order_form():
         conn.commit()
         conn.close()
 
-        # ログイン済みユーザーの LINE ID をセッションから取得
-        line_user_id = session.get('line_user_id')
-        if not line_user_id:
-            # 未ログインならログインページへ
-            return redirect('/login')
-
         # LINE へお知らせ
         send_line_message(
-            user_id=line_user_id,
+            user_id=session['line_user_id'],
             message=f'{name}さん、ご注文ありがとう！「{item}」 x {quantity} 承りました😊'
         )
 
@@ -154,11 +152,8 @@ def callback():
     session['line_user_id']   = user_id
     session['line_user_name'] = user_name
 
-    return f"""
-    <h2>ログイン成功！</h2>
-    <p>こんにちは、{user_name} さん！（ID: {user_id}）</p>
-    <a href="/">トップへ戻る</a>
-    """
+    # トップページ（注文フォーム）へリダイレクト
+    return redirect('/')
 
 if __name__ == '__main__':
     init_db()
