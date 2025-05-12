@@ -101,7 +101,12 @@ def webhook():
 # LINE Login 設定
 LINE_LOGIN_CHANNEL_ID     = os.environ["LINE_LOGIN_CHANNEL_ID"]
 LINE_LOGIN_CHANNEL_SECRET = os.environ["LINE_LOGIN_CHANNEL_SECRET"]
-LINE_REDIRECT_URI         = os.environ["LINE_REDIRECT_URI"]
+
+# 環境に応じてリダイレクトURIを設定
+if os.environ.get('FLASK_ENV') == 'development':
+    LINE_REDIRECT_URI = 'http://localhost:10000/callback'
+else:
+    LINE_REDIRECT_URI = os.environ["LINE_REDIRECT_URI"]
 
 @app.route('/login')
 def login():
@@ -154,6 +159,27 @@ def callback():
 
     # トップページ（注文フォーム）へリダイレクト
     return redirect('/')
+
+@app.route('/mypage')
+def mypage():
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    # ユーザーの注文履歴を取得
+    conn = sqlite3.connect('orders.db')
+    c    = conn.cursor()
+    c.execute('SELECT name,item,quantity FROM orders WHERE line_user_id = ?', (session['line_user_id'],))
+    rows = c.fetchall()
+    conn.close()
+    
+    return render_template('mypage.html', 
+                         user_name=session.get('line_user_name', 'ゲスト'),
+                         orders=rows)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 if __name__ == '__main__':
     init_db()

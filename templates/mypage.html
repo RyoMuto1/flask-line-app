@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイページ - Tシャツ注文システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .order-card {
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .order-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .user-info {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .logout-btn {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- ユーザー情報 -->
+                <div class="user-info">
+                    <h2 class="mb-3">ようこそ、{{ user_name }}さん</h2>
+                    <a href="/" class="btn btn-primary">新規注文</a>
+                    <a href="/logout" class="btn btn-outline-danger logout-btn">ログアウト</a>
+                </div>
+
+                <!-- 注文履歴 -->
+                <h3 class="mb-4">注文履歴</h3>
+                {% if orders %}
+                    {% for order in orders %}
+                        <div class="card order-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ order.item }}</h5>
+                                <p class="card-text">
+                                    <strong>数量:</strong> {{ order.quantity }}<br>
+                                    <strong>注文日時:</strong> {{ order.created_at }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        まだ注文履歴がありません。
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
