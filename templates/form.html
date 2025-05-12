@@ -1,16 +1,169 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>注文フォーム</title>
+    <meta charset="utf-8">
+    <title>クラスTシャツ注文フォーム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .required:after {
+            content: " *";
+            color: red;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body>
-  <h1>注文フォーム</h1>
-  <form method="post">
-    <label>お名前：<input type="text" name="name" required></label><br><br>
-    <label>商品名：<input type="text" name="item" required></label><br><br>
-    <label>個数：<input type="number" name="quantity" required></label><br><br>
-    <button type="submit">送信</button>
-  </form>
+    <div class="container mt-5">
+        <h1 class="mb-4">クラスTシャツ注文フォーム</h1>
+        
+        <form method="post" class="needs-validation" novalidate>
+            <!-- イベント日 -->
+            <div class="form-group">
+                <label class="required">イベント日/ご使用予定日</label>
+                <input type="date" name="event_date" class="form-control" required>
+            </div>
+
+            <!-- お名前 -->
+            <div class="form-group">
+                <label class="required">お名前（漢字フルネーム）</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+
+            <!-- ふりがな -->
+            <div class="form-group">
+                <label class="required">お名前（ふりがな）</label>
+                <input type="text" name="name_kana" class="form-control" required>
+            </div>
+
+            <!-- クラス・担任 -->
+            <div class="form-group">
+                <label class="required">クラス・担任の先生のお名前</label>
+                <input type="text" name="class_teacher" class="form-control" placeholder="例：2年2組・田中太郎先生" required>
+            </div>
+
+            <!-- 電話番号 -->
+            <div class="form-group">
+                <label class="required">電話番号</label>
+                <input type="tel" name="phone" class="form-control" required>
+            </div>
+
+            <!-- お届け先 -->
+            <div class="form-group">
+                <label class="required">お届け先氏名（宛名）</label>
+                <input type="text" name="delivery_name" class="form-control" required>
+                <small class="form-text text-muted">※学校の場合は学校名のみ記入をしてください。</small>
+            </div>
+
+            <!-- 郵便番号 -->
+            <div class="form-group">
+                <label class="required">お届け先の郵便番号</label>
+                <div class="input-group">
+                    <input type="text" name="postal_code" id="postal_code" class="form-control" pattern="\d{3}-?\d{4}" placeholder="例：123-4567" required>
+                    <button type="button" class="btn btn-outline-secondary" id="search_address">住所検索</button>
+                </div>
+            </div>
+
+            <!-- 都道府県 -->
+            <div class="form-group">
+                <label class="required">お届け先の都道府県</label>
+                <input type="text" name="prefecture" id="prefecture" class="form-control" required>
+            </div>
+
+            <!-- 市区郡町村 -->
+            <div class="form-group">
+                <label class="required">お届け先の市区郡町村</label>
+                <input type="text" name="city" id="city" class="form-control" required>
+            </div>
+
+            <!-- 丁目・番地・号 -->
+            <div class="form-group">
+                <label class="required">お届け先の丁目・番地・号(建物名)</label>
+                <input type="text" name="address" id="address" class="form-control" required>
+            </div>
+
+            <!-- 学校名 -->
+            <div class="form-group">
+                <label class="required">学校名</label>
+                <input type="text" name="school_name" class="form-control" required>
+            </div>
+
+            <!-- 検討枚数 -->
+            <div class="form-group">
+                <label class="required">ご検討枚数</label>
+                <input type="number" name="quantity" class="form-control" min="1" required>
+            </div>
+
+            <!-- 商品名 -->
+            <div class="form-group">
+                <label class="required">商品名</label>
+                <input type="text" name="product_name" class="form-control" placeholder="例）野球ユニ,ビブス,バスケユニ,サッカーユニ,オリジナル,ホッケーシャツ" required>
+                <small class="form-text text-muted">※目安ですので簡単にお書きください。</small>
+            </div>
+
+            <!-- 予算 -->
+            <div class="form-group">
+                <label class="required">1枚あたりの予算</label>
+                <input type="number" name="budget" class="form-control" min="0" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">注文内容を確認する</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // フォームのバリデーション
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
+
+        // 郵便番号から住所を検索
+        document.getElementById('search_address').addEventListener('click', function() {
+            const postalCode = document.getElementById('postal_code').value.replace(/-/g, '');
+            
+            if (postalCode.length !== 7) {
+                alert('郵便番号は7桁で入力してください');
+                return;
+            }
+
+            fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200 && data.results) {
+                        const result = data.results[0];
+                        document.getElementById('prefecture').value = result.address1;
+                        document.getElementById('city').value = result.address2;
+                        document.getElementById('address').value = result.address3;
+                    } else {
+                        alert('住所が見つかりませんでした');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('住所の検索に失敗しました');
+                });
+        });
+
+        // 郵便番号の自動フォーマット
+        document.getElementById('postal_code').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 3) {
+                value = value.slice(0, 3) + '-' + value.slice(3);
+            }
+            e.target.value = value;
+        });
+    </script>
 </body>
 </html>
