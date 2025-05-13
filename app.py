@@ -25,8 +25,8 @@ def init_db():
     try:
         # データベースファイルのパスを取得
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
-        logger.info(f"データベースパス: {db_path}")
-        logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
+        app.logger.info(f"データベースパス: {db_path}")
+        app.logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
         
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
