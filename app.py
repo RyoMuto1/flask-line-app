@@ -26,25 +26,22 @@ def init_db():
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         
-        # テーブルが存在するか確認
-        c.execute('''
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='orders'
-        ''')
+        # 既存のテーブルを削除
+        c.execute('DROP TABLE IF EXISTS orders')
+        app.logger.info("既存のordersテーブルを削除しました")
         
-        if not c.fetchone():
-            # テーブルが存在しない場合は作成
-            c.execute('''
-                CREATE TABLE orders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    line_user_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    item TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            app.logger.info("ordersテーブルを作成しました")
+        # 新しいテーブルを作成
+        c.execute('''
+            CREATE TABLE orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                item TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        app.logger.info("新しいordersテーブルを作成しました")
         
         conn.commit()
         conn.close()
@@ -56,8 +53,26 @@ def init_db():
 def get_db():
     try:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+        app.logger.info(f"データベースに接続します: {db_path}")
+        
+        # データベースファイルの存在確認
+        if not os.path.exists(db_path):
+            app.logger.warning(f"データベースファイルが存在しません: {db_path}")
+            init_db()
+        
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
+        
+        # テーブルの存在確認
+        c = conn.cursor()
+        c.execute('''
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='orders'
+        ''')
+        if not c.fetchone():
+            app.logger.warning("ordersテーブルが存在しません")
+            init_db()
+        
         return conn
     except Exception as e:
         app.logger.error(f"データベース接続エラー: {str(e)}")
@@ -75,6 +90,15 @@ def send_line_message(user_id, message):
         json={"to": user_id, "messages":[{"type":"text","text":message}]}
     )
     app.logger.debug(f"LINE Push → {res.status_code} {res.text}")
+
+# アプリケーションの初期化
+with app.app_context():
+    try:
+        init_db()
+        app.logger.info("データベースの初期化が完了しました")
+    except Exception as e:
+        app.logger.error(f"データベース初期化エラー: {str(e)}")
+        raise
 
 @app.route('/', methods=['GET', 'POST'])
 def order_form():
@@ -109,6 +133,10 @@ def order_form():
                 # データベースに保存
                 conn = get_db()
                 c = conn.cursor()
+                
+                # データの型を確認
+                app.logger.info(f"保存するデータ: line_user_id={form_data['line_user_id']}, name={form_data['name']}, item={form_data['item']}, quantity={form_data['quantity']}")
+                
                 c.execute('''
                     INSERT INTO orders (line_user_id, name, item, quantity)
                     VALUES (?, ?, ?, ?)
@@ -118,7 +146,7 @@ def order_form():
                 app.logger.info("データベースへの保存が完了しました")
             except Exception as db_error:
                 app.logger.error(f"データベースエラー: {str(db_error)}")
-                return "データベースエラーが発生しました", 500
+                return f"データベースエラーが発生しました: {str(db_error)}", 500
 
             try:
                 # LINE へお知らせ
@@ -280,9 +308,5 @@ def logout():
     return redirect('/login')
 
 if __name__ == '__main__':
-    # データベースの初期化
-    init_db()
-    app.logger.info("データベースを初期化しました")
-    
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
