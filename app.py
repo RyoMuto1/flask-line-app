@@ -164,19 +164,28 @@ def callback():
 
 @app.route('/mypage')
 def mypage():
-    if 'line_user_id' not in session:
-        return redirect('/login')
-    
-    # ユーザーの注文履歴を取得
-    conn = sqlite3.connect('orders.db')
-    c    = conn.cursor()
-    c.execute('SELECT name,item,quantity FROM orders WHERE line_user_id = ?', (session['line_user_id'],))
-    rows = c.fetchall()
-    conn.close()
-    
-    return render_template('mypage.html', 
-                         user_name=session.get('line_user_name', 'ゲスト'),
-                         orders=rows)
+    try:
+        if 'line_user_id' not in session:
+            return redirect('/login')
+        
+        # ユーザーの注文履歴を取得
+        conn = sqlite3.connect('orders.db')
+        c = conn.cursor()
+        c.execute('''
+            SELECT item, quantity, created_at 
+            FROM orders 
+            WHERE line_user_id = ? 
+            ORDER BY created_at DESC
+        ''', (session['line_user_id'],))
+        orders = [{'item': row[0], 'quantity': row[1], 'created_at': row[2]} for row in c.fetchall()]
+        conn.close()
+        
+        return render_template('mypage.html', 
+                             user_name=session.get('line_user_name', 'ゲスト'),
+                             orders=orders)
+    except Exception as e:
+        app.logger.error(f"マイページエラー: {str(e)}")
+        return "エラーが発生しました。しばらく経ってから再度お試しください。", 500
 
 @app.route('/logout')
 def logout():
@@ -184,6 +193,9 @@ def logout():
     return redirect('/login')
 
 if __name__ == '__main__':
+    # データベースの初期化
     init_db()
+    app.logger.info("データベースを初期化しました")
+    
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
