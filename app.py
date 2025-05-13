@@ -44,13 +44,12 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            conn.commit()
             app.logger.info("ordersテーブルを作成しました")
         else:
             app.logger.info("ordersテーブルは既に存在します")
         
-        conn.commit()
-        conn.close()
-        app.logger.info("データベースの初期化が完了しました")
+        return conn
     except Exception as e:
         app.logger.error(f"データベース初期化エラー: {str(e)}")
         raise
@@ -63,7 +62,7 @@ def get_db():
         # データベースファイルの存在確認
         if not os.path.exists(db_path):
             app.logger.warning(f"データベースファイルが存在しません: {db_path}")
-            init_db()
+            return init_db()
         
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
@@ -76,11 +75,8 @@ def get_db():
         ''')
         if not c.fetchone():
             app.logger.warning("ordersテーブルが存在しません")
-            conn.close()  # 接続を一旦閉じる
-            init_db()     # テーブルを作成
-            conn = sqlite3.connect(db_path)  # 再接続
-            conn.row_factory = sqlite3.Row
-            conn.commit()  # 変更を確定
+            conn.close()
+            return init_db()
         
         return conn
     except Exception as e:
