@@ -19,7 +19,11 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 # DB 初期化
 def init_db():
     try:
-        conn = sqlite3.connect('orders.db')
+        # データベースファイルのパスを取得
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+        app.logger.info(f"データベースパス: {db_path}")
+        
+        conn = sqlite3.connect(db_path)
         c = conn.cursor()
         
         # テーブルが存在するか確認
@@ -33,10 +37,10 @@ def init_db():
             c.execute('''
                 CREATE TABLE orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    line_user_id TEXT,
-                    name TEXT,
-                    item TEXT,
-                    quantity INTEGER,
+                    line_user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    item TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
@@ -47,6 +51,16 @@ def init_db():
         app.logger.info("データベースの初期化が完了しました")
     except Exception as e:
         app.logger.error(f"データベース初期化エラー: {str(e)}")
+        raise
+
+def get_db():
+    try:
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception as e:
+        app.logger.error(f"データベース接続エラー: {str(e)}")
         raise
 
 # LINE Push helper
@@ -93,7 +107,7 @@ def order_form():
 
             try:
                 # データベースに保存
-                conn = sqlite3.connect('orders.db')
+                conn = get_db()
                 c = conn.cursor()
                 c.execute('''
                     INSERT INTO orders (line_user_id, name, item, quantity)
