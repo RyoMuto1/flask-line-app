@@ -7,7 +7,11 @@ from flask import (
     redirect, jsonify, session, Response
 )
 from dotenv import load_dotenv
+import logging  # 追加
 
+# ログ設定
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # .env をロード
 load_dotenv()
@@ -21,8 +25,8 @@ def init_db():
     try:
         # データベースファイルのパスを取得
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
-        app.logger.info(f"データベースパス: {db_path}")
-        app.logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
+        logger.info(f"データベースパス: {db_path}")
+        logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
         
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
@@ -35,7 +39,7 @@ def init_db():
         
         if not c.fetchone():
             # テーブルが存在しない場合のみ作成
-            app.logger.info("テーブルが存在しないため、新規作成を開始します")
+            logger.info("テーブルが存在しないため、新規作成を開始します")
             c.execute('''
                 CREATE TABLE orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,28 +51,28 @@ def init_db():
                 )
             ''')
             conn.commit()
-            app.logger.info("ordersテーブルを作成しました")
+            logger.info("ordersテーブルを作成しました")
         else:
             # テーブルが存在する場合、その構造を確認
             c.execute("PRAGMA table_info(orders)")
             columns = c.fetchall()
-            app.logger.info(f"既存のテーブル構造: {columns}")
-            app.logger.info("ordersテーブルは既に存在します")
+            logger.info(f"既存のテーブル構造: {columns}")
+            logger.info("ordersテーブルは既に存在します")
         
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
-        app.logger.error(f"データベース初期化エラー: {str(e)}")
+        logger.error(f"データベース初期化エラー: {str(e)}")
         raise
 
 def get_db():
     try:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
-        app.logger.info(f"データベースに接続します: {db_path}")
+        logger.info(f"データベースに接続します: {db_path}")
         
         # データベースファイルの存在確認
         if not os.path.exists(db_path):
-            app.logger.warning(f"データベースファイルが存在しません: {db_path}")
+            logger.warning(f"データベースファイルが存在しません: {db_path}")
             return init_db()
         
         conn = sqlite3.connect(db_path)
@@ -81,13 +85,13 @@ def get_db():
             WHERE type='table' AND name='orders'
         ''')
         if not c.fetchone():
-            app.logger.warning("ordersテーブルが存在しません")
+            logger.warning("ordersテーブルが存在しません")
             conn.close()
             conn = init_db()  # 新しい接続を取得
         
         return conn
     except Exception as e:
-        app.logger.error(f"データベース接続エラー: {str(e)}")
+        logger.error(f"データベース接続エラー: {str(e)}")
         raise
 
 # LINE Push helper
@@ -101,15 +105,15 @@ def send_line_message(user_id, message):
         },
         json={"to": user_id, "messages":[{"type":"text","text":message}]}
     )
-    app.logger.debug(f"LINE Push → {res.status_code} {res.text}")
+    logger.debug(f"LINE Push → {res.status_code} {res.text}")
 
 # アプリケーションの初期化
 with app.app_context():
     try:
         init_db()
-        app.logger.info("データベースの初期化が完了しました")
+        logger.info("データベースの初期化が完了しました")
     except Exception as e:
-        app.logger.error(f"データベース初期化エラー: {str(e)}")
+        logger.error(f"データベース初期化エラー: {str(e)}")
         raise
 
 @app.route('/', methods=['GET', 'POST'])
@@ -128,7 +132,7 @@ def order_form():
             # 必須フィールドのチェック
             for field in required_fields:
                 if not request.form.get(field):
-                    app.logger.error(f"必須フィールドが不足: {field}")
+                    logger.error(f"必須フィールドが不足: {field}")
                     return f"必須項目が入力されていません: {field}", 400
 
             # フォームデータの取得
@@ -139,7 +143,7 @@ def order_form():
                 'line_user_id': session['line_user_id']
             }
             
-            app.logger.info(f"フォームデータ: {form_data}")
+            logger.info(f"フォームデータ: {form_data}")
 
             try:
                 # データベースに保存
@@ -147,7 +151,7 @@ def order_form():
                 c = conn.cursor()
                 
                 # データの型を確認
-                app.logger.info(f"保存するデータ: line_user_id={form_data['line_user_id']}, name={form_data['name']}, item={form_data['item']}, quantity={form_data['quantity']}")
+                logger.info(f"保存するデータ: line_user_id={form_data['line_user_id']}, name={form_data['name']}, item={form_data['item']}, quantity={form_data['quantity']}")
                 
                 c.execute('''
                     INSERT INTO orders (line_user_id, name, item, quantity)
@@ -155,9 +159,9 @@ def order_form():
                 ''', (form_data['line_user_id'], form_data['name'], form_data['item'], form_data['quantity']))
                 conn.commit()
                 conn.close()
-                app.logger.info("データベースへの保存が完了しました")
+                logger.info("データベースへの保存が完了しました")
             except Exception as db_error:
-                app.logger.error(f"データベースエラー: {str(db_error)}")
+                logger.error(f"データベースエラー: {str(db_error)}")
                 return f"データベースエラーが発生しました: {str(db_error)}", 500
 
             try:
@@ -183,9 +187,9 @@ def order_form():
                     user_id=session['line_user_id'],
                     message=message
                 )
-                app.logger.info("LINE通知の送信が完了しました")
+                logger.info("LINE通知の送信が完了しました")
             except Exception as line_error:
-                app.logger.error(f"LINE通知エラー: {str(line_error)}")
+                logger.error(f"LINE通知エラー: {str(line_error)}")
                 # LINE通知のエラーは注文処理を妨げないようにする
                 pass
 
@@ -193,7 +197,7 @@ def order_form():
 
         return render_template('form.html')
     except Exception as e:
-        app.logger.error(f"フォーム処理エラー: {str(e)}")
+        logger.error(f"フォーム処理エラー: {str(e)}")
         return "エラーが発生しました。しばらく経ってから再度お試しください。", 500
 
 @app.route('/thanks')
@@ -216,7 +220,7 @@ def history():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    app.logger.debug("📬 webhook hit：%s", request.get_data())
+    logger.debug("📬 webhook hit：%s", request.get_data())
     return jsonify({"status":"ok"})
 
 # LINE Login 設定
@@ -257,7 +261,7 @@ def callback():
         }
     )
     token_data = token_res.json()
-    app.logger.debug("🐛 token_data: %s", token_data)
+    logger.debug("🐛 token_data: %s", token_data)
     id_token = token_data.get('id_token')
     if not id_token:
         return Response("id_token が取れませんでした", status=500)
@@ -266,7 +270,7 @@ def callback():
     try:
         payload = jwt.decode(id_token, options={"verify_signature": False})
     except Exception as e:
-        app.logger.error("JWT decode error: %s", e)
+        logger.error("JWT decode error: %s", e)
         return Response("ID トークンの解析に失敗しました", status=500)
 
     user_id   = payload.get('sub')
@@ -294,7 +298,7 @@ def mypage():
         # テーブル構造を確認
         c.execute("PRAGMA table_info(orders)")
         columns = [col[1] for col in c.fetchall()]
-        app.logger.info(f"テーブル構造: {columns}")
+        logger.info(f"テーブル構造: {columns}")
         
         # ユーザーの注文履歴を取得
         c.execute('''
@@ -306,12 +310,12 @@ def mypage():
         orders = [{'item': row[0], 'quantity': row[1], 'created_at': row[2]} for row in c.fetchall()]
         conn.close()
         
-        app.logger.info(f"注文履歴を取得: {len(orders)}件")
+        logger.info(f"注文履歴を取得: {len(orders)}件")
         return render_template('mypage.html', 
                              user_name=session.get('line_user_name', 'ゲスト'),
                              orders=orders)
     except Exception as e:
-        app.logger.error(f"マイページエラー: {str(e)}")
+        logger.error(f"マイページエラー: {str(e)}")
         return "エラーが発生しました。しばらく経ってから再度お試しください。", 500
 
 @app.route('/logout')
