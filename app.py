@@ -70,28 +70,45 @@ def order_form():
             return redirect('/login')
 
         if request.method == 'POST':
+            # フォームデータの取得と検証
+            required_fields = ['name', 'product_name', 'quantity', 'event_date', 
+                             'class_teacher', 'school_name', 'delivery_name', 
+                             'postal_code', 'prefecture', 'city', 'address']
+            
+            # 必須フィールドのチェック
+            for field in required_fields:
+                if not request.form.get(field):
+                    app.logger.error(f"必須フィールドが不足: {field}")
+                    return f"必須項目が入力されていません: {field}", 400
+
             # フォームデータの取得
             form_data = {
                 'name': request.form.get('name'),
-                'item': request.form.get('product_name'),  # フォームのname属性に合わせて修正
+                'item': request.form.get('product_name'),
                 'quantity': request.form.get('quantity'),
                 'line_user_id': session['line_user_id']
             }
             
             app.logger.info(f"フォームデータ: {form_data}")
 
-            # データベースに保存
-            conn = sqlite3.connect('orders.db')
-            c = conn.cursor()
-            c.execute('''
-                INSERT INTO orders (line_user_id, name, item, quantity)
-                VALUES (?, ?, ?, ?)
-            ''', (form_data['line_user_id'], form_data['name'], form_data['item'], form_data['quantity']))
-            conn.commit()
-            conn.close()
+            try:
+                # データベースに保存
+                conn = sqlite3.connect('orders.db')
+                c = conn.cursor()
+                c.execute('''
+                    INSERT INTO orders (line_user_id, name, item, quantity)
+                    VALUES (?, ?, ?, ?)
+                ''', (form_data['line_user_id'], form_data['name'], form_data['item'], form_data['quantity']))
+                conn.commit()
+                conn.close()
+                app.logger.info("データベースへの保存が完了しました")
+            except Exception as db_error:
+                app.logger.error(f"データベースエラー: {str(db_error)}")
+                return "データベースエラーが発生しました", 500
 
-            # LINE へお知らせ
-            message = f'''
+            try:
+                # LINE へお知らせ
+                message = f'''
 {form_data["name"]}さん、ご注文ありがとうございます！
 
 【注文内容】
@@ -108,17 +125,22 @@ def order_form():
 
 ご注文ありがとうございました！😊
 '''
-            send_line_message(
-                user_id=session['line_user_id'],
-                message=message
-            )
+                send_line_message(
+                    user_id=session['line_user_id'],
+                    message=message
+                )
+                app.logger.info("LINE通知の送信が完了しました")
+            except Exception as line_error:
+                app.logger.error(f"LINE通知エラー: {str(line_error)}")
+                # LINE通知のエラーは注文処理を妨げないようにする
+                pass
 
             return redirect('/thanks')
 
         return render_template('form.html')
     except Exception as e:
         app.logger.error(f"フォーム処理エラー: {str(e)}")
-        return "エラーが発生しました。しばらく経ってから再度お試しください。", 400
+        return "エラーが発生しました。しばらく経ってから再度お試しください。", 500
 
 @app.route('/thanks')
 def thanks():
