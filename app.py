@@ -22,70 +22,80 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
 # DB 初期化
 def init_db():
-    try:
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
-        logger.info(f"データベースパス: {db_path}")
-        logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+    logger.info(f"データベースパス: {db_path}")
 
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
 
-        # テーブルが存在するか確認
+    # テーブルが存在するか確認
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
+    if not c.fetchone():
+        logger.info("ordersテーブルが存在しないため、新規作成します")
+        # フルスキーマでテーブル作成
         c.execute('''
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='orders'
+            CREATE TABLE orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                item TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                event_date TEXT,
+                class_teacher TEXT,
+                school_name TEXT,
+                delivery_name TEXT,
+                postal_code TEXT,
+                prefecture TEXT,
+                city TEXT,
+                address TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         ''')
-        if not c.fetchone():
-            logger.info("テーブルが存在しないため、新規作成を開始します")
-            c.execute('''
-                CREATE TABLE orders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    line_user_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    item TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            conn.commit()
-            logger.info("ordersテーブルを作成しました")
-        else:
-            logger.info("ordersテーブルは既に存在します")
+        conn.commit()
+        logger.info("ordersテーブルを作成しました")
+    else:
+        # マイグレーション：必要なカラムを追加
+        existing = [row[1] for row in c.execute("PRAGMA table_info(orders)").fetchall()]
+        additions = [
+            ("event_date",   "TEXT"),
+            ("class_teacher","TEXT"),
+            ("school_name",  "TEXT"),
+            ("delivery_name","TEXT"),
+            ("postal_code",  "TEXT"),
+            ("prefecture",   "TEXT"),
+            ("city",         "TEXT"),
+            ("address",      "TEXT")
+        ]
+        for name, col_type in additions:
+            if name not in existing:
+                logger.info(f"カラム '{name}' が存在しないため追加します")
+                c.execute(f"ALTER TABLE orders ADD COLUMN {name} {col_type}")
+        conn.commit()
+        logger.info("ordersテーブルのマイグレーションが完了しました")
 
-        conn.row_factory = sqlite3.Row
-        return conn
-    except Exception as e:
-        logger.error(f"データベース初期化エラー: {str(e)}")
-        raise
+    conn.row_factory = sqlite3.Row
+    return conn
+
 
 def get_db():
-    try:
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
-        logger.info(f"データベースに接続します: {db_path}")
-        
-        # データベースファイルの存在確認
-        if not os.path.exists(db_path):
-            logger.warning(f"データベースファイルが存在しません: {db_path}")
-            return init_db()
-        
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        
-        # テーブルの存在確認
-        c = conn.cursor()
-        c.execute('''
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='orders'
-        ''')
-        if not c.fetchone():
-            logger.warning("ordersテーブルが存在しません")
-            conn.close()
-            conn = init_db()  # 新しい接続を取得
-        
-        return conn
-    except Exception as e:
-        logger.error(f"データベース接続エラー: {str(e)}")
-        raise
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+    logger.info(f"データベースに接続します: {db_path}")
+
+    if not os.path.exists(db_path):
+        logger.warning(f"データベースファイルが存在しません: {db_path}")
+        return init_db()
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    # テーブル存在チェック
+    c = conn.cursor()
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
+    if not c.fetchone():
+        logger.warning("ordersテーブルが存在しません。再初期化します。")
+        conn.close()
+        return init_db()
+
+    return conn
 
 # LINE Push helper
 def send_line_message(user_id, message):
@@ -112,44 +122,50 @@ with app.app_context():
 @app.route('/', methods=['GET', 'POST'])
 def order_form():
     try:
-        # LINEログインしていない場合はログインページへリダイレクト
         if not session.get('line_user_id'):
             return redirect('/login')
 
         if request.method == 'POST':
-            # フォームデータの取得と検証
             required_fields = ['name', 'product_name', 'quantity', 'event_date', 
-                             'class_teacher', 'school_name', 'delivery_name', 
-                             'postal_code', 'prefecture', 'city', 'address']
-            
-            # 必須フィールドのチェック
+                               'class_teacher', 'school_name', 'delivery_name', 
+                               'postal_code', 'prefecture', 'city', 'address']
             for field in required_fields:
                 if not request.form.get(field):
                     logger.error(f"必須フィールドが不足: {field}")
                     return f"必須項目が入力されていません: {field}", 400
 
-            # フォームデータの取得
             form_data = {
                 'name': request.form.get('name'),
                 'item': request.form.get('product_name'),
                 'quantity': request.form.get('quantity'),
                 'line_user_id': session['line_user_id']
             }
-            
             logger.info(f"フォームデータ: {form_data}")
 
             try:
-                # データベースに保存
                 conn = get_db()
                 c = conn.cursor()
-                
-                # データの型を確認
-                logger.info(f"保存するデータ: line_user_id={form_data['line_user_id']}, name={form_data['name']}, item={form_data['item']}, quantity={form_data['quantity']}")
-                
                 c.execute('''
-                    INSERT INTO orders (line_user_id, name, item, quantity)
-                    VALUES (?, ?, ?, ?)
-                ''', (form_data['line_user_id'], form_data['name'], form_data['item'], form_data['quantity']))
+                    INSERT INTO orders (
+                        line_user_id, name, item, quantity,
+                        event_date, class_teacher, school_name,
+                        delivery_name, postal_code, prefecture,
+                        city, address
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                ''', (
+                    form_data['line_user_id'],
+                    form_data['name'],
+                    form_data['item'],
+                    form_data['quantity'],
+                    request.form.get('event_date'),
+                    request.form.get('class_teacher'),
+                    request.form.get('school_name'),
+                    request.form.get('delivery_name'),
+                    request.form.get('postal_code'),
+                    request.form.get('prefecture'),
+                    request.form.get('city'),
+                    request.form.get('address'),
+                ))
                 conn.commit()
                 conn.close()
                 logger.info("データベースへの保存が完了しました")
@@ -158,14 +174,12 @@ def order_form():
                 return f"データベースエラーが発生しました: {str(db_error)}", 500
 
             try:
-                # LINE へお知らせ
-                message = f'''
+                message = f'''\
 {form_data["name"]}さん、ご注文ありがとうございます！
 
 【注文内容】
 商品名：{form_data["item"]}
 数量：{form_data["quantity"]}枚
-予算：{request.form.get('budget')}円
 イベント日：{request.form.get('event_date')}
 クラス・担任：{request.form.get('class_teacher')}
 
@@ -184,9 +198,6 @@ def order_form():
                 logger.info("LINE通知の送信が完了しました")
             except Exception as line_error:
                 logger.error(f"LINE通知エラー: {str(line_error)}")
-                # LINE通知のエラーは注文処理を妨げないようにする
-                pass
-
             return redirect('/thanks')
 
         return render_template('form.html')
@@ -196,7 +207,6 @@ def order_form():
 
 @app.route('/thanks')
 def thanks():
-    # templates/thanks.html を返す
     return render_template('thanks.html')
 
 @app.route('/history')
@@ -222,7 +232,6 @@ def webhook():
 LINE_LOGIN_CHANNEL_ID     = os.environ["LINE_LOGIN_CHANNEL_ID"]
 LINE_LOGIN_CHANNEL_SECRET = os.environ["LINE_LOGIN_CHANNEL_SECRET"]
 
-# 環境に応じてリダイレクトURIを設定
 if os.environ.get('FLASK_ENV') == 'development':
     LINE_REDIRECT_URI = 'http://localhost:10000/callback'
 else:
@@ -243,7 +252,6 @@ def login():
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
-    # トークン取得
     token_res = requests.post(
         'https://api.line.me/oauth2/v2.1/token',
         headers={'Content-Type':'application/x-www-form-urlencoded'},
@@ -261,7 +269,6 @@ def callback():
     if not id_token:
         return Response("id_token が取れませんでした", status=500)
 
-    # JWT を検証せずにデコード
     try:
         payload = jwt.decode(id_token, options={"verify_signature": False})
     except Exception as e:
@@ -273,11 +280,9 @@ def callback():
     if not user_id:
         return Response("ユーザーID(sub) が取得できませんでした", status=500)
 
-    # セッションに保存
     session['line_user_id']   = user_id
     session['line_user_name'] = user_name
 
-    # トップページ（注文フォーム）へリダイレクト
     return redirect('/')
 
 @app.route('/mypage')
@@ -285,23 +290,21 @@ def mypage():
     try:
         if 'line_user_id' not in session:
             return redirect('/login')
-        
         conn = get_db()
         c = conn.cursor()
-        
-        # ユーザーの注文履歴を全て取得
         c.execute('''
-            SELECT name, item, quantity, event_date, class_teacher, school_name, delivery_name, postal_code, prefecture, city, address, created_at 
-            FROM orders 
-            WHERE line_user_id = ? 
-            ORDER BY created_at DESC
+            SELECT name, item, quantity, event_date, class_teacher,
+                   school_name, delivery_name, postal_code,
+                   prefecture, city, address, created_at
+              FROM orders
+             WHERE line_user_id = ?
+             ORDER BY created_at DESC
         ''', (session['line_user_id'],))
         orders = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
         conn.close()
-        
         return render_template('mypage.html', 
-                             user_name=session.get('line_user_name', 'ゲスト'),
-                             orders=orders)
+                               user_name=session.get('line_user_name', 'ゲスト'),
+                               orders=orders)
     except Exception as e:
         logger.error(f"マイページエラー: {str(e)}")
         return "エラーが発生しました。しばらく経ってから再度お試しください。", 500
