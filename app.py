@@ -47,6 +47,10 @@ def init_db():
             conn.commit()
             app.logger.info("ordersテーブルを作成しました")
         else:
+            # テーブルが存在する場合、その構造を確認
+            c.execute("PRAGMA table_info(orders)")
+            columns = c.fetchall()
+            app.logger.info(f"既存のテーブル構造: {columns}")
             app.logger.info("ordersテーブルは既に存在します")
         
         conn.row_factory = sqlite3.Row
@@ -77,7 +81,7 @@ def get_db():
         if not c.fetchone():
             app.logger.warning("ordersテーブルが存在しません")
             conn.close()
-            return init_db()
+            conn = init_db()  # 新しい接続を取得
         
         return conn
     except Exception as e:
