@@ -18,20 +18,36 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
 # DB 初期化
 def init_db():
-    conn = sqlite3.connect('orders.db')
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            line_user_id TEXT,
-            name TEXT,
-            item TEXT,
-            quantity INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect('orders.db')
+        c = conn.cursor()
+        
+        # テーブルが存在するか確認
+        c.execute('''
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='orders'
+        ''')
+        
+        if not c.fetchone():
+            # テーブルが存在しない場合は作成
+            c.execute('''
+                CREATE TABLE orders (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    line_user_id TEXT,
+                    name TEXT,
+                    item TEXT,
+                    quantity INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            app.logger.info("ordersテーブルを作成しました")
+        
+        conn.commit()
+        conn.close()
+        app.logger.info("データベースの初期化が完了しました")
+    except Exception as e:
+        app.logger.error(f"データベース初期化エラー: {str(e)}")
+        raise
 
 # LINE Push helper
 def send_line_message(user_id, message):
@@ -168,9 +184,16 @@ def mypage():
         if 'line_user_id' not in session:
             return redirect('/login')
         
-        # ユーザーの注文履歴を取得
+        # データベース接続
         conn = sqlite3.connect('orders.db')
         c = conn.cursor()
+        
+        # テーブル構造を確認
+        c.execute("PRAGMA table_info(orders)")
+        columns = [col[1] for col in c.fetchall()]
+        app.logger.info(f"テーブル構造: {columns}")
+        
+        # ユーザーの注文履歴を取得
         c.execute('''
             SELECT item, quantity, created_at 
             FROM orders 
@@ -180,6 +203,7 @@ def mypage():
         orders = [{'item': row[0], 'quantity': row[1], 'created_at': row[2]} for row in c.fetchall()]
         conn.close()
         
+        app.logger.info(f"注文履歴を取得: {len(orders)}件")
         return render_template('mypage.html', 
                              user_name=session.get('line_user_name', 'ゲスト'),
                              orders=orders)
