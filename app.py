@@ -165,6 +165,7 @@ def order_form():
 【注文内容】
 商品名：{form_data["item"]}
 数量：{form_data["quantity"]}枚
+予算：{request.form.get('budget')}円
 イベント日：{request.form.get('event_date')}
 クラス・担任：{request.form.get('class_teacher')}
 
@@ -195,7 +196,8 @@ def order_form():
 
 @app.route('/thanks')
 def thanks():
-    return 'ご注文ありがとうございました！'
+    # templates/thanks.html を返す
+    return render_template('thanks.html')
 
 @app.route('/history')
 def history():
