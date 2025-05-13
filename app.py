@@ -206,7 +206,7 @@ def thanks():
 
 @app.route('/history')
 def history():
-    conn = sqlite3.connect('orders.db')
+    conn = get_db()
     c    = conn.cursor()
     c.execute('SELECT name,item,quantity FROM orders')
     rows = c.fetchall()
@@ -292,7 +292,7 @@ def mypage():
             return redirect('/login')
         
         # データベース接続
-        conn = sqlite3.connect('orders.db')
+        conn = get_db()
         c = conn.cursor()
         
         # テーブル構造を確認
