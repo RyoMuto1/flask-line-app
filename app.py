@@ -64,34 +64,44 @@ def send_line_message(user_id, message):
 
 @app.route('/', methods=['GET', 'POST'])
 def order_form():
-    # LINEログインしていない場合はログインページへリダイレクト
-    if not session.get('line_user_id'):
-        return redirect('/login')
+    try:
+        # LINEログインしていない場合はログインページへリダイレクト
+        if not session.get('line_user_id'):
+            return redirect('/login')
 
-    if request.method == 'POST':
-        name     = request.form['name']
-        item     = request.form['item']
-        quantity = int(request.form['quantity'])
+        if request.method == 'POST':
+            # フォームデータの取得
+            form_data = {
+                'name': request.form.get('name'),
+                'item': request.form.get('product_name'),  # フォームのname属性に合わせて修正
+                'quantity': request.form.get('quantity'),
+                'line_user_id': session['line_user_id']
+            }
+            
+            app.logger.info(f"フォームデータ: {form_data}")
 
-        # DB に保存
-        conn = sqlite3.connect('orders.db')
-        c    = conn.cursor()
-        c.execute(
-            'INSERT INTO orders (line_user_id, name, item, quantity) VALUES (?, ?, ?, ?)',
-            (session['line_user_id'], name, item, quantity)
-        )
-        conn.commit()
-        conn.close()
+            # データベースに保存
+            conn = sqlite3.connect('orders.db')
+            c = conn.cursor()
+            c.execute('''
+                INSERT INTO orders (line_user_id, name, item, quantity)
+                VALUES (?, ?, ?, ?)
+            ''', (form_data['line_user_id'], form_data['name'], form_data['item'], form_data['quantity']))
+            conn.commit()
+            conn.close()
 
-        # LINE へお知らせ
-        send_line_message(
-            user_id=session['line_user_id'],
-            message=f'{name}さん、ご注文ありがとう！「{item}」 x {quantity} 承りました😊'
-        )
+            # LINE へお知らせ
+            send_line_message(
+                user_id=session['line_user_id'],
+                message=f'{form_data["name"]}さん、ご注文ありがとう！「{form_data["item"]}」 x {form_data["quantity"]} 承りました😊'
+            )
 
-        return redirect('/thanks')
+            return redirect('/thanks')
 
-    return render_template('form.html')
+        return render_template('form.html')
+    except Exception as e:
+        app.logger.error(f"フォーム処理エラー: {str(e)}")
+        return "エラーが発生しました。しばらく経ってから再度お試しください。", 400
 
 @app.route('/thanks')
 def thanks():
