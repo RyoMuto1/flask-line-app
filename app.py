@@ -91,9 +91,26 @@ def order_form():
             conn.close()
 
             # LINE へお知らせ
+            message = f'''
+{form_data["name"]}さん、ご注文ありがとうございます！
+
+【注文内容】
+商品名：{form_data["item"]}
+数量：{form_data["quantity"]}枚
+イベント日：{request.form.get('event_date')}
+クラス・担任：{request.form.get('class_teacher')}
+
+【お届け先】
+学校名：{request.form.get('school_name')}
+宛名：{request.form.get('delivery_name')}
+郵便番号：{request.form.get('postal_code')}
+住所：{request.form.get('prefecture')}{request.form.get('city')}{request.form.get('address')}
+
+ご注文ありがとうございました！😊
+'''
             send_line_message(
                 user_id=session['line_user_id'],
-                message=f'{form_data["name"]}さん、ご注文ありがとう！「{form_data["item"]}」 x {form_data["quantity"]} 承りました😊'
+                message=message
             )
 
             return redirect('/thanks')
