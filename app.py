@@ -284,26 +284,19 @@ def mypage():
         if 'line_user_id' not in session:
             return redirect('/login')
         
-        # データベース接続
         conn = get_db()
         c = conn.cursor()
         
-        # テーブル構造を確認
-        c.execute("PRAGMA table_info(orders)")
-        columns = [col[1] for col in c.fetchall()]
-        logger.info(f"テーブル構造: {columns}")
-        
-        # ユーザーの注文履歴を取得
+        # ユーザーの注文履歴を全て取得
         c.execute('''
-            SELECT item, quantity, created_at 
+            SELECT name, item, quantity, event_date, class_teacher, school_name, delivery_name, postal_code, prefecture, city, address, created_at 
             FROM orders 
             WHERE line_user_id = ? 
             ORDER BY created_at DESC
         ''', (session['line_user_id'],))
-        orders = [{'item': row[0], 'quantity': row[1], 'created_at': row[2]} for row in c.fetchall()]
+        orders = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
         conn.close()
         
-        logger.info(f"注文履歴を取得: {len(orders)}件")
         return render_template('mypage.html', 
                              user_name=session.get('line_user_name', 'ゲスト'),
                              orders=orders)
