@@ -26,22 +26,27 @@ def init_db():
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         
-        # 既存のテーブルを削除
-        c.execute('DROP TABLE IF EXISTS orders')
-        app.logger.info("既存のordersテーブルを削除しました")
-        
-        # 新しいテーブルを作成
+        # テーブルが存在するか確認
         c.execute('''
-            CREATE TABLE orders (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                line_user_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                item TEXT NOT NULL,
-                quantity INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='orders'
         ''')
-        app.logger.info("新しいordersテーブルを作成しました")
+        
+        if not c.fetchone():
+            # テーブルが存在しない場合のみ作成
+            c.execute('''
+                CREATE TABLE orders (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    line_user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    item TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            app.logger.info("ordersテーブルを作成しました")
+        else:
+            app.logger.info("ordersテーブルは既に存在します")
         
         conn.commit()
         conn.close()
