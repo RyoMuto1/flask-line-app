@@ -23,9 +23,11 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            line_user_id TEXT,
             name TEXT,
             item TEXT,
-            quantity INTEGER
+            quantity INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
@@ -59,8 +61,8 @@ def order_form():
         conn = sqlite3.connect('orders.db')
         c    = conn.cursor()
         c.execute(
-            'INSERT INTO orders (name, item, quantity) VALUES (?, ?, ?)',
-            (name, item, quantity)
+            'INSERT INTO orders (line_user_id, name, item, quantity) VALUES (?, ?, ?, ?)',
+            (session['line_user_id'], name, item, quantity)
         )
         conn.commit()
         conn.close()
