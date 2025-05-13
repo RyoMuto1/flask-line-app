@@ -76,7 +76,10 @@ def get_db():
         ''')
         if not c.fetchone():
             app.logger.warning("ordersテーブルが存在しません")
-            init_db()
+            conn.close()  # 接続を一旦閉じる
+            init_db()     # テーブルを作成
+            conn = sqlite3.connect(db_path)  # 再接続
+            conn.row_factory = sqlite3.Row
         
         return conn
     except Exception as e:
