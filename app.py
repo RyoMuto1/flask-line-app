@@ -49,6 +49,7 @@ def init_db():
         else:
             app.logger.info("ordersテーブルは既に存在します")
         
+        conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
         app.logger.error(f"データベース初期化エラー: {str(e)}")
