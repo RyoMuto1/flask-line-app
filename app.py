@@ -80,6 +80,7 @@ def get_db():
             init_db()     # テーブルを作成
             conn = sqlite3.connect(db_path)  # 再接続
             conn.row_factory = sqlite3.Row
+            conn.commit()  # 変更を確定
         
         return conn
     except Exception as e:
