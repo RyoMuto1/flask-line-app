@@ -37,24 +37,44 @@
                 </div>
 
                 <!-- 注文履歴 -->
-                <h3 class="mb-4">注文履歴</h3>
-                {% if orders %}
-                    {% for order in orders %}
-                        <div class="card order-card">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ order.item }}</h5>
-                                <p class="card-text">
-                                    <strong>数量:</strong> {{ order.quantity }}<br>
-                                    <strong>注文日時:</strong> {{ order.created_at }}
-                                </p>
-                            </div>
+                <div class="container mt-4">
+                    <h2>{{ user_name }}さんのマイページ</h2>
+                    {% if orders %}
+                        <h3>注文履歴</h3>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>注文日時</th>
+                                        <th>商品</th>
+                                        <th>数量</th>
+                                        <th>イベント日</th>
+                                        <th>担当者</th>
+                                        <th>学校名</th>
+                                        <th>配送先</th>
+                                        <th>住所</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                    <tr>
+                                        <td>{{ order.created_at }}</td>
+                                        <td>{{ order.item }}</td>
+                                        <td>{{ order.quantity }}</td>
+                                        <td>{{ order.event_date }}</td>
+                                        <td>{{ order.class_teacher }}</td>
+                                        <td>{{ order.school_name }}</td>
+                                        <td>{{ order.delivery_name }}</td>
+                                        <td>{{ order.prefecture }}{{ order.city }}{{ order.address }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert alert-info">
-                        まだ注文履歴がありません。
-                    </div>
-                {% endif %}
+                    {% else %}
+                        <p>ご注文情報がありません</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
