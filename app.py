@@ -22,6 +22,7 @@ def init_db():
         # データベースファイルのパスを取得
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
         app.logger.info(f"データベースパス: {db_path}")
+        app.logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
         
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
@@ -34,6 +35,7 @@ def init_db():
         
         if not c.fetchone():
             # テーブルが存在しない場合のみ作成
+            app.logger.info("テーブルが存在しないため、新規作成を開始します")
             c.execute('''
                 CREATE TABLE orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
