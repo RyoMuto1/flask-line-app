@@ -23,42 +23,31 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 # DB 初期化
 def init_db():
     try:
-        # データベースファイルのパスを取得
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
-        app.logger.info(f"データベースパス: {db_path}")
-        app.logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
-        
+        logger.info(f"データベースパス: {db_path}")
+        logger.info(f"init_dbが呼び出されました。呼び出し元: {__name__}")
+
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
-        
-        # テーブルが存在するか確認
+
+        # 既存のordersテーブルを削除
+        c.execute("DROP TABLE IF EXISTS orders")
+        logger.info("ordersテーブルを削除しました（もし存在していれば）")
+
+        # 新しい構造でテーブル作成
         c.execute('''
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='orders'
+            CREATE TABLE orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                item TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         ''')
-        
-        if not c.fetchone():
-            # テーブルが存在しない場合のみ作成
-            logger.info("テーブルが存在しないため、新規作成を開始します")
-            c.execute('''
-                CREATE TABLE orders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    line_user_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    item TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            conn.commit()
-            logger.info("ordersテーブルを作成しました")
-        else:
-            # テーブルが存在する場合、その構造を確認
-            c.execute("PRAGMA table_info(orders)")
-            columns = c.fetchall()
-            logger.info(f"既存のテーブル構造: {columns}")
-            logger.info("ordersテーブルは既に存在します")
-        
+        conn.commit()
+        logger.info("ordersテーブルを新しい構造で作成しました")
+
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
