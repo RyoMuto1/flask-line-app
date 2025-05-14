@@ -8,6 +8,7 @@ from flask import (
 )
 from dotenv import load_dotenv
 import logging  # 追加
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,21 @@ def init_db():
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
+    # 管理者テーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'")
+    if not c.fetchone():
+        logger.info("adminsテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE admins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("adminsテーブルを作成しました")
+
     # テーブルが存在するか確認
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
     if not c.fetchone():
@@ -38,6 +54,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 line_user_id TEXT NOT NULL,
                 name TEXT NOT NULL,
+                name_kana TEXT NOT NULL,
+                phone TEXT NOT NULL,
                 item TEXT NOT NULL,
                 quantity INTEGER NOT NULL,
                 event_date TEXT,
@@ -48,6 +66,7 @@ def init_db():
                 prefecture TEXT,
                 city TEXT,
                 address TEXT,
+                budget TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -64,7 +83,10 @@ def init_db():
             ("postal_code",  "TEXT"),
             ("prefecture",   "TEXT"),
             ("city",         "TEXT"),
-            ("address",      "TEXT")
+            ("address",      "TEXT"),
+            ("budget",       "TEXT"),
+            ("name_kana",    "TEXT"),
+            ("phone",        "TEXT")
         ]
         for name, col_type in additions:
             if name not in existing:
@@ -126,9 +148,9 @@ def order_form():
             return redirect('/login')
 
         if request.method == 'POST':
-            required_fields = ['name', 'product_name', 'quantity', 'event_date', 
-                               'class_teacher', 'school_name', 'delivery_name', 
-                               'postal_code', 'prefecture', 'city', 'address']
+            required_fields = ['name', 'name_kana', 'phone', 'product_name', 'quantity', 'event_date', 
+                             'class_teacher', 'school_name', 'delivery_name', 
+                             'postal_code', 'prefecture', 'city', 'address', 'budget']
             for field in required_fields:
                 if not request.form.get(field):
                     logger.error(f"必須フィールドが不足: {field}")
@@ -136,6 +158,8 @@ def order_form():
 
             form_data = {
                 'name': request.form.get('name'),
+                'name_kana': request.form.get('name_kana'),
+                'phone': request.form.get('phone'),
                 'item': request.form.get('product_name'),
                 'quantity': request.form.get('quantity'),
                 'line_user_id': session['line_user_id']
@@ -147,14 +171,16 @@ def order_form():
                 c = conn.cursor()
                 c.execute('''
                     INSERT INTO orders (
-                        line_user_id, name, item, quantity,
+                        line_user_id, name, name_kana, phone, item, quantity,
                         event_date, class_teacher, school_name,
                         delivery_name, postal_code, prefecture,
-                        city, address
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                        city, address, budget
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ''', (
                     form_data['line_user_id'],
                     form_data['name'],
+                    form_data['name_kana'],
+                    form_data['phone'],
                     form_data['item'],
                     form_data['quantity'],
                     request.form.get('event_date'),
@@ -165,6 +191,7 @@ def order_form():
                     request.form.get('prefecture'),
                     request.form.get('city'),
                     request.form.get('address'),
+                    request.form.get('budget')
                 ))
                 conn.commit()
                 conn.close()
@@ -313,6 +340,67 @@ def mypage():
 def logout():
     session.clear()
     return redirect('/login')
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT * FROM admins WHERE email = ?', (email,))
+        admin = c.fetchone()
+        conn.close()
+        
+        if admin and check_password_hash(admin['password'], password):
+            session['admin_id'] = admin['id']
+            session['admin_email'] = admin['email']
+            return redirect('/admin/dashboard')
+        
+        return render_template('admin/login.html', error='メールアドレスまたはパスワードが正しくありません。')
+    
+    return render_template('admin/login.html')
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if 'admin_id' not in session:
+        return redirect('/admin/login')
+    
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT id, name, school_name, event_date, budget, created_at
+        FROM orders
+        ORDER BY created_at DESC
+    ''')
+    orders = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
+    conn.close()
+    
+    return render_template('admin/dashboard.html', orders=orders)
+
+@app.route('/admin/order/<int:order_id>')
+def admin_order_detail(order_id):
+    if 'admin_id' not in session:
+        return redirect('/admin/login')
+    
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT *
+        FROM orders
+        WHERE id = ?
+    ''', (order_id,))
+    order = dict(zip([column[0] for column in c.description], c.fetchone()))
+    conn.close()
+    
+    return render_template('admin/order_detail.html', order=order)
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_id', None)
+    session.pop('admin_email', None)
+    return redirect('/admin/login')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
