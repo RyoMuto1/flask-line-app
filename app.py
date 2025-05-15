@@ -79,6 +79,21 @@ def init_db():
         conn.commit()
         logger.info("user_registrationsテーブルを作成しました")
 
+    # ユーザーテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+    if not c.fetchone():
+        logger.info("usersテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("usersテーブルを作成しました")
+
     # 管理者テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'")
     if not c.fetchone():
@@ -330,6 +345,22 @@ def login():
         # セッションに流入元を保存
         session['registration_source'] = source
     return redirect('/line-login')
+
+@app.route('/line-login')
+def line_login():
+    # LINE認証URLを生成
+    state = secrets.token_urlsafe(16)
+    session['line_login_state'] = state
+    
+    auth_params = {
+        'response_type': 'code',
+        'client_id': LINE_LOGIN_CHANNEL_ID,
+        'redirect_uri': LINE_REDIRECT_URI,
+        'state': state,
+        'scope': 'profile',
+    }
+    auth_url = 'https://access.line.me/oauth2/v2.1/authorize?' + '&'.join([f'{k}={v}' for k, v in auth_params.items()])
+    return redirect(auth_url)
 
 @app.route('/line-login/callback')
 def line_login_callback():
