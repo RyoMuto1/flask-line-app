@@ -472,14 +472,8 @@ def line_login():
     state = secrets.token_urlsafe(16)
     session['line_login_state'] = state
     
-    # 環境に応じたコールバックURLを設定
-    if os.path.exists('/opt/render'):
-        # Render環境では/callbackを使用
-        callback_url = f"{request.host_url.rstrip('/')}/callback"
-    else:
-        # ローカル環境では従来通り
-        callback_url = LINE_REDIRECT_URI
-    
+    # 常にHTTPSで固定のコールバックURLを使用する
+    callback_url = "https://flask-line-app-essd.onrender.com/callback"
     logger.info(f"LINE認証用コールバックURL: {callback_url}")
     
     auth_params = {
@@ -504,13 +498,8 @@ def callback():
     if not session_state or session_state != state:
         logger.warning(f"state不一致: session={session_state}, request={state}")
     
-    # Renderの本番環境用のコールバックURLを作成
-    if os.path.exists('/opt/render'):
-        callback_url = "https://flask-line-app-essd.onrender.com/callback"
-    else:
-        # ローカル環境ではリクエストベースのURLを使用
-        callback_url = f"{request.host_url.rstrip('/')}/callback"
-    
+    # 常にHTTPSで固定のコールバックURLを使用する
+    callback_url = "https://flask-line-app-essd.onrender.com/callback"
     logger.info(f"コールバックURLを使用: {callback_url}")
     
     try:
