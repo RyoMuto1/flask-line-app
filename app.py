@@ -382,9 +382,15 @@ else:
 @app.route('/login')
 def login():
     source = request.args.get('source')
+    logger.info(f"ログインルートにアクセス - source={source}, args={request.args}")
+    
     if source:
         # セッションに流入元を保存
         session['registration_source'] = source
+        logger.info(f"流入元をセッションに保存: registration_source={source}")
+    else:
+        logger.info("流入元情報なしでログイン")
+        
     return redirect('/line-login')
 
 @app.route('/line-login')
@@ -619,7 +625,19 @@ def line_source_analytics():
     result_links = []
     for link in links:
         link_dict = dict(link)
-        link_dict['full_url'] = f"{request.host_url}login?source={link['link_code']}"
+        
+        # 環境に応じたURLを構築
+        if os.path.exists('/opt/render'):
+            # Render環境では絶対URLを使用
+            base_url = "https://flask-line-app-essd.onrender.com"
+        else:
+            # ローカル環境ではリクエストベースのURLを使用
+            base_url = request.host_url.rstrip('/')
+        
+        # 完全なURLを構築（URLエンコードはブラウザが行うので不要）
+        link_dict['full_url'] = f"{base_url}/login?source={link['link_code']}"
+        logger.info(f"流入リンク生成: {link_dict['full_url']}")
+        
         result_links.append(link_dict)
     
     conn.close()
@@ -914,11 +932,12 @@ def delete_admin(admin_id):
 # LINE認証コールバック（Renderでの動作のため追加）
 @app.route('/callback')
 def callback():
-    # line_login_callbackと同じ処理を実行
+    # リクエスト情報をデバッグ出力
+    logger.info(f"コールバックルートにアクセス - args={request.args}")
     code = request.args.get('code')
     
-    # Renderの本番環境用のコールバックURLを作成
-    callback_url = f"{request.host_url.rstrip('/')}/callback"
+    # Renderの本番環境用のコールバックURLを作成 - ここが重要
+    callback_url = "https://flask-line-app-essd.onrender.com/callback"
     logger.info(f"コールバックURLを使用: {callback_url}")
     
     token_res = requests.post(
