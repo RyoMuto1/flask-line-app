@@ -8,6 +8,18 @@
     </button>
 </div>
 
+<!-- フラッシュメッセージ表示 -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <!-- 登録リンク一覧 -->
 <div class="card mb-4">
     <div class="card-header">
@@ -35,10 +47,39 @@
                         </td>
                         <td>{{ link.created_at }}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary copy-link" 
-                                    data-link="{{ link.full_url }}">
-                                リンクをコピー
-                            </button>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary copy-link" 
+                                        data-link="{{ link.full_url }}">
+                                    <i class="bi bi-clipboard"></i> コピー
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteLinkModal{{ link.id }}">
+                                    <i class="bi bi-trash"></i> 削除
+                                </button>
+                            </div>
+                            
+                            <!-- 削除確認モーダル -->
+                            <div class="modal fade" id="deleteLinkModal{{ link.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">リンク削除の確認</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>リンク「{{ link.name }}」を削除してもよろしいですか？</p>
+                                            <p class="text-danger">この操作は取り消せません。このリンクから登録したユーザーの流入元情報も削除されます。</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                            <form method="POST" action="{{ url_for('delete_registration_link', link_id=link.id) }}">
+                                                <button type="submit" class="btn btn-danger">削除する</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

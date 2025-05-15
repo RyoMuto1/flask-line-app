@@ -481,7 +481,7 @@ def line_login():
         'client_id': LINE_LOGIN_CHANNEL_ID,
         'redirect_uri': callback_url,
         'state': state,
-        'scope': 'profile',
+        'scope': 'profile openid',  # openidスコープを追加
     }
     auth_url = 'https://access.line.me/oauth2/v2.1/authorize?' + '&'.join([f'{k}={v}' for k, v in auth_params.items()])
     return redirect(auth_url)
@@ -1051,6 +1051,39 @@ def delete_admin(admin_id):
     
     flash('管理者アカウントを削除しました。', 'success')
     return redirect(url_for('admin_list'))
+
+# 流入リンク削除機能
+@app.route('/admin/line-source-analytics/delete-link/<int:link_id>', methods=['POST'])
+@admin_required
+def delete_registration_link(link_id):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # 削除前にリンク情報を取得
+        cursor.execute('SELECT * FROM registration_links WHERE id = ?', (link_id,))
+        link = cursor.fetchone()
+        
+        if not link:
+            flash('指定されたリンクが見つかりません', 'error')
+            return redirect(url_for('line_source_analytics'))
+        
+        # 関連する登録情報を削除（外部キー制約がある場合）
+        cursor.execute('DELETE FROM user_registrations WHERE registration_link_id = ?', (link_id,))
+        
+        # リンク自体を削除
+        cursor.execute('DELETE FROM registration_links WHERE id = ?', (link_id,))
+        
+        conn.commit()
+        flash(f'流入リンク "{link["name"]}" を削除しました', 'success')
+        
+    except Exception as e:
+        logger.error(f"流入リンク削除エラー: {str(e)}")
+        flash('エラーが発生しました。もう一度お試しください', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('line_source_analytics'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
