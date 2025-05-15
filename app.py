@@ -408,19 +408,23 @@ def line_login_callback():
         
         # 流入元が指定されている場合は記録
         if 'registration_source' in session:
-            cursor.execute('''
-                SELECT id FROM registration_links WHERE link_code = ?
-            ''', (session['registration_source'],))
+            source_code = session['registration_source']
+            logger.info(f"登録リンク情報: source_code={source_code}")
+            
+            cursor.execute('SELECT * FROM registration_links WHERE link_code = ?', (source_code,))
             link = cursor.fetchone()
             
             if link:
-                cursor.execute('''
-                    INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
-                    VALUES (?, ?, datetime('now'))
-                ''', (user_id, link['id']))
-            
-            # セッションから流入元を削除
-            session.pop('registration_source', None)
+                logger.info(f"リンク情報: id={link['id']}, name={link['name']}")
+                try:
+                    cursor.execute('''
+                        INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
+                        VALUES (?, ?, datetime('now'))
+                    ''', (user_id, link['id']))
+                except Exception as e:
+                    logger.error(f"ユーザー登録エラー: {str(e)}")
+            else:
+                logger.warning(f"リンクコード '{source_code}' が見つかりません")
         
         conn.commit()
     except sqlite3.IntegrityError:
