@@ -36,11 +36,24 @@ def admin_required(f):
 def init_db():
     # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
     if os.path.exists('/opt/render'):
-        # Renderの公式ドキュメントに基づく永続ディスクのパス
-        PERSISTENT_DISK_DIR = '/var/data'
-        os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+        # Renderの永続ディスクパス（Render管理画面で設定した値）
+        PERSISTENT_DISK_DIR = '/opt/render/project/.render-data'
+        
+        # ディレクトリの存在確認と作成
+        if not os.path.exists(PERSISTENT_DISK_DIR):
+            try:
+                os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+                logger.info(f"永続ディレクトリを作成しました: {PERSISTENT_DISK_DIR}")
+            except Exception as e:
+                logger.warning(f"永続ディレクトリの作成に失敗: {str(e)}")
+                # 失敗した場合はプロジェクトディレクトリを使用
+                PERSISTENT_DISK_DIR = '/opt/render/project/src/data'
+                os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+        else:
+            logger.info(f"既存の永続ディレクトリを使用: {PERSISTENT_DISK_DIR}")
+            
         db_path = os.path.join(PERSISTENT_DISK_DIR, 'orders.db')
-        logger.info(f"Renderの永続ディスクを使用します: {db_path}")
+        logger.info(f"データベースパス: {db_path}")
     else:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
         logger.info(f"ローカルディスクを使用します: {db_path}")
@@ -223,11 +236,19 @@ def init_db():
 def get_db():
     # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
     if os.path.exists('/opt/render'):
-        # Renderの公式ドキュメントに基づく永続ディスクのパス
-        PERSISTENT_DISK_DIR = '/var/data'
-        os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+        # Renderの永続ディスクパス（Render管理画面で設定した値）
+        PERSISTENT_DISK_DIR = '/opt/render/project/.render-data'
+        
+        # ディレクトリの存在確認
+        if not os.path.exists(PERSISTENT_DISK_DIR):
+            logger.warning(f"永続ディレクトリが存在しません: {PERSISTENT_DISK_DIR}")
+            # 代替パスを使用
+            PERSISTENT_DISK_DIR = '/opt/render/project/src/data'
+            os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+            logger.info(f"代替ディレクトリを使用: {PERSISTENT_DISK_DIR}")
+        
         db_path = os.path.join(PERSISTENT_DISK_DIR, 'orders.db')
-        logger.info(f"Renderの永続ディスクを使用します: {db_path}")
+        logger.info(f"データベースパス: {db_path}")
     else:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
         logger.info(f"ローカルディスクを使用します: {db_path}")
@@ -268,32 +289,28 @@ with app.app_context():
     try:
         # データベースストレージのパスとパーミッションを確認
         if os.path.exists('/opt/render'):
-            PERSISTENT_DISK_DIR = '/var/data'
-            logger.info(f"Render環境を検出: パス確認 {PERSISTENT_DISK_DIR}")
+            # Renderの永続ディスクパス
+            PERSISTENT_DISK_DIR = '/opt/render/project/.render-data'
+            logger.info(f"Render環境を検出: 永続ディスク {PERSISTENT_DISK_DIR}")
             
             # ディレクトリの存在確認
             if os.path.exists(PERSISTENT_DISK_DIR):
-                logger.info(f"永続ディスクパスは存在します: {PERSISTENT_DISK_DIR}")
+                logger.info(f"永続ディスクパスは存在します")
                 # 書き込み権限の確認
                 if os.access(PERSISTENT_DISK_DIR, os.W_OK):
                     logger.info(f"永続ディスクへの書き込み権限があります")
                 else:
-                    logger.warning(f"永続ディスクへの書き込み権限がありません！")
+                    logger.warning(f"永続ディスクへの書き込み権限がありません！別の場所を使用します")
             else:
-                logger.warning(f"永続ディスクパスが存在しません: {PERSISTENT_DISK_DIR}")
-                # ディレクトリ作成を試みる
-                try:
-                    os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
-                    logger.info(f"永続ディスクディレクトリを作成しました: {PERSISTENT_DISK_DIR}")
-                except Exception as e:
-                    logger.error(f"永続ディスクディレクトリの作成に失敗: {str(e)}")
+                logger.warning(f"永続ディスクパスが存在しません。作成を試みます")
         
         # データベース初期化
         init_db()
         logger.info("データベースの初期化が完了しました")
     except Exception as e:
         logger.error(f"データベース初期化エラー: {str(e)}")
-        raise
+        # エラーがあっても続行する
+        pass
 
 @app.route('/', methods=['GET', 'POST'])
 def order_form():
