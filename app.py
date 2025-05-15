@@ -704,10 +704,13 @@ def admin_dashboard():
     
     conn = get_db()
     c = conn.cursor()
+    # LINEユーザー名を含めて注文を取得
     c.execute('''
-        SELECT id, name, school_name, event_date, budget, created_at
-        FROM orders
-        ORDER BY created_at DESC
+        SELECT o.id, o.name, o.school_name, o.event_date, o.budget, o.created_at, 
+               o.line_user_id, u.name as line_name
+        FROM orders o
+        LEFT JOIN users u ON o.line_user_id = u.line_user_id
+        ORDER BY o.created_at DESC
     ''')
     orders = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
     conn.close()
@@ -1095,6 +1098,49 @@ def delete_registration_link(link_id):
         conn.close()
     
     return redirect(url_for('line_source_analytics'))
+
+# ユーザー詳細ページ
+@app.route('/admin/user/<line_user_id>')
+@admin_required
+def admin_user_detail(line_user_id):
+    conn = get_db()
+    c = conn.cursor()
+    
+    # ユーザー情報を取得
+    c.execute('SELECT * FROM users WHERE line_user_id = ?', (line_user_id,))
+    user_row = c.fetchone()
+    
+    if not user_row:
+        flash('指定されたユーザーが見つかりません', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    user = dict(user_row)
+    
+    # ユーザーの注文履歴を取得
+    c.execute('''
+        SELECT *
+        FROM orders
+        WHERE line_user_id = ?
+        ORDER BY created_at DESC
+    ''', (line_user_id,))
+    orders = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
+    
+    # ユーザーの登録リンク情報を取得
+    c.execute('''
+        SELECT rl.name as link_name, rl.source, ur.registered_at
+        FROM user_registrations ur
+        JOIN registration_links rl ON ur.registration_link_id = rl.id
+        WHERE ur.line_user_id = ?
+        ORDER BY ur.registered_at DESC
+    ''', (line_user_id,))
+    registrations = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
+    
+    conn.close()
+    
+    return render_template('admin/user_detail.html', 
+                          user=user, 
+                          orders=orders,
+                          registrations=registrations)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))

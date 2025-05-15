@@ -1,0 +1,142 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- フラッシュメッセージ表示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- ユーザー情報カード -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">ユーザー情報</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th style="width: 150px;">LINE名</th>
+                                    <td>{{ user.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>LINE ID</th>
+                                    <td><code>{{ user.line_user_id }}</code></td>
+                                </tr>
+                                <tr>
+                                    <th>登録日時</th>
+                                    <td>{{ user.created_at }}</td>
+                                </tr>
+                                <tr>
+                                    <th>メールアドレス</th>
+                                    <td>{% if user.email %}{{ user.email }}{% else %}<span class="text-muted">未設定</span>{% endif %}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> 注文一覧に戻る
+                                </a>
+                            </div>
+                            <!-- 将来的にここにLINEメッセージ送信ボタンなどを追加できます -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 流入登録情報 -->
+    {% if registrations %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">流入経路情報</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>流入元</th>
+                                    <th>登録日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reg in registrations %}
+                                <tr>
+                                    <td>{{ reg.link_name }}</td>
+                                    <td>{{ reg.registered_at }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 注文履歴 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">注文履歴</h5>
+                </div>
+                <div class="card-body">
+                    {% if orders %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>注文日時</th>
+                                    <th>注文者名</th>
+                                    <th>商品</th>
+                                    <th>数量</th>
+                                    <th>学校名</th>
+                                    <th>使用日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.created_at }}</td>
+                                    <td>{{ order.name }}</td>
+                                    <td>{{ order.item }}</td>
+                                    <td>{{ order.quantity }}</td>
+                                    <td>{{ order.school_name }}</td>
+                                    <td>{{ order.event_date }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-eye"></i> 詳細
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">このユーザーの注文履歴はありません。</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
