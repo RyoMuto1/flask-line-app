@@ -86,6 +86,21 @@ def init_db():
         ''')
         conn.commit()
         logger.info("adminsテーブルを作成しました")
+        
+        # デフォルト管理者アカウントの作成
+        default_email = "admin@example.com"
+        default_password = secrets.token_urlsafe(8)  # ランダムなパスワードを生成
+        
+        c.execute('''
+            INSERT INTO admins (email, password, created_at)
+            VALUES (?, ?, datetime('now'))
+        ''', (default_email, generate_password_hash(default_password)))
+        conn.commit()
+        
+        logger.info(f"デフォルト管理者アカウントを作成しました:")
+        logger.info(f"メールアドレス: {default_email}")
+        logger.info(f"パスワード: {default_password}")
+        logger.info("このログインアカウントは必ず変更してください。")
 
     # テーブルが存在するか確認
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
@@ -602,6 +617,41 @@ def admin_change_password():
         return redirect(url_for('admin_dashboard'))
     
     return render_template('admin/change_password.html')
+
+@app.route('/admin/reset-password', methods=['GET', 'POST'])
+def admin_reset_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not email or not new_password or not confirm_password:
+            flash('すべての項目を入力してください。', 'error')
+            return render_template('admin/reset_password.html')
+        
+        if new_password != confirm_password:
+            flash('新しいパスワードが一致しません。', 'error')
+            return render_template('admin/reset_password.html')
+        
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT * FROM admins WHERE email = ?', (email,))
+        admin = c.fetchone()
+        
+        if not admin:
+            flash('このメールアドレスは登録されていません。', 'error')
+            return render_template('admin/reset_password.html')
+        
+        # パスワードをリセット
+        c.execute('UPDATE admins SET password = ? WHERE id = ?', 
+                 (generate_password_hash(new_password), admin['id']))
+        conn.commit()
+        conn.close()
+        
+        flash('パスワードがリセットされました。新しいパスワードでログインしてください。', 'success')
+        return redirect('/admin/login')
+    
+    return render_template('admin/reset_password.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
