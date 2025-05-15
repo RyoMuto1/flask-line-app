@@ -759,6 +759,48 @@ def admin_profile():
     conn.close()
     return render_template('admin/profile.html', admin=admin)
 
+@app.route('/admin/admin-list')
+@admin_required
+def admin_list():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT * FROM admins ORDER BY id')
+    admins = c.fetchall()
+    conn.close()
+    
+    return render_template('admin/admin_list.html', 
+                           admins=admins, 
+                           current_admin_id=session['admin_id'])
+
+@app.route('/admin/delete-admin/<int:admin_id>', methods=['POST'])
+@admin_required
+def delete_admin(admin_id):
+    # 自分自身は削除できないようにする
+    if admin_id == session['admin_id']:
+        flash('自分自身は削除できません。', 'error')
+        return redirect(url_for('admin_list'))
+    
+    conn = get_db()
+    c = conn.cursor()
+    
+    # 管理者アカウントの総数を確認
+    c.execute('SELECT COUNT(*) as count FROM admins')
+    count = c.fetchone()['count']
+    
+    # 最後の管理者は削除できないようにする
+    if count <= 1:
+        flash('最後の管理者アカウントは削除できません。', 'error')
+        conn.close()
+        return redirect(url_for('admin_list'))
+    
+    # 管理者を削除
+    c.execute('DELETE FROM admins WHERE id = ?', (admin_id,))
+    conn.commit()
+    conn.close()
+    
+    flash('管理者アカウントを削除しました。', 'success')
+    return redirect(url_for('admin_list'))
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
