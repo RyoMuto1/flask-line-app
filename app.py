@@ -141,11 +141,21 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 line_user_id TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
+                email TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         conn.commit()
         logger.info("usersテーブルを作成しました")
+    else:
+        # email列をusersテーブルに追加（なければ）
+        c.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in c.fetchall()]
+        if 'email' not in columns:
+            logger.info("usersテーブルにemail列を追加します")
+            c.execute("ALTER TABLE users ADD COLUMN email TEXT")
+            conn.commit()
+            logger.info("usersテーブルにemail列を追加しました")
 
     # 管理者テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'")
@@ -576,6 +586,13 @@ def mypage():
             return redirect('/login')
         conn = get_db()
         c = conn.cursor()
+        
+        # ユーザー情報を取得（メールアドレスを含む）
+        c.execute('SELECT * FROM users WHERE line_user_id = ?', (session['line_user_id'],))
+        user = c.fetchone()
+        user_dict = dict(user) if user else {'name': session.get('line_user_name', 'ゲスト'), 'email': ''}
+        
+        # 注文情報を取得
         c.execute('''
             SELECT name, item, quantity, event_date, class_teacher,
                    school_name, delivery_name, postal_code,
@@ -586,12 +603,40 @@ def mypage():
         ''', (session['line_user_id'],))
         orders = [dict(zip([column[0] for column in c.description], row)) for row in c.fetchall()]
         conn.close()
+        
         return render_template('mypage.html', 
-                               user_name=session.get('line_user_name', 'ゲスト'),
+                               user=user_dict,
                                orders=orders)
     except Exception as e:
         logger.error(f"マイページエラー: {str(e)}")
         return "エラーが発生しました。しばらく経ってから再度お試しください。", 500
+
+@app.route('/update-email', methods=['POST'])
+def update_email():
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    email = request.form.get('email')
+    if not email:
+        flash('メールアドレスを入力してください', 'error')
+        return redirect('/mypage')
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # ユーザー情報を更新
+        c.execute('UPDATE users SET email = ? WHERE line_user_id = ?', 
+                 (email, session['line_user_id']))
+        conn.commit()
+        conn.close()
+        
+        flash('メールアドレスを更新しました', 'success')
+    except Exception as e:
+        logger.error(f"メールアドレス更新エラー: {str(e)}")
+        flash('エラーが発生しました。もう一度お試しください', 'error')
+    
+    return redirect('/mypage')
 
 @app.route('/logout')
 def logout():
