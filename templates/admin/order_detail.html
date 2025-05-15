@@ -1,59 +1,39 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>注文詳細</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">管理画面</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/admin/logout">ログアウト</a>
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>注文詳細</h2>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">一覧に戻る</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h3 class="card-title mb-4">基本情報</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>注文者名：</strong>{{ order.name }}</p>
+                <p><strong>注文日時：</strong>{{ order.created_at }}</p>
+                <p><strong>商品名：</strong>{{ order.item }}</p>
+                <p><strong>数量：</strong>{{ order.quantity }}枚</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>使用日：</strong>{{ order.event_date }}</p>
+                <p><strong>クラス・担任：</strong>{{ order.class_teacher }}</p>
+                <p><strong>予算：</strong>{{ order.budget }}</p>
             </div>
         </div>
-    </nav>
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>注文詳細</h2>
-            <a href="/admin/dashboard" class="btn btn-secondary">一覧に戻る</a>
-        </div>
-
-        <div class="card">
-            <div class="card-body">
-                <h3 class="card-title mb-4">基本情報</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>注文者名：</strong>{{ order.name }}</p>
-                        <p><strong>注文日時：</strong>{{ order.created_at }}</p>
-                        <p><strong>商品名：</strong>{{ order.item }}</p>
-                        <p><strong>数量：</strong>{{ order.quantity }}枚</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>使用日：</strong>{{ order.event_date }}</p>
-                        <p><strong>クラス・担任：</strong>{{ order.class_teacher }}</p>
-                        <p><strong>予算：</strong>{{ order.budget }}</p>
-                    </div>
-                </div>
-
-                <h3 class="card-title mb-4 mt-4">お届け先情報</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>学校名：</strong>{{ order.school_name }}</p>
-                        <p><strong>宛名：</strong>{{ order.delivery_name }}</p>
-                        <p><strong>郵便番号：</strong>{{ order.postal_code }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>住所：</strong>{{ order.prefecture }}{{ order.city }}{{ order.address }}</p>
-                    </div>
-                </div>
+        <h3 class="card-title mb-4 mt-4">お届け先情報</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>学校名：</strong>{{ order.school_name }}</p>
+                <p><strong>宛名：</strong>{{ order.delivery_name }}</p>
+                <p><strong>郵便番号：</strong>{{ order.postal_code }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>住所：</strong>{{ order.prefecture }}{{ order.city }}{{ order.address }}</p>
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> 
+</div>
+{% endblock %} 
