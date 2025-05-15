@@ -502,32 +502,38 @@ def line_source_analytics():
 @app.route('/admin/line-source-analytics/create-link', methods=['POST'])
 @admin_required
 def create_registration_link():
-    name = request.form.get('name')
-    source = request.form.get('source')
-    
-    if not name or not source:
-        flash('リンク名と流入元は必須です', 'error')
-        return redirect('/admin/line-source-analytics')
-    
-    # ユニークなリンクコードを生成
-    link_code = secrets.token_urlsafe(8)
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    
     try:
-        cursor.execute('''
-            INSERT INTO registration_links (name, source, link_code, created_at)
-            VALUES (?, ?, ?, datetime('now'))
-        ''', (name, source, link_code))
-        conn.commit()
-        flash('登録リンクを作成しました', 'success')
-    except sqlite3.IntegrityError:
-        flash('リンクコードの生成に失敗しました。もう一度お試しください', 'error')
-    finally:
-        conn.close()
-    
-    return redirect('/admin/line-source-analytics')
+        name = request.form.get('name')
+        source = request.form.get('source')
+        
+        if not name or not source:
+            flash('リンク名と流入元は必須です', 'error')
+            return redirect('/admin/line-source-analytics')
+        
+        # ユニークなリンクコードを生成
+        link_code = secrets.token_urlsafe(8)
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                INSERT INTO registration_links (name, source, link_code, created_at)
+                VALUES (?, ?, ?, datetime('now'))
+            ''', (name, source, link_code))
+            conn.commit()
+            flash('登録リンクを作成しました', 'success')
+        except sqlite3.IntegrityError as e:
+            logger.error(f"データベースエラー: {str(e)}")
+            flash('リンクコードの生成に失敗しました。もう一度お試しください', 'error')
+        finally:
+            conn.close()
+        
+        return redirect('/admin/line-source-analytics')
+    except Exception as e:
+        logger.error(f"登録リンク作成エラー: {str(e)}")
+        flash('エラーが発生しました。もう一度お試しください', 'error')
+        return redirect('/admin/line-source-analytics')
 
 # 登録者一覧ページ
 @app.route('/admin/line-source-analytics/users/<int:link_id>')
