@@ -36,7 +36,6 @@
                         <thead>
                             <tr>
                                 <th>リンク名</th>
-                                <th>流入元</th>
                                 <th>登録者数</th>
                                 <th>作成日</th>
                                 <th>操作</th>
@@ -46,7 +45,6 @@
                             {% for link in registration_links %}
                             <tr>
                                 <td>{{ link.name }}</td>
-                                <td>{{ link.source }}</td>
                                 <td>
                                     <a href="/admin/line-source-analytics/users/{{ link.id }}" class="text-decoration-none">
                                         {{ link.registration_count }}人
@@ -83,11 +81,7 @@
                             <input type="text" class="form-control" id="linkName" name="name" required>
                             <div class="form-text">例：Instagram用、Twitter用など</div>
                         </div>
-                        <div class="mb-3">
-                            <label for="source" class="form-label">流入元</label>
-                            <input type="text" class="form-control" id="source" name="source" required>
-                            <div class="form-text">例：instagram, twitter, facebookなど</div>
-                        </div>
+                        <input type="hidden" name="source" value="line">
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
