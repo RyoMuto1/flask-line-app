@@ -87,20 +87,7 @@ def init_db():
         conn.commit()
         logger.info("adminsテーブルを作成しました")
         
-        # デフォルト管理者アカウントの作成
-        default_email = "admin@example.com"
-        default_password = secrets.token_urlsafe(8)  # ランダムなパスワードを生成
-        
-        c.execute('''
-            INSERT INTO admins (email, password, created_at)
-            VALUES (?, ?, datetime('now'))
-        ''', (default_email, generate_password_hash(default_password)))
-        conn.commit()
-        
-        logger.info(f"デフォルト管理者アカウントを作成しました:")
-        logger.info(f"メールアドレス: {default_email}")
-        logger.info(f"パスワード: {default_password}")
-        logger.info("このログインアカウントは必ず変更してください。")
+        # デフォルト管理者アカウントの自動作成をやめる（初回管理者登録機能に置き換え）
 
     # テーブルが存在するか確認
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
@@ -652,6 +639,92 @@ def admin_reset_password():
         return redirect('/admin/login')
     
     return render_template('admin/reset_password.html')
+
+@app.route('/admin/create-first-admin', methods=['GET', 'POST'])
+def create_first_admin():
+    # 既存の管理者アカウントがある場合はリダイレクト
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT COUNT(*) as count FROM admins')
+    count = c.fetchone()['count']
+    conn.close()
+    
+    if count > 0:
+        flash('管理者アカウントは既に作成されています。', 'error')
+        return redirect('/admin/login')
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not email or not password or not confirm_password:
+            flash('すべての項目を入力してください。', 'error')
+            return render_template('admin/first_admin.html')
+        
+        if password != confirm_password:
+            flash('パスワードが一致しません。', 'error')
+            return render_template('admin/first_admin.html')
+        
+        # 管理者アカウントを作成
+        conn = get_db()
+        c = conn.cursor()
+        try:
+            c.execute('INSERT INTO admins (email, password, created_at) VALUES (?, ?, datetime("now"))', 
+                     (email, generate_password_hash(password)))
+            conn.commit()
+            conn.close()
+            
+            flash('管理者アカウントが作成されました。ログインしてください。', 'success')
+            return redirect('/admin/login')
+        except sqlite3.IntegrityError:
+            conn.close()
+            flash('このメールアドレスは既に使用されています。', 'error')
+            return render_template('admin/first_admin.html')
+    
+    return render_template('admin/first_admin.html')
+
+@app.route('/admin/profile', methods=['GET', 'POST'])
+@admin_required
+def admin_profile():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT * FROM admins WHERE id = ?', (session['admin_id'],))
+    admin = c.fetchone()
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        current_password = request.form.get('current_password')
+        
+        if not email or not current_password:
+            flash('すべての項目を入力してください。', 'error')
+            return render_template('admin/profile.html', admin=admin)
+        
+        # パスワードを確認
+        if not check_password_hash(admin['password'], current_password):
+            flash('現在のパスワードが正しくありません。', 'error')
+            return render_template('admin/profile.html', admin=admin)
+        
+        # 他の管理者が同じメールアドレスを使用していないか確認
+        c.execute('SELECT * FROM admins WHERE email = ? AND id != ?', (email, session['admin_id']))
+        existing_admin = c.fetchone()
+        if existing_admin:
+            flash('このメールアドレスは既に使用されています。', 'error')
+            return render_template('admin/profile.html', admin=admin)
+        
+        # メールアドレスを更新
+        c.execute('UPDATE admins SET email = ? WHERE id = ?', (email, session['admin_id']))
+        conn.commit()
+        conn.close()
+        
+        # セッションも更新
+        session['admin_email'] = email
+        
+        flash('プロフィールが更新されました。', 'success')
+        return redirect('/admin/dashboard')
+    
+    conn.close()
+    return render_template('admin/profile.html', admin=admin)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
