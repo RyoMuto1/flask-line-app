@@ -36,9 +36,10 @@ def admin_required(f):
 def init_db():
     # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
     if os.path.exists('/opt/render'):
-        db_dir = '/opt/render/project/data'
-        os.makedirs(db_dir, exist_ok=True)
-        db_path = os.path.join(db_dir, 'orders.db')
+        # Renderの公式ドキュメントに基づく永続ディスクのパス
+        PERSISTENT_DISK_DIR = '/var/data'
+        os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+        db_path = os.path.join(PERSISTENT_DISK_DIR, 'orders.db')
         logger.info(f"Renderの永続ディスクを使用します: {db_path}")
     else:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
@@ -148,7 +149,21 @@ def init_db():
         conn.commit()
         logger.info("adminsテーブルを作成しました")
         
-        # デフォルト管理者アカウントの自動作成をやめる（初回管理者登録機能に置き換え）
+        # デフォルト管理者アカウントを自動作成
+        try:
+            default_email = "admin@example.com"
+            default_password = "adminpassword"
+            hashed_password = generate_password_hash(default_password)
+            
+            c.execute('''
+                INSERT INTO admins (email, password, created_at)
+                VALUES (?, ?, datetime('now'))
+            ''', (default_email, hashed_password))
+            conn.commit()
+            logger.info(f"デフォルト管理者アカウントを作成しました: {default_email} / {default_password}")
+            logger.info("このアカウントは初期設定用です。ログイン後、必ずパスワードを変更してください。")
+        except Exception as e:
+            logger.error(f"デフォルト管理者アカウント作成エラー: {str(e)}")
 
     # テーブルが存在するか確認
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
@@ -208,9 +223,10 @@ def init_db():
 def get_db():
     # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
     if os.path.exists('/opt/render'):
-        db_dir = '/opt/render/project/data'
-        os.makedirs(db_dir, exist_ok=True)
-        db_path = os.path.join(db_dir, 'orders.db')
+        # Renderの公式ドキュメントに基づく永続ディスクのパス
+        PERSISTENT_DISK_DIR = '/var/data'
+        os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+        db_path = os.path.join(PERSISTENT_DISK_DIR, 'orders.db')
         logger.info(f"Renderの永続ディスクを使用します: {db_path}")
     else:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
@@ -250,6 +266,29 @@ def send_line_message(user_id, message):
 # アプリケーションの初期化
 with app.app_context():
     try:
+        # データベースストレージのパスとパーミッションを確認
+        if os.path.exists('/opt/render'):
+            PERSISTENT_DISK_DIR = '/var/data'
+            logger.info(f"Render環境を検出: パス確認 {PERSISTENT_DISK_DIR}")
+            
+            # ディレクトリの存在確認
+            if os.path.exists(PERSISTENT_DISK_DIR):
+                logger.info(f"永続ディスクパスは存在します: {PERSISTENT_DISK_DIR}")
+                # 書き込み権限の確認
+                if os.access(PERSISTENT_DISK_DIR, os.W_OK):
+                    logger.info(f"永続ディスクへの書き込み権限があります")
+                else:
+                    logger.warning(f"永続ディスクへの書き込み権限がありません！")
+            else:
+                logger.warning(f"永続ディスクパスが存在しません: {PERSISTENT_DISK_DIR}")
+                # ディレクトリ作成を試みる
+                try:
+                    os.makedirs(PERSISTENT_DISK_DIR, exist_ok=True)
+                    logger.info(f"永続ディスクディレクトリを作成しました: {PERSISTENT_DISK_DIR}")
+                except Exception as e:
+                    logger.error(f"永続ディスクディレクトリの作成に失敗: {str(e)}")
+        
+        # データベース初期化
         init_db()
         logger.info("データベースの初期化が完了しました")
     except Exception as e:
