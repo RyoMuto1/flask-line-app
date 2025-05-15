@@ -34,7 +34,14 @@ def admin_required(f):
 
 # DB 初期化
 def init_db():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+    # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
+    if os.path.exists('/opt/render/project/src/.render'):
+        db_dir = '/opt/render/project/.render-data'
+        os.makedirs(db_dir, exist_ok=True)
+        db_path = os.path.join(db_dir, 'orders.db')
+    else:
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+    
     logger.info(f"データベースパス: {db_path}")
 
     conn = sqlite3.connect(db_path)
@@ -145,7 +152,14 @@ def init_db():
 
 
 def get_db():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+    # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
+    if os.path.exists('/opt/render/project/src/.render'):
+        db_dir = '/opt/render/project/.render-data'
+        os.makedirs(db_dir, exist_ok=True)
+        db_path = os.path.join(db_dir, 'orders.db')
+    else:
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+    
     logger.info(f"データベースに接続します: {db_path}")
 
     if not os.path.exists(db_path):
@@ -494,12 +508,15 @@ def line_source_analytics():
     ''')
     links = cursor.fetchall()
     
-    # リンクの完全なURLを生成
+    # リンクの完全なURLを生成（SQLite3.Rowはイミュータブルなので辞書に変換）
+    result_links = []
     for link in links:
-        link['full_url'] = f"{request.host_url}login?source={link['link_code']}"
+        link_dict = dict(link)
+        link_dict['full_url'] = f"{request.host_url}login?source={link['link_code']}"
+        result_links.append(link_dict)
     
     conn.close()
-    return render_template('admin/line_source_analytics.html', registration_links=links)
+    return render_template('admin/line_source_analytics.html', registration_links=result_links)
 
 # 新しい登録リンクの作成
 @app.route('/admin/line-source-analytics/create-link', methods=['POST'])
@@ -511,7 +528,7 @@ def create_registration_link():
         
         if not name or not source:
             flash('リンク名と流入元は必須です', 'error')
-            return redirect('/admin/line-source-analytics')
+            return redirect(url_for('line_source_analytics'))
         
         # ユニークなリンクコードを生成
         link_code = secrets.token_urlsafe(8)
@@ -532,11 +549,11 @@ def create_registration_link():
         finally:
             conn.close()
         
-        return redirect('/admin/line-source-analytics')
+        return redirect(url_for('line_source_analytics'))
     except Exception as e:
         logger.error(f"登録リンク作成エラー: {str(e)}")
         flash('エラーが発生しました。もう一度お試しください', 'error')
-        return redirect('/admin/line-source-analytics')
+        return redirect(url_for('line_source_analytics'))
 
 # 登録者一覧ページ
 @app.route('/admin/line-source-analytics/users/<int:link_id>')
@@ -547,11 +564,14 @@ def line_source_analytics_users(link_id):
     
     # 登録リンクの情報を取得
     cursor.execute('SELECT * FROM registration_links WHERE id = ?', (link_id,))
-    link = cursor.fetchone()
+    link_row = cursor.fetchone()
     
-    if not link:
+    if not link_row:
         flash('指定された登録リンクが見つかりません', 'error')
-        return redirect('/admin/line-source-analytics')
+        return redirect(url_for('line_source_analytics'))
+    
+    # SQLite3.Rowを辞書に変換
+    link = dict(link_row)
     
     # このリンクから登録したユーザー一覧を取得
     cursor.execute('''
@@ -567,7 +587,10 @@ def line_source_analytics_users(link_id):
         GROUP BY u.line_user_id
         ORDER BY ur.registered_at DESC
     ''', (link_id,))
-    users = cursor.fetchall()
+    user_rows = cursor.fetchall()
+    
+    # SQLite3.Rowのリストを辞書のリストに変換
+    users = [dict(user) for user in user_rows]
     
     conn.close()
     return render_template('admin/line_source_analytics_users.html', link=link, users=users)
