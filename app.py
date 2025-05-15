@@ -9,6 +9,7 @@ from flask import (
 from dotenv import load_dotenv
 import logging  # 追加
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,38 @@ def init_db():
 
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
+
+    # 登録リンク管理テーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='registration_links'")
+    if not c.fetchone():
+        logger.info("registration_linksテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE registration_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,           -- リンクの名前（例：Instagram用）
+                source TEXT NOT NULL,         -- 流入元（例：instagram）
+                link_code TEXT UNIQUE NOT NULL, -- 一意のリンクコード
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("registration_linksテーブルを作成しました")
+
+    # ユーザー登録経路テーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_registrations'")
+    if not c.fetchone():
+        logger.info("user_registrationsテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE user_registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT UNIQUE NOT NULL,
+                registration_link_id INTEGER NOT NULL,
+                registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (registration_link_id) REFERENCES registration_links(id)
+            )
+        ''')
+        conn.commit()
+        logger.info("user_registrationsテーブルを作成しました")
 
     # 管理者テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'")
@@ -266,18 +299,14 @@ else:
 
 @app.route('/login')
 def login():
-    params = {
-        'response_type':'code',
-        'client_id':LINE_LOGIN_CHANNEL_ID,
-        'redirect_uri':LINE_REDIRECT_URI,
-        'scope':'openid profile',
-        'state':'12345abcde'
-    }
-    url = 'https://access.line.me/oauth2/v2.1/authorize?' + '&'.join(f'{k}={v}' for k,v in params.items())
-    return redirect(url)
+    source = request.args.get('source')
+    if source:
+        # セッションに流入元を保存
+        session['registration_source'] = source
+    return redirect('/line-login')
 
-@app.route('/callback')
-def callback():
+@app.route('/line-login/callback')
+def line_login_callback():
     code = request.args.get('code')
     token_res = requests.post(
         'https://api.line.me/oauth2/v2.1/token',
@@ -309,6 +338,39 @@ def callback():
 
     session['line_user_id']   = user_id
     session['line_user_name'] = user_name
+
+    # ユーザー情報を保存
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO users (line_user_id, name, created_at)
+            VALUES (?, ?, datetime('now'))
+        ''', (user_id, user_name))
+        
+        # 流入元が指定されている場合は記録
+        if 'registration_source' in session:
+            cursor.execute('''
+                SELECT id FROM registration_links WHERE link_code = ?
+            ''', (session['registration_source'],))
+            link = cursor.fetchone()
+            
+            if link:
+                cursor.execute('''
+                    INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
+                    VALUES (?, ?, datetime('now'))
+                ''', (user_id, link['id']))
+            
+            # セッションから流入元を削除
+            session.pop('registration_source', None)
+        
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # ユーザーが既に存在する場合は無視
+        pass
+    finally:
+        conn.close()
 
     return redirect('/')
 
@@ -401,6 +463,95 @@ def admin_logout():
     session.pop('admin_id', None)
     session.pop('admin_email', None)
     return redirect('/admin/login')
+
+# LINE流入経路分析ページ
+@app.route('/admin/line-source-analytics')
+@admin_required
+def line_source_analytics():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # 登録リンク一覧を取得（登録者数も含める）
+    cursor.execute('''
+        SELECT rl.*, COUNT(ur.id) as registration_count
+        FROM registration_links rl
+        LEFT JOIN user_registrations ur ON rl.id = ur.registration_link_id
+        GROUP BY rl.id
+        ORDER BY rl.created_at DESC
+    ''')
+    links = cursor.fetchall()
+    
+    # リンクの完全なURLを生成
+    for link in links:
+        link['full_url'] = f"{request.host_url}login?source={link['link_code']}"
+    
+    conn.close()
+    return render_template('admin/line_source_analytics.html', registration_links=links)
+
+# 新しい登録リンクの作成
+@app.route('/admin/line-source-analytics/create-link', methods=['POST'])
+@admin_required
+def create_registration_link():
+    name = request.form.get('name')
+    source = request.form.get('source')
+    
+    if not name or not source:
+        flash('リンク名と流入元は必須です', 'error')
+        return redirect('/admin/line-source-analytics')
+    
+    # ユニークなリンクコードを生成
+    link_code = secrets.token_urlsafe(8)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO registration_links (name, source, link_code, created_at)
+            VALUES (?, ?, ?, datetime('now'))
+        ''', (name, source, link_code))
+        conn.commit()
+        flash('登録リンクを作成しました', 'success')
+    except sqlite3.IntegrityError:
+        flash('リンクコードの生成に失敗しました。もう一度お試しください', 'error')
+    finally:
+        conn.close()
+    
+    return redirect('/admin/line-source-analytics')
+
+# 登録者一覧ページ
+@app.route('/admin/line-source-analytics/users/<int:link_id>')
+@admin_required
+def line_source_analytics_users(link_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # 登録リンクの情報を取得
+    cursor.execute('SELECT * FROM registration_links WHERE id = ?', (link_id,))
+    link = cursor.fetchone()
+    
+    if not link:
+        flash('指定された登録リンクが見つかりません', 'error')
+        return redirect('/admin/line-source-analytics')
+    
+    # このリンクから登録したユーザー一覧を取得
+    cursor.execute('''
+        SELECT 
+            u.line_user_id,
+            u.name,
+            ur.registered_at,
+            COUNT(o.id) as order_count
+        FROM user_registrations ur
+        JOIN users u ON ur.line_user_id = u.line_user_id
+        LEFT JOIN orders o ON u.line_user_id = o.line_user_id
+        WHERE ur.registration_link_id = ?
+        GROUP BY u.line_user_id
+        ORDER BY ur.registered_at DESC
+    ''', (link_id,))
+    users = cursor.fetchall()
+    
+    conn.close()
+    return render_template('admin/line_source_analytics_users.html', link=link, users=users)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
