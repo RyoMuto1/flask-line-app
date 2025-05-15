@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理画面</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <style>
         body {
             min-height: 100vh;
@@ -48,43 +49,48 @@
             border-bottom: 1px solid rgba(255, 255, 255, .2);
             margin-bottom: 1rem;
         }
+        .nav-link i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <!-- サイドバー -->
     <div id="sidebar">
         <a href="{{ url_for('admin_dashboard') }}" class="sidebar-brand">
-            管理画面
+            <i class="bi bi-gear-fill"></i> 管理画面
         </a>
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                    ダッシュボード
+                    <i class="bi bi-speedometer2"></i> ダッシュボード
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('line_source_analytics') }}">
-                    LINE流入経路分析
+                    <i class="bi bi-graph-up"></i> LINE流入経路分析
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('admin_list') }}">
-                    管理者一覧
+                    <i class="bi bi-people"></i> 管理者一覧
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('admin_profile') }}">
-                    プロフィール編集
+                    <i class="bi bi-person-badge"></i> メールアドレス変更
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('admin_change_password') }}">
-                    パスワード変更
+                    <i class="bi bi-shield-lock"></i> パスワード変更
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('admin_logout') }}">
-                    ログアウト
+                    <i class="bi bi-box-arrow-right"></i> ログアウト
                 </a>
             </li>
         </ul>

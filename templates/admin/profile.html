@@ -2,30 +2,49 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>プロフィール編集</h2>
+    <h2>管理者プロフィール編集</h2>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
     
-    <div class="card">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">メールアドレス変更</h5>
+        </div>
         <div class="card-body">
+            <p class="card-text">管理者ログイン用のメールアドレスを変更できます。新しいメールアドレスは次回ログイン時から有効になります。</p>
             <form method="POST">
                 <div class="mb-3">
-                    <label for="email" class="form-label">メールアドレス</label>
+                    <label for="email" class="form-label">新しいメールアドレス</label>
                     <input type="email" class="form-control" id="email" name="email" value="{{ admin.email }}" required>
+                    <div class="form-text">このメールアドレスは管理者ログインに使用されます</div>
                 </div>
                 <div class="mb-3">
                     <label for="current_password" class="form-label">現在のパスワード（確認用）</label>
                     <input type="password" class="form-control" id="current_password" name="current_password" required>
+                    <div class="form-text">セキュリティのため、変更を確認するには現在のパスワードが必要です</div>
                 </div>
-                <button type="submit" class="btn btn-primary">プロフィールを更新</button>
+                <button type="submit" class="btn btn-primary">メールアドレスを更新</button>
                 <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">キャンセル</a>
             </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">アカウント情報</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>現在のメールアドレス:</strong> {{ admin.email }}</p>
+            <p><strong>アカウント作成日:</strong> {{ admin.created_at }}</p>
+            <div class="mt-3">
+                <a href="{{ url_for('admin_change_password') }}" class="btn btn-outline-primary">パスワード変更へ</a>
+            </div>
         </div>
     </div>
 </div>

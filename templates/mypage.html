@@ -23,13 +23,6 @@
         .logout-btn {
             margin-top: 1rem;
         }
-        .email-form {
-            margin-top: 1rem;
-            padding: 1rem;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            background-color: #fff;
-        }
         .flash-message {
             margin-bottom: 1rem;
         }
@@ -53,19 +46,6 @@
                 <!-- ユーザー情報 -->
                 <div class="user-info">
                     <h2 class="mb-3">ようこそ、{{ user.name }}さん</h2>
-                    
-                    <!-- メールアドレス設定フォーム -->
-                    <div class="email-form">
-                        <h5>メールアドレス設定</h5>
-                        <form action="/update-email" method="post">
-                            <div class="mb-3">
-                                <label for="email" class="form-label">メールアドレス</label>
-                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
-                                <div class="form-text">重要なお知らせやキャンペーン情報をお送りします</div>
-                            </div>
-                            <button type="submit" class="btn btn-success">更新</button>
-                        </form>
-                    </div>
                     
                     <div class="mt-3">
                         <a href="/" class="btn btn-primary">新規注文</a>
