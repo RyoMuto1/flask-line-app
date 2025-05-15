@@ -569,6 +569,40 @@ def line_source_analytics_users(link_id):
     conn.close()
     return render_template('admin/line_source_analytics_users.html', link=link, users=users)
 
+@app.route('/admin/change_password', methods=['GET', 'POST'])
+@admin_required
+def admin_change_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # 現在のパスワードを確認
+        conn = get_db()
+        admin = conn.execute('SELECT * FROM admins WHERE id = ?', (session['admin_id'],)).fetchone()
+        conn.close()
+        
+        if not check_password_hash(admin['password'], current_password):
+            flash('現在のパスワードが正しくありません。', 'error')
+            return redirect(url_for('admin_change_password'))
+        
+        # 新しいパスワードの確認
+        if new_password != confirm_password:
+            flash('新しいパスワードが一致しません。', 'error')
+            return redirect(url_for('admin_change_password'))
+        
+        # パスワードの更新
+        conn = get_db()
+        conn.execute('UPDATE admins SET password = ? WHERE id = ?',
+                    (generate_password_hash(new_password), session['admin_id']))
+        conn.commit()
+        conn.close()
+        
+        flash('パスワードを更新しました。', 'success')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin/change_password.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
