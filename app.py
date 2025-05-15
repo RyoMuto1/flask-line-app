@@ -35,12 +35,14 @@ def admin_required(f):
 # DB 初期化
 def init_db():
     # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
-    if os.path.exists('/opt/render/project/src/.render'):
-        db_dir = '/opt/render/project/.render-data'
+    if os.path.exists('/opt/render'):
+        db_dir = '/opt/render/project/data'
         os.makedirs(db_dir, exist_ok=True)
         db_path = os.path.join(db_dir, 'orders.db')
+        logger.info(f"Renderの永続ディスクを使用します: {db_path}")
     else:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+        logger.info(f"ローカルディスクを使用します: {db_path}")
     
     logger.info(f"データベースパス: {db_path}")
 
@@ -70,10 +72,11 @@ def init_db():
         c.execute('''
             CREATE TABLE user_registrations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                line_user_id TEXT UNIQUE NOT NULL,
+                line_user_id TEXT NOT NULL,
                 registration_link_id INTEGER NOT NULL,
                 registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (registration_link_id) REFERENCES registration_links(id)
+                FOREIGN KEY (registration_link_id) REFERENCES registration_links(id),
+                UNIQUE(line_user_id, registration_link_id)
             )
         ''')
         conn.commit()
@@ -168,12 +171,14 @@ def init_db():
 
 def get_db():
     # Renderの永続ディスクがある場合はそこにDBを保存、ない場合は従来のパス
-    if os.path.exists('/opt/render/project/src/.render'):
-        db_dir = '/opt/render/project/.render-data'
+    if os.path.exists('/opt/render'):
+        db_dir = '/opt/render/project/data'
         os.makedirs(db_dir, exist_ok=True)
         db_path = os.path.join(db_dir, 'orders.db')
+        logger.info(f"Renderの永続ディスクを使用します: {db_path}")
     else:
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
+        logger.info(f"ローカルディスクを使用します: {db_path}")
     
     logger.info(f"データベースに接続します: {db_path}")
 
@@ -401,35 +406,56 @@ def line_login_callback():
     cursor = conn.cursor()
     
     try:
-        cursor.execute('''
-            INSERT INTO users (line_user_id, name, created_at)
-            VALUES (?, ?, datetime('now'))
-        ''', (user_id, user_name))
+        # ユーザー情報を保存（既存の場合はスキップ）
+        try:
+            cursor.execute('''
+                INSERT INTO users (line_user_id, name, created_at)
+                VALUES (?, ?, datetime('now'))
+            ''', (user_id, user_name))
+            logger.info(f"新規ユーザーを登録しました: {user_name}")
+        except sqlite3.IntegrityError:
+            logger.info(f"既存ユーザーのログイン: {user_name}")
         
         # 流入元が指定されている場合は記録
         if 'registration_source' in session:
             source_code = session['registration_source']
             logger.info(f"登録リンク情報: source_code={source_code}")
             
+            # 流入元リンクの存在を確認
             cursor.execute('SELECT * FROM registration_links WHERE link_code = ?', (source_code,))
             link = cursor.fetchone()
             
             if link:
-                logger.info(f"リンク情報: id={link['id']}, name={link['name']}")
-                try:
-                    cursor.execute('''
-                        INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
-                        VALUES (?, ?, datetime('now'))
-                    ''', (user_id, link['id']))
-                except Exception as e:
-                    logger.error(f"ユーザー登録エラー: {str(e)}")
+                link_id = link['id']
+                logger.info(f"リンク情報: id={link_id}, name={link['name']}")
+                
+                # 既に同じリンクからの登録があるか確認
+                cursor.execute('''
+                    SELECT id FROM user_registrations 
+                    WHERE line_user_id = ? AND registration_link_id = ?
+                ''', (user_id, link_id))
+                
+                if not cursor.fetchone():
+                    # 新規登録
+                    try:
+                        cursor.execute('''
+                            INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
+                            VALUES (?, ?, datetime('now'))
+                        ''', (user_id, link_id))
+                        logger.info(f"流入元 '{link['name']}' からのユーザー登録を記録しました")
+                    except Exception as e:
+                        logger.error(f"ユーザー登録エラー: {str(e)}")
+                else:
+                    logger.info(f"すでに同じリンクからの登録があります: {link['name']}")
             else:
                 logger.warning(f"リンクコード '{source_code}' が見つかりません")
+            
+            # セッションから流入元を削除
+            session.pop('registration_source', None)
         
         conn.commit()
-    except sqlite3.IntegrityError:
-        # ユーザーが既に存在する場合は無視
-        pass
+    except Exception as e:
+        logger.error(f"ユーザー情報保存エラー: {str(e)}")
     finally:
         conn.close()
 
