@@ -595,7 +595,18 @@ def callback():
         finally:
             conn.close()
 
-        return redirect('/')
+        # LINE公式アカウントのトーク画面にリダイレクトする
+        LINE_BOT_BASIC_ID = os.environ.get("LINE_BOT_BASIC_ID", "")
+        if LINE_BOT_BASIC_ID:
+            # 公式アカウントIDがある場合は、トーク画面に飛ばす
+            line_talk_url = f"https://line.me/R/oaMessage/{LINE_BOT_BASIC_ID}"
+            logger.info(f"LINEトーク画面にリダイレクト: {line_talk_url}")
+            return redirect(line_talk_url)
+        else:
+            # 公式アカウントIDがない場合は通常どおりTOPにリダイレクト
+            logger.warning("LINE_BOT_BASIC_IDが設定されていないため、TOPにリダイレクトします")
+            return redirect('/')
+            
     except Exception as e:
         logger.error(f"LINE認証エラー: {str(e)}")
         return Response(f"エラーが発生しました: {str(e)}", status=500)
