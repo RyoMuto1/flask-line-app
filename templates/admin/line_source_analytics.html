@@ -1,108 +1,88 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE流入経路分析</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">管理画面</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link active" href="/admin/line-source-analytics">LINE流入経路分析</a>
-                <a class="nav-link" href="/admin/logout">ログアウト</a>
-            </div>
-        </div>
-    </nav>
+{% extends "admin/base.html" %}
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>LINE流入経路分析</h2>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
-                新しい登録リンクを作成
-            </button>
-        </div>
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>LINE流入経路分析</h2>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
+        新しい登録リンクを作成
+    </button>
+</div>
 
-        <!-- 登録リンク一覧 -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h3 class="card-title h5 mb-0">登録リンク一覧</h3>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>リンク名</th>
-                                <th>登録者数</th>
-                                <th>作成日</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for link in registration_links %}
-                            <tr>
-                                <td>{{ link.name }}</td>
-                                <td>
-                                    <a href="/admin/line-source-analytics/users/{{ link.id }}" class="text-decoration-none">
-                                        {{ link.registration_count }}人
-                                    </a>
-                                </td>
-                                <td>{{ link.created_at }}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary copy-link" 
-                                            data-link="{{ link.full_url }}">
-                                        リンクをコピー
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<!-- 登録リンク一覧 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title h5 mb-0">登録リンク一覧</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>リンク名</th>
+                        <th>登録者数</th>
+                        <th>作成日</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for link in registration_links %}
+                    <tr>
+                        <td>{{ link.name }}</td>
+                        <td>
+                            <a href="{{ url_for('line_source_analytics_users', link_id=link.id) }}" class="text-decoration-none">
+                                {{ link.registration_count }}人
+                            </a>
+                        </td>
+                        <td>{{ link.created_at }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary copy-link" 
+                                    data-link="{{ link.full_url }}">
+                                リンクをコピー
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <!-- 新しい登録リンク作成モーダル -->
-    <div class="modal fade" id="newLinkModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">新しい登録リンクを作成</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="/admin/line-source-analytics/create-link">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="linkName" class="form-label">リンク名</label>
-                            <input type="text" class="form-control" id="linkName" name="name" required>
-                            <div class="form-text">例：Instagram用、Twitter用など</div>
-                        </div>
-                        <input type="hidden" name="source" value="line">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                        <button type="submit" class="btn btn-primary">作成</button>
-                    </div>
-                </form>
+<!-- 新しい登録リンク作成モーダル -->
+<div class="modal fade" id="newLinkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新しい登録リンクを作成</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <form method="POST" action="{{ url_for('create_registration_link') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="linkName" class="form-label">リンク名</label>
+                        <input type="text" class="form-control" id="linkName" name="name" required>
+                        <div class="form-text">例：Instagram用、Twitter用など</div>
+                    </div>
+                    <input type="hidden" name="source" value="line">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">作成</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // リンクコピー機能
-        document.querySelectorAll('.copy-link').forEach(button => {
-            button.addEventListener('click', function() {
-                const link = this.dataset.link;
-                navigator.clipboard.writeText(link).then(() => {
-                    alert('リンクをコピーしました');
-                });
+<script>
+    // リンクコピー機能
+    document.querySelectorAll('.copy-link').forEach(button => {
+        button.addEventListener('click', function() {
+            const link = this.dataset.link;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('リンクをコピーしました');
             });
         });
-    </script>
-</body>
-</html> 
+    });
+</script>
+{% endblock %} 
