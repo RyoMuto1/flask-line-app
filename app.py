@@ -4,7 +4,7 @@ import requests
 import jwt    # ← 追加
 from flask import (
     Flask, render_template, request,
-    redirect, jsonify, session, Response
+    redirect, jsonify, session, Response, flash, url_for
 )
 from dotenv import load_dotenv
 import logging  # 追加
@@ -432,7 +432,8 @@ def admin_login():
             session['admin_email'] = admin['email']
             return redirect('/admin/dashboard')
         
-        return render_template('admin/login.html', error='メールアドレスまたはパスワードが正しくありません。')
+        flash('メールアドレスまたはパスワードが正しくありません。', 'error')
+        return render_template('admin/login.html')
     
     return render_template('admin/login.html')
 
@@ -636,53 +637,62 @@ def admin_reset_password():
         conn.close()
         
         flash('パスワードがリセットされました。新しいパスワードでログインしてください。', 'success')
-        return redirect('/admin/login')
+        return redirect(url_for('admin_login'))
     
     return render_template('admin/reset_password.html')
 
 @app.route('/admin/create-first-admin', methods=['GET', 'POST'])
 def create_first_admin():
-    # 既存の管理者アカウントがある場合はリダイレクト
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('SELECT COUNT(*) as count FROM admins')
-    count = c.fetchone()['count']
-    conn.close()
-    
-    if count > 0:
-        flash('管理者アカウントは既に作成されています。', 'error')
-        return redirect('/admin/login')
-    
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        
-        if not email or not password or not confirm_password:
-            flash('すべての項目を入力してください。', 'error')
-            return render_template('admin/first_admin.html')
-        
-        if password != confirm_password:
-            flash('パスワードが一致しません。', 'error')
-            return render_template('admin/first_admin.html')
-        
-        # 管理者アカウントを作成
+    try:
+        # 既存の管理者アカウントがある場合はリダイレクト
         conn = get_db()
         c = conn.cursor()
-        try:
-            c.execute('INSERT INTO admins (email, password, created_at) VALUES (?, ?, datetime("now"))', 
-                     (email, generate_password_hash(password)))
-            conn.commit()
-            conn.close()
+        c.execute('SELECT COUNT(*) as count FROM admins')
+        count = c.fetchone()['count']
+        conn.close()
+        
+        if count > 0:
+            flash('管理者アカウントは既に作成されています。', 'error')
+            return redirect(url_for('admin_login'))
+        
+        if request.method == 'POST':
+            email = request.form.get('email')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
             
-            flash('管理者アカウントが作成されました。ログインしてください。', 'success')
-            return redirect('/admin/login')
-        except sqlite3.IntegrityError:
-            conn.close()
-            flash('このメールアドレスは既に使用されています。', 'error')
-            return render_template('admin/first_admin.html')
-    
-    return render_template('admin/first_admin.html')
+            if not email or not password or not confirm_password:
+                flash('すべての項目を入力してください。', 'error')
+                return render_template('admin/first_admin.html')
+            
+            if password != confirm_password:
+                flash('パスワードが一致しません。', 'error')
+                return render_template('admin/first_admin.html')
+            
+            # 管理者アカウントを作成
+            try:
+                conn = get_db()
+                c = conn.cursor()
+                c.execute('INSERT INTO admins (email, password, created_at) VALUES (?, ?, datetime("now"))', 
+                        (email, generate_password_hash(password)))
+                conn.commit()
+                conn.close()
+                
+                flash('管理者アカウントが作成されました。ログインしてください。', 'success')
+                return redirect(url_for('admin_login'))
+            except sqlite3.IntegrityError:
+                conn.close()
+                flash('このメールアドレスは既に使用されています。', 'error')
+                return render_template('admin/first_admin.html')
+            except Exception as e:
+                logger.error(f"管理者アカウント作成エラー: {str(e)}")
+                flash('エラーが発生しました。もう一度お試しください。', 'error')
+                return render_template('admin/first_admin.html')
+        
+        return render_template('admin/first_admin.html')
+    except Exception as e:
+        logger.error(f"初回管理者登録エラー: {str(e)}")
+        flash('エラーが発生しました。もう一度お試しください。', 'error')
+        return render_template('admin/first_admin.html')
 
 @app.route('/admin/profile', methods=['GET', 'POST'])
 @admin_required
@@ -721,7 +731,7 @@ def admin_profile():
         session['admin_email'] = email
         
         flash('プロフィールが更新されました。', 'success')
-        return redirect('/admin/dashboard')
+        return redirect(url_for('admin_dashboard'))
     
     conn.close()
     return render_template('admin/profile.html', admin=admin)
