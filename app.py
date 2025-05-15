@@ -23,6 +23,15 @@ app = Flask(__name__)
 # セッション用の鍵
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
+# 管理者認証用デコレータ
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            return redirect('/admin/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
 # DB 初期化
 def init_db():
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'orders.db')
@@ -553,15 +562,6 @@ def line_source_analytics_users(link_id):
     
     conn.close()
     return render_template('admin/line_source_analytics_users.html', link=link, users=users)
-
-# 管理者認証用デコレータ
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'admin_id' not in session:
-            return redirect('/admin/login')
-        return f(*args, **kwargs)
-    return decorated_function
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
