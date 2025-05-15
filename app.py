@@ -11,6 +11,7 @@ import logging  # 追加
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 from functools import wraps  # 追加
+import urllib.parse  # URLエンコーディング用に追加
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -451,9 +452,15 @@ def login():
     logger.info(f"ログインルートにアクセス - source={source}, args={request.args}")
     
     if source:
-        # セッションに流入元を保存
-        session['registration_source'] = source
-        logger.info(f"流入元をセッションに保存: registration_source={source}")
+        # セッションに流入元を保存（デコード済みの値を使用）
+        try:
+            # URLデコードが必要な場合にデコードする
+            if '%' in source:
+                source = urllib.parse.unquote(source)
+            session['registration_source'] = source
+            logger.info(f"流入元をセッションに保存: registration_source={source}")
+        except Exception as e:
+            logger.error(f"流入元の処理でエラー: {str(e)}")
     else:
         logger.info("流入元情報なしでログイン")
         
@@ -485,99 +492,124 @@ def line_login():
     auth_url = 'https://access.line.me/oauth2/v2.1/authorize?' + '&'.join([f'{k}={v}' for k, v in auth_params.items()])
     return redirect(auth_url)
 
-@app.route('/line-login/callback')
-def line_login_callback():
+@app.route('/callback')
+def callback():
+    # リクエスト情報をデバッグ出力
+    logger.info(f"コールバックルートにアクセス - args={request.args}")
     code = request.args.get('code')
-    token_res = requests.post(
-        'https://api.line.me/oauth2/v2.1/token',
-        headers={'Content-Type':'application/x-www-form-urlencoded'},
-        data={
-            'grant_type':'authorization_code',
-            'code':code,
-            'redirect_uri':LINE_REDIRECT_URI,
-            'client_id':LINE_LOGIN_CHANNEL_ID,
-            'client_secret':LINE_LOGIN_CHANNEL_SECRET
-        }
-    )
-    token_data = token_res.json()
-    logger.debug("🐛 token_data: %s", token_data)
-    id_token = token_data.get('id_token')
-    if not id_token:
-        return Response("id_token が取れませんでした", status=500)
-
-    try:
-        payload = jwt.decode(id_token, options={"verify_signature": False})
-    except Exception as e:
-        logger.error("JWT decode error: %s", e)
-        return Response("ID トークンの解析に失敗しました", status=500)
-
-    user_id   = payload.get('sub')
-    user_name = payload.get('name', '（名前なし）')
-    if not user_id:
-        return Response("ユーザーID(sub) が取得できませんでした", status=500)
-
-    session['line_user_id']   = user_id
-    session['line_user_name'] = user_name
-
-    # ユーザー情報を保存
-    conn = get_db()
-    cursor = conn.cursor()
+    state = request.args.get('state')  # stateパラメータも取得
+    
+    # セッションのstateと比較して検証（セキュリティ対策）
+    session_state = session.get('line_login_state')
+    if not session_state or session_state != state:
+        logger.warning(f"state不一致: session={session_state}, request={state}")
+    
+    # Renderの本番環境用のコールバックURLを作成
+    if os.path.exists('/opt/render'):
+        callback_url = "https://flask-line-app-essd.onrender.com/callback"
+    else:
+        # ローカル環境ではリクエストベースのURLを使用
+        callback_url = f"{request.host_url.rstrip('/')}/callback"
+    
+    logger.info(f"コールバックURLを使用: {callback_url}")
     
     try:
-        # ユーザー情報を保存（既存の場合はスキップ）
-        try:
-            cursor.execute('''
-                INSERT INTO users (line_user_id, name, created_at)
-                VALUES (?, ?, datetime('now'))
-            ''', (user_id, user_name))
-            logger.info(f"新規ユーザーを登録しました: {user_name}")
-        except sqlite3.IntegrityError:
-            logger.info(f"既存ユーザーのログイン: {user_name}")
+        token_res = requests.post(
+            'https://api.line.me/oauth2/v2.1/token',
+            headers={'Content-Type':'application/x-www-form-urlencoded'},
+            data={
+                'grant_type':'authorization_code',
+                'code':code,
+                'redirect_uri':callback_url,  # 実際のリダイレクト先URLを使用
+                'client_id':LINE_LOGIN_CHANNEL_ID,
+                'client_secret':LINE_LOGIN_CHANNEL_SECRET
+            }
+        )
+        token_data = token_res.json()
+        logger.info(f"トークンレスポンス: {token_data}")
         
-        # 流入元が指定されている場合は記録
-        if 'registration_source' in session:
-            source_code = session['registration_source']
-            logger.info(f"登録リンク情報: source_code={source_code}")
-            
-            # 流入元リンクの存在を確認
-            cursor.execute('SELECT * FROM registration_links WHERE link_code = ?', (source_code,))
-            link = cursor.fetchone()
-            
-            if link:
-                link_id = link['id']
-                logger.info(f"リンク情報: id={link_id}, name={link['name']}")
-                
-                # 既に同じリンクからの登録があるか確認
-                cursor.execute('''
-                    SELECT id FROM user_registrations 
-                    WHERE line_user_id = ? AND registration_link_id = ?
-                ''', (user_id, link_id))
-                
-                if not cursor.fetchone():
-                    # 新規登録
-                    try:
-                        cursor.execute('''
-                            INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
-                            VALUES (?, ?, datetime('now'))
-                        ''', (user_id, link_id))
-                        logger.info(f"流入元 '{link['name']}' からのユーザー登録を記録しました")
-                    except Exception as e:
-                        logger.error(f"ユーザー登録エラー: {str(e)}")
-                else:
-                    logger.info(f"すでに同じリンクからの登録があります: {link['name']}")
-            else:
-                logger.warning(f"リンクコード '{source_code}' が見つかりません")
-            
-            # セッションから流入元を削除
-            session.pop('registration_source', None)
-        
-        conn.commit()
-    except Exception as e:
-        logger.error(f"ユーザー情報保存エラー: {str(e)}")
-    finally:
-        conn.close()
+        id_token = token_data.get('id_token')
+        if not id_token:
+            error_msg = token_data.get('error_description', 'id_token が取れませんでした')
+            logger.error(f"ID Token取得エラー: {error_msg}")
+            return Response(f"認証エラー: {error_msg}", status=500)
 
-    return redirect('/')
+        try:
+            payload = jwt.decode(id_token, options={"verify_signature": False})
+        except Exception as e:
+            logger.error("JWT decode error: %s", e)
+            return Response("ID トークンの解析に失敗しました", status=500)
+
+        user_id   = payload.get('sub')
+        user_name = payload.get('name', '（名前なし）')
+        if not user_id:
+            return Response("ユーザーID(sub) が取得できませんでした", status=500)
+
+        session['line_user_id']   = user_id
+        session['line_user_name'] = user_name
+
+        # ユーザー情報を保存
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        try:
+            # ユーザー情報を保存（既存の場合はスキップ）
+            try:
+                cursor.execute('''
+                    INSERT INTO users (line_user_id, name, created_at)
+                    VALUES (?, ?, datetime('now'))
+                ''', (user_id, user_name))
+                logger.info(f"新規ユーザーを登録しました: {user_name}")
+            except sqlite3.IntegrityError:
+                logger.info(f"既存ユーザーのログイン: {user_name}")
+            
+            # 流入元が指定されている場合は記録
+            if 'registration_source' in session:
+                source_code = session['registration_source']
+                logger.info(f"登録リンク情報: source_code={source_code}")
+                
+                # 流入元リンクの存在を確認
+                cursor.execute('SELECT * FROM registration_links WHERE link_code = ?', (source_code,))
+                link = cursor.fetchone()
+                
+                if link:
+                    link_id = link['id']
+                    logger.info(f"リンク情報: id={link_id}, name={link['name']}")
+                    
+                    # 既に同じリンクからの登録があるか確認
+                    cursor.execute('''
+                        SELECT id FROM user_registrations 
+                        WHERE line_user_id = ? AND registration_link_id = ?
+                    ''', (user_id, link_id))
+                    
+                    if not cursor.fetchone():
+                        # 新規登録
+                        try:
+                            cursor.execute('''
+                                INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
+                                VALUES (?, ?, datetime('now'))
+                            ''', (user_id, link_id))
+                            logger.info(f"流入元 '{link['name']}' からのユーザー登録を記録しました")
+                        except Exception as e:
+                            logger.error(f"ユーザー登録エラー: {str(e)}")
+                    else:
+                        logger.info(f"すでに同じリンクからの登録があります: {link['name']}")
+                else:
+                    logger.warning(f"リンクコード '{source_code}' が見つかりません")
+                
+                # セッションから流入元を削除
+                session.pop('registration_source', None)
+            
+            conn.commit()
+        except Exception as e:
+            logger.error(f"ユーザー情報保存エラー: {str(e)}")
+        finally:
+            conn.close()
+
+        return redirect('/')
+    except Exception as e:
+        logger.error(f"LINE認証エラー: {str(e)}")
+        return Response(f"エラーが発生しました: {str(e)}", status=500)
 
 @app.route('/mypage')
 def mypage():
@@ -735,8 +767,9 @@ def line_source_analytics():
             # ローカル環境ではリクエストベースのURLを使用
             base_url = request.host_url.rstrip('/')
         
-        # 完全なURLを構築（URLエンコードはブラウザが行うので不要）
-        link_dict['full_url'] = f"{base_url}/login?source={link['link_code']}"
+        # 完全なURLを構築（URLエンコード処理を追加）
+        encoded_link_code = urllib.parse.quote(link['link_code'])
+        link_dict['full_url'] = f"{base_url}/login?source={encoded_link_code}"
         logger.info(f"流入リンク生成: {link_dict['full_url']}")
         
         result_links.append(link_dict)
@@ -1029,112 +1062,6 @@ def delete_admin(admin_id):
     
     flash('管理者アカウントを削除しました。', 'success')
     return redirect(url_for('admin_list'))
-
-# LINE認証コールバック（Renderでの動作のため追加）
-@app.route('/callback')
-def callback():
-    # リクエスト情報をデバッグ出力
-    logger.info(f"コールバックルートにアクセス - args={request.args}")
-    code = request.args.get('code')
-    
-    # Renderの本番環境用のコールバックURLを作成 - ここが重要
-    callback_url = "https://flask-line-app-essd.onrender.com/callback"
-    logger.info(f"コールバックURLを使用: {callback_url}")
-    
-    token_res = requests.post(
-        'https://api.line.me/oauth2/v2.1/token',
-        headers={'Content-Type':'application/x-www-form-urlencoded'},
-        data={
-            'grant_type':'authorization_code',
-            'code':code,
-            'redirect_uri':callback_url,  # 実際のリダイレクト先URLを使用
-            'client_id':LINE_LOGIN_CHANNEL_ID,
-            'client_secret':LINE_LOGIN_CHANNEL_SECRET
-        }
-    )
-    token_data = token_res.json()
-    logger.debug("🐛 token_data: %s", token_data)
-    logger.info(f"トークンレスポンス: {token_data}")
-    
-    id_token = token_data.get('id_token')
-    if not id_token:
-        error_msg = token_data.get('error_description', 'id_token が取れませんでした')
-        logger.error(f"ID Token取得エラー: {error_msg}")
-        return Response(f"認証エラー: {error_msg}", status=500)
-
-    try:
-        payload = jwt.decode(id_token, options={"verify_signature": False})
-    except Exception as e:
-        logger.error("JWT decode error: %s", e)
-        return Response("ID トークンの解析に失敗しました", status=500)
-
-    user_id   = payload.get('sub')
-    user_name = payload.get('name', '（名前なし）')
-    if not user_id:
-        return Response("ユーザーID(sub) が取得できませんでした", status=500)
-
-    session['line_user_id']   = user_id
-    session['line_user_name'] = user_name
-
-    # ユーザー情報を保存
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    try:
-        # ユーザー情報を保存（既存の場合はスキップ）
-        try:
-            cursor.execute('''
-                INSERT INTO users (line_user_id, name, created_at)
-                VALUES (?, ?, datetime('now'))
-            ''', (user_id, user_name))
-            logger.info(f"新規ユーザーを登録しました: {user_name}")
-        except sqlite3.IntegrityError:
-            logger.info(f"既存ユーザーのログイン: {user_name}")
-        
-        # 流入元が指定されている場合は記録
-        if 'registration_source' in session:
-            source_code = session['registration_source']
-            logger.info(f"登録リンク情報: source_code={source_code}")
-            
-            # 流入元リンクの存在を確認
-            cursor.execute('SELECT * FROM registration_links WHERE link_code = ?', (source_code,))
-            link = cursor.fetchone()
-            
-            if link:
-                link_id = link['id']
-                logger.info(f"リンク情報: id={link_id}, name={link['name']}")
-                
-                # 既に同じリンクからの登録があるか確認
-                cursor.execute('''
-                    SELECT id FROM user_registrations 
-                    WHERE line_user_id = ? AND registration_link_id = ?
-                ''', (user_id, link_id))
-                
-                if not cursor.fetchone():
-                    # 新規登録
-                    try:
-                        cursor.execute('''
-                            INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
-                            VALUES (?, ?, datetime('now'))
-                        ''', (user_id, link_id))
-                        logger.info(f"流入元 '{link['name']}' からのユーザー登録を記録しました")
-                    except Exception as e:
-                        logger.error(f"ユーザー登録エラー: {str(e)}")
-                else:
-                    logger.info(f"すでに同じリンクからの登録があります: {link['name']}")
-            else:
-                logger.warning(f"リンクコード '{source_code}' が見つかりません")
-            
-            # セッションから流入元を削除
-            session.pop('registration_source', None)
-        
-        conn.commit()
-    except Exception as e:
-        logger.error(f"ユーザー情報保存エラー: {str(e)}")
-    finally:
-        conn.close()
-
-    return redirect('/')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
