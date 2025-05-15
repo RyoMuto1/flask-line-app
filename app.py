@@ -393,10 +393,20 @@ def line_login():
     state = secrets.token_urlsafe(16)
     session['line_login_state'] = state
     
+    # 環境に応じたコールバックURLを設定
+    if os.path.exists('/opt/render'):
+        # Render環境では/callbackを使用
+        callback_url = f"{request.host_url.rstrip('/')}/callback"
+    else:
+        # ローカル環境では従来通り
+        callback_url = LINE_REDIRECT_URI
+    
+    logger.info(f"LINE認証用コールバックURL: {callback_url}")
+    
     auth_params = {
         'response_type': 'code',
         'client_id': LINE_LOGIN_CHANNEL_ID,
-        'redirect_uri': LINE_REDIRECT_URI,
+        'redirect_uri': callback_url,
         'state': state,
         'scope': 'profile',
     }
@@ -906,22 +916,31 @@ def delete_admin(admin_id):
 def callback():
     # line_login_callbackと同じ処理を実行
     code = request.args.get('code')
+    
+    # Renderの本番環境用のコールバックURLを作成
+    callback_url = f"{request.host_url.rstrip('/')}/callback"
+    logger.info(f"コールバックURLを使用: {callback_url}")
+    
     token_res = requests.post(
         'https://api.line.me/oauth2/v2.1/token',
         headers={'Content-Type':'application/x-www-form-urlencoded'},
         data={
             'grant_type':'authorization_code',
             'code':code,
-            'redirect_uri':LINE_REDIRECT_URI,
+            'redirect_uri':callback_url,  # 実際のリダイレクト先URLを使用
             'client_id':LINE_LOGIN_CHANNEL_ID,
             'client_secret':LINE_LOGIN_CHANNEL_SECRET
         }
     )
     token_data = token_res.json()
     logger.debug("🐛 token_data: %s", token_data)
+    logger.info(f"トークンレスポンス: {token_data}")
+    
     id_token = token_data.get('id_token')
     if not id_token:
-        return Response("id_token が取れませんでした", status=500)
+        error_msg = token_data.get('error_description', 'id_token が取れませんでした')
+        logger.error(f"ID Token取得エラー: {error_msg}")
+        return Response(f"認証エラー: {error_msg}", status=500)
 
     try:
         payload = jwt.decode(id_token, options={"verify_signature": False})
