@@ -6,6 +6,18 @@
     <a href="{{ url_for('line_source_analytics') }}" class="btn btn-outline-secondary">戻る</a>
 </div>
 
+<!-- フラッシュメッセージ表示 -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <!-- 登録者一覧 -->
 <div class="card">
     <div class="card-header">
@@ -29,11 +41,9 @@
                         <td>{{ user.registered_at }}</td>
                         <td>{{ user.order_count }}</td>
                         <td>
-                            {% if user.order_count > 0 %}
-                            <a href="#" class="btn btn-sm btn-outline-primary">
-                                注文履歴を見る
+                            <a href="{{ url_for('admin_user_detail', line_user_id=user.line_user_id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-person-badge"></i> 詳細を見る
                             </a>
-                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
