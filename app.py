@@ -81,6 +81,42 @@ def init_db():
         ''')
         conn.commit()
         logger.info("user_registrationsテーブルを作成しました")
+    else:
+        # テーブルの構造を修正（既存のユニーク制約を変更）
+        try:
+            logger.info("user_registrationsテーブルの構造を修正します")
+            c.execute("PRAGMA foreign_keys=off")
+            c.execute("BEGIN TRANSACTION")
+            
+            # 一時テーブルを作成
+            c.execute('''
+                CREATE TABLE user_registrations_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    line_user_id TEXT NOT NULL,
+                    registration_link_id INTEGER NOT NULL,
+                    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (registration_link_id) REFERENCES registration_links(id),
+                    UNIQUE(line_user_id, registration_link_id)
+                )
+            ''')
+            
+            # データを移行（重複があれば最初のレコードのみ）
+            c.execute('''
+                INSERT OR IGNORE INTO user_registrations_new(id, line_user_id, registration_link_id, registered_at)
+                SELECT id, line_user_id, registration_link_id, registered_at FROM user_registrations
+            ''')
+            
+            # 元のテーブルを削除して新しいテーブルをリネーム
+            c.execute("DROP TABLE user_registrations")
+            c.execute("ALTER TABLE user_registrations_new RENAME TO user_registrations")
+            
+            c.execute("COMMIT")
+            c.execute("PRAGMA foreign_keys=on")
+            logger.info("user_registrationsテーブルの構造を修正しました")
+        except Exception as e:
+            logger.error(f"テーブル構造の修正に失敗しました: {str(e)}")
+            c.execute("ROLLBACK")
+            c.execute("PRAGMA foreign_keys=on")
 
     # ユーザーテーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
@@ -823,6 +859,9 @@ def admin_profile():
 @app.route('/admin/admin-list')
 @admin_required
 def admin_list():
+    # フラッシュメッセージをクリア（管理者一覧画面では不要なメッセージを表示しない）
+    session.pop('_flashes', None)
+    
     conn = get_db()
     c = conn.cursor()
     c.execute('SELECT * FROM admins ORDER BY id')
@@ -861,6 +900,102 @@ def delete_admin(admin_id):
     
     flash('管理者アカウントを削除しました。', 'success')
     return redirect(url_for('admin_list'))
+
+# LINE認証コールバック（Renderでの動作のため追加）
+@app.route('/callback')
+def callback():
+    # line_login_callbackと同じ処理を実行
+    code = request.args.get('code')
+    token_res = requests.post(
+        'https://api.line.me/oauth2/v2.1/token',
+        headers={'Content-Type':'application/x-www-form-urlencoded'},
+        data={
+            'grant_type':'authorization_code',
+            'code':code,
+            'redirect_uri':LINE_REDIRECT_URI,
+            'client_id':LINE_LOGIN_CHANNEL_ID,
+            'client_secret':LINE_LOGIN_CHANNEL_SECRET
+        }
+    )
+    token_data = token_res.json()
+    logger.debug("🐛 token_data: %s", token_data)
+    id_token = token_data.get('id_token')
+    if not id_token:
+        return Response("id_token が取れませんでした", status=500)
+
+    try:
+        payload = jwt.decode(id_token, options={"verify_signature": False})
+    except Exception as e:
+        logger.error("JWT decode error: %s", e)
+        return Response("ID トークンの解析に失敗しました", status=500)
+
+    user_id   = payload.get('sub')
+    user_name = payload.get('name', '（名前なし）')
+    if not user_id:
+        return Response("ユーザーID(sub) が取得できませんでした", status=500)
+
+    session['line_user_id']   = user_id
+    session['line_user_name'] = user_name
+
+    # ユーザー情報を保存
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        # ユーザー情報を保存（既存の場合はスキップ）
+        try:
+            cursor.execute('''
+                INSERT INTO users (line_user_id, name, created_at)
+                VALUES (?, ?, datetime('now'))
+            ''', (user_id, user_name))
+            logger.info(f"新規ユーザーを登録しました: {user_name}")
+        except sqlite3.IntegrityError:
+            logger.info(f"既存ユーザーのログイン: {user_name}")
+        
+        # 流入元が指定されている場合は記録
+        if 'registration_source' in session:
+            source_code = session['registration_source']
+            logger.info(f"登録リンク情報: source_code={source_code}")
+            
+            # 流入元リンクの存在を確認
+            cursor.execute('SELECT * FROM registration_links WHERE link_code = ?', (source_code,))
+            link = cursor.fetchone()
+            
+            if link:
+                link_id = link['id']
+                logger.info(f"リンク情報: id={link_id}, name={link['name']}")
+                
+                # 既に同じリンクからの登録があるか確認
+                cursor.execute('''
+                    SELECT id FROM user_registrations 
+                    WHERE line_user_id = ? AND registration_link_id = ?
+                ''', (user_id, link_id))
+                
+                if not cursor.fetchone():
+                    # 新規登録
+                    try:
+                        cursor.execute('''
+                            INSERT INTO user_registrations (line_user_id, registration_link_id, registered_at)
+                            VALUES (?, ?, datetime('now'))
+                        ''', (user_id, link_id))
+                        logger.info(f"流入元 '{link['name']}' からのユーザー登録を記録しました")
+                    except Exception as e:
+                        logger.error(f"ユーザー登録エラー: {str(e)}")
+                else:
+                    logger.info(f"すでに同じリンクからの登録があります: {link['name']}")
+            else:
+                logger.warning(f"リンクコード '{source_code}' が見つかりません")
+            
+            # セッションから流入元を削除
+            session.pop('registration_source', None)
+        
+        conn.commit()
+    except Exception as e:
+        logger.error(f"ユーザー情報保存エラー: {str(e)}")
+    finally:
+        conn.close()
+
+    return redirect('/')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
