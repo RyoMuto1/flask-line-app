@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import logging  # 追加
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
+from functools import wraps  # 追加
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -552,6 +553,15 @@ def line_source_analytics_users(link_id):
     
     conn.close()
     return render_template('admin/line_source_analytics_users.html', link=link, users=users)
+
+# 管理者認証用デコレータ
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            return redirect('/admin/login')
+        return f(*args, **kwargs)
+    return decorated_function
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
