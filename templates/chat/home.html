@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}チャット{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>チャット</h2>
+    
+    <div class="mb-4">
+        <a href="/chat/users" class="btn btn-primary">新しいチャットを開始</a>
+        <a href="/mypage" class="btn btn-outline-secondary ml-2">マイページに戻る</a>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="chat-rooms">
+        {% if rooms %}
+            <div class="list-group">
+                {% for room in rooms %}
+                    <a href="/chat/room/{{ room.id }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">
+                                {{ room.participant_count }}名のチャット
+                            </h5>
+                            <small>
+                                {% if room.last_activity %}
+                                    {{ room.last_activity }}
+                                {% else %}
+                                    メッセージなし
+                                {% endif %}
+                            </small>
+                        </div>
+                        <p class="mb-1">作成者: {{ room.creator_name }}</p>
+                        <small>メッセージ数: {{ room.message_count or 0 }}</small>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                まだチャットルームがありません。「新しいチャットを開始」をクリックして最初のチャットを作成しましょう。
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

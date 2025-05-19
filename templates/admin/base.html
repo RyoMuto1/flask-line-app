@@ -3,117 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理画面</title>
+    <title>{% block title %}管理画面{% endblock %} - 注文管理システム</title>
+    {% block styles %}
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
+        /* サイドバーのスタイル */
+        .admin-sidebar {
             min-height: 100vh;
-            display: flex;
-        }
-        #sidebar {
-            width: 250px;
-            min-height: 100vh;
-            background-color: #212529;
+            background-color: #343a40;
             color: white;
-            position: fixed;
-            left: 0;
-            top: 0;
+            padding-top: 2rem;
         }
-        #sidebar .nav-link {
-            color: rgba(255, 255, 255, .8);
+        
+        .admin-sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
             padding: 0.5rem 1rem;
-            margin: 0.2rem 0;
+            margin-bottom: 0.5rem;
+            border-radius: 0.25rem;
         }
-        #sidebar .nav-link:hover {
-            color: #fff;
-            background-color: rgba(255, 255, 255, .1);
-        }
-        #sidebar .nav-link.active {
-            color: #fff;
-            background-color: rgba(255, 255, 255, .2);
-        }
-        #content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 20px;
-        }
-        .sidebar-brand {
-            padding: 1rem;
-            font-size: 1.25rem;
-            font-weight: bold;
+        
+        .admin-sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
             color: white;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, .2);
+        }
+        
+        .admin-sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .admin-sidebar .sidebar-heading {
+            padding: 0.875rem 1.25rem;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             margin-bottom: 1rem;
         }
-        .nav-link i {
-            margin-right: 8px;
-            width: 20px;
-            text-align: center;
+        
+        /* コンテンツ領域 */
+        .admin-content {
+            padding: 2rem;
+        }
+        
+        /* データテーブル */
+        .data-table th {
+            white-space: nowrap;
+        }
+        
+        /* アラート */
+        .flash-message {
+            margin-bottom: 1rem;
         }
     </style>
+    {% endblock %}
 </head>
 <body>
-    <!-- サイドバー -->
-    <div id="sidebar">
-        <a href="{{ url_for('admin_dashboard') }}" class="sidebar-brand">
-            <i class="bi bi-gear-fill"></i> 管理画面
-        </a>
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                    <i class="bi bi-speedometer2"></i> ダッシュボード
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('line_source_analytics') }}">
-                    <i class="bi bi-graph-up"></i> LINE流入経路分析
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('admin_list') }}">
-                    <i class="bi bi-people"></i> 管理者一覧
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('admin_profile') }}">
-                    <i class="bi bi-person-badge"></i> メールアドレス変更
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('admin_change_password') }}">
-                    <i class="bi bi-shield-lock"></i> パスワード変更
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('admin_logout') }}">
-                    <i class="bi bi-box-arrow-right"></i> ログアウト
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <!-- メインコンテンツ -->
-    <div id="content">
-        {% block content %}{% endblock %}
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // 現在のページのナビゲーションリンクをアクティブにする
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('#sidebar .nav-link');
+    <div class="container-fluid">
+        <div class="row">
+            <!-- サイドバー -->
+            <nav class="col-md-2 d-none d-md-block admin-sidebar">
+                <div class="sidebar-heading">
+                    <i class="fas fa-cogs"></i> 管理画面
+                </div>
+                <div class="nav flex-column">
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                    </a>
+                    <a href="{{ url_for('admin_chat') }}" class="nav-link {% if request.path == url_for('admin_chat') %}active{% endif %}">
+                        <i class="fas fa-comments"></i> チャット管理
+                    </a>
+                    <a href="{{ url_for('line_source_analytics') }}" class="nav-link {% if request.path == url_for('line_source_analytics') %}active{% endif %}">
+                        <i class="fab fa-line"></i> LINE流入分析
+                    </a>
+                    <a href="{{ url_for('admin_change_password') }}" class="nav-link {% if request.path == url_for('admin_change_password') %}active{% endif %}">
+                        <i class="fas fa-key"></i> パスワード変更
+                    </a>
+                    <a href="{{ url_for('admin_list') }}" class="nav-link {% if request.path == url_for('admin_list') %}active{% endif %}">
+                        <i class="fas fa-users-cog"></i> 管理者一覧
+                    </a>
+                    <a href="{{ url_for('admin_logout') }}" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i> ログアウト
+                    </a>
+                </div>
+            </nav>
             
-            navLinks.forEach(link => {
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('active');
-                }
-            });
-        });
-    </script>
+            <!-- メインコンテンツ -->
+            <main class="col-md-10 ml-sm-auto admin-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    
+    {% block scripts %}
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% endblock %}
 </body>
 </html> 

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}チャット相手を選択{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>チャット相手を選択</h2>
+    
+    <div class="mb-4">
+        <a href="/chat" class="btn btn-outline-secondary">チャット一覧に戻る</a>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="users-list">
+        {% if users %}
+            <div class="list-group">
+                {% for user in users %}
+                    <a href="/chat/create/{{ user.line_user_id }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ user.name }}</h5>
+                        </div>
+                        {% if user.email %}
+                            <small>メール: {{ user.email }}</small>
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                現在、チャットできるユーザーがいません。
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

@@ -189,6 +189,92 @@ def init_db():
         except Exception as e:
             logger.error(f"デフォルト管理者アカウント作成エラー: {str(e)}")
 
+    # チャットルームテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_rooms'")
+    if not c.fetchone():
+        logger.info("chat_roomsテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE chat_rooms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                creator_id TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("chat_roomsテーブルを作成しました")
+
+    # チャット参加者テーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_participants'")
+    if not c.fetchone():
+        logger.info("chat_participantsテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE chat_participants (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id INTEGER NOT NULL,
+                line_user_id TEXT NOT NULL,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (room_id) REFERENCES chat_rooms(id),
+                UNIQUE(room_id, line_user_id)
+            )
+        ''')
+        conn.commit()
+        logger.info("chat_participantsテーブルを作成しました")
+
+    # チャットメッセージテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_messages'")
+    if not c.fetchone():
+        logger.info("chat_messagesテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id INTEGER NOT NULL,
+                sender_id TEXT NOT NULL,
+                message TEXT NOT NULL,
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (room_id) REFERENCES chat_rooms(id)
+            )
+        ''')
+        conn.commit()
+        logger.info("chat_messagesテーブルを作成しました")
+
+    # 管理者・ユーザー間のチャットメッセージテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='admin_chat_messages'")
+    if not c.fetchone():
+        logger.info("admin_chat_messagesテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE admin_chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                admin_id INTEGER,
+                line_user_id TEXT NOT NULL,
+                message TEXT NOT NULL,
+                is_from_admin BOOLEAN NOT NULL,
+                read_status BOOLEAN DEFAULT 0,
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (admin_id) REFERENCES admins(id)
+            )
+        ''')
+        conn.commit()
+        logger.info("admin_chat_messagesテーブルを作成しました")
+    
+    # ユーザーメモテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_notes'")
+    if not c.fetchone():
+        logger.info("user_notesテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE user_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT NOT NULL,
+                admin_id INTEGER NOT NULL,
+                note TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (admin_id) REFERENCES admins(id),
+                UNIQUE(line_user_id, admin_id)
+            )
+        ''')
+        conn.commit()
+        logger.info("user_notesテーブルを作成しました")
+
     # テーブルが存在するか確認
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'")
     if not c.fetchone():
@@ -435,6 +521,46 @@ def history():
 @app.route('/webhook', methods=['POST'])
 def webhook():
     logger.debug("📬 webhook hit：%s", request.get_data())
+    
+    try:
+        # LINEからのイベントを処理
+        signature = request.headers.get('X-Line-Signature', '')
+        body = request.get_data(as_text=True)
+        
+        import json
+        try:
+            events = json.loads(body).get('events', [])
+            
+            for event in events:
+                event_type = event.get('type')
+                
+                # メッセージイベントを処理
+                if event_type == 'message':
+                    message_type = event.get('message', {}).get('type')
+                    
+                    # テキストメッセージを処理
+                    if message_type == 'text':
+                        user_id = event.get('source', {}).get('userId')
+                        message_text = event.get('message', {}).get('text')
+                        
+                        if user_id and message_text:
+                            # ユーザーからのメッセージを管理者チャットに保存
+                            conn = get_db()
+                            cursor = conn.cursor()
+                            
+                            cursor.execute('''
+                                INSERT INTO admin_chat_messages 
+                                (line_user_id, message, is_from_admin, read_status, sent_at)
+                                VALUES (?, ?, 0, 0, datetime('now'))
+                            ''', (user_id, message_text))
+                            
+                            conn.commit()
+                            conn.close()
+        except Exception as e:
+            logger.error(f"Webhookイベント処理エラー: {str(e)}")
+    except Exception as e:
+        logger.error(f"Webhook処理エラー: {str(e)}")
+    
     return jsonify({"status":"ok"})
 
 # LINE Login 設定
@@ -1141,6 +1267,464 @@ def admin_user_detail(line_user_id):
                           user=user, 
                           orders=orders,
                           registrations=registrations)
+
+# チャット機能のルート
+@app.route('/chat')
+def chat_home():
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    conn = get_db()
+    c = conn.cursor()
+    
+    # 自分が参加しているチャットルームを取得
+    c.execute('''
+        SELECT cr.id, cr.created_at,
+               (SELECT name FROM users WHERE line_user_id = cr.creator_id) as creator_name,
+               (SELECT COUNT(*) FROM chat_participants WHERE room_id = cr.id) as participant_count,
+               (SELECT COUNT(*) FROM chat_messages WHERE room_id = cr.id) as message_count,
+               (SELECT MAX(sent_at) FROM chat_messages WHERE room_id = cr.id) as last_activity
+        FROM chat_rooms cr
+        JOIN chat_participants cp ON cr.id = cp.room_id
+        WHERE cp.line_user_id = ?
+        ORDER BY last_activity DESC NULLS LAST, cr.created_at DESC
+    ''', (session['line_user_id'],))
+    
+    # SQLite3.Rowのリストを辞書のリストに変換
+    try:
+        rooms = [dict(row) for row in c.fetchall()]
+    except Exception as e:
+        logger.error(f"チャットルーム取得エラー: {str(e)}")
+        rooms = []
+    
+    conn.close()
+    
+    return render_template('chat/home.html', rooms=rooms)
+
+@app.route('/chat/users')
+def chat_users():
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    conn = get_db()
+    c = conn.cursor()
+    
+    # 他のユーザーを検索（自分以外）
+    c.execute('''
+        SELECT *
+        FROM users
+        WHERE line_user_id != ?
+        ORDER BY name
+    ''', (session['line_user_id'],))
+    
+    users = [dict(row) for row in c.fetchall()]
+    conn.close()
+    
+    return render_template('chat/users.html', users=users)
+
+@app.route('/chat/create/<target_user_id>')
+def create_chat(target_user_id):
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    # 自分自身とのチャットは作成できないようにする
+    if target_user_id == session['line_user_id']:
+        flash('自分自身とチャットを作成することはできません', 'error')
+        return redirect('/chat/users')
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        # 既存の1:1チャットルームがあるか確認
+        cursor.execute('''
+            SELECT cr.id
+            FROM chat_rooms cr
+            JOIN chat_participants cp1 ON cr.id = cp1.room_id
+            JOIN chat_participants cp2 ON cr.id = cp2.room_id
+            WHERE cp1.line_user_id = ? AND cp2.line_user_id = ?
+            GROUP BY cr.id
+            HAVING COUNT(DISTINCT cp1.line_user_id) = 2
+        ''', (session['line_user_id'], target_user_id))
+        
+        existing_room = cursor.fetchone()
+        
+        if existing_room:
+            # 既存のルームがある場合はそこにリダイレクト
+            room_id = existing_room[0]
+            return redirect(f'/chat/room/{room_id}')
+        
+        # 新しいチャットルームを作成
+        cursor.execute('''
+            INSERT INTO chat_rooms (creator_id, created_at)
+            VALUES (?, datetime('now'))
+        ''', (session['line_user_id'],))
+        
+        room_id = cursor.lastrowid
+        
+        # 参加者を追加（自分と相手）
+        cursor.execute('''
+            INSERT INTO chat_participants (room_id, line_user_id, joined_at)
+            VALUES (?, ?, datetime('now'))
+        ''', (room_id, session['line_user_id']))
+        
+        cursor.execute('''
+            INSERT INTO chat_participants (room_id, line_user_id, joined_at)
+            VALUES (?, ?, datetime('now'))
+        ''', (room_id, target_user_id))
+        
+        conn.commit()
+        
+        # 作成したチャットルームにリダイレクト
+        return redirect(f'/chat/room/{room_id}')
+        
+    except Exception as e:
+        logger.error(f"チャットルーム作成エラー: {str(e)}")
+        conn.rollback()
+        flash('チャットルームの作成に失敗しました', 'error')
+        return redirect('/chat/users')
+    finally:
+        conn.close()
+
+@app.route('/chat/room/<int:room_id>')
+def chat_room(room_id):
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # ユーザーがこのルームに参加しているか確認
+    cursor.execute('''
+        SELECT COUNT(*) as count
+        FROM chat_participants
+        WHERE room_id = ? AND line_user_id = ?
+    ''', (room_id, session['line_user_id']))
+    
+    result = cursor.fetchone()
+    if not result or result[0] == 0:
+        flash('このチャットルームにアクセスする権限がありません', 'error')
+        return redirect('/chat')
+    
+    # ルーム情報を取得
+    cursor.execute('''
+        SELECT cr.*, 
+               (SELECT name FROM users WHERE line_user_id = cr.creator_id) as creator_name
+        FROM chat_rooms cr
+        WHERE cr.id = ?
+    ''', (room_id,))
+    
+    room = dict(cursor.fetchone())
+    
+    # 参加者情報を取得
+    cursor.execute('''
+        SELECT cp.*, u.name
+        FROM chat_participants cp
+        JOIN users u ON cp.line_user_id = u.line_user_id
+        WHERE cp.room_id = ?
+        ORDER BY cp.joined_at
+    ''', (room_id,))
+    
+    participants = [dict(row) for row in cursor.fetchall()]
+    
+    # メッセージ履歴を取得
+    cursor.execute('''
+        SELECT cm.*, u.name as sender_name
+        FROM chat_messages cm
+        JOIN users u ON cm.sender_id = u.line_user_id
+        WHERE cm.room_id = ?
+        ORDER BY cm.sent_at
+    ''', (room_id,))
+    
+    messages = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return render_template('chat/room.html', 
+                          room=room, 
+                          participants=participants, 
+                          messages=messages,
+                          current_user_id=session['line_user_id'])
+
+@app.route('/chat/send/<int:room_id>', methods=['POST'])
+def send_message(room_id):
+    if 'line_user_id' not in session:
+        return redirect('/login')
+    
+    message_text = request.form.get('message')
+    if not message_text:
+        flash('メッセージを入力してください', 'error')
+        return redirect(f'/chat/room/{room_id}')
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        # ユーザーがこのルームに参加しているか確認
+        cursor.execute('''
+            SELECT COUNT(*) as count
+            FROM chat_participants
+            WHERE room_id = ? AND line_user_id = ?
+        ''', (room_id, session['line_user_id']))
+        
+        result = cursor.fetchone()
+        if not result or result[0] == 0:
+            flash('このチャットルームにメッセージを送信する権限がありません', 'error')
+            return redirect('/chat')
+        
+        # メッセージを保存
+        cursor.execute('''
+            INSERT INTO chat_messages (room_id, sender_id, message, sent_at)
+            VALUES (?, ?, ?, datetime('now'))
+        ''', (room_id, session['line_user_id'], message_text))
+        
+        conn.commit()
+        
+        # 参加者にLINE通知を送信（自分以外）
+        cursor.execute('''
+            SELECT cp.line_user_id, u.name
+            FROM chat_participants cp
+            JOIN users u ON cp.line_user_id = u.line_user_id
+            WHERE cp.room_id = ? AND cp.line_user_id != ?
+        ''', (room_id, session['line_user_id']))
+        
+        participants = cursor.fetchall()
+        
+        # 送信者の名前を取得
+        cursor.execute('SELECT name FROM users WHERE line_user_id = ?', (session['line_user_id'],))
+        sender_name = cursor.fetchone()[0]
+        
+        # LINE通知を送信
+        for participant_id, participant_name in participants:
+            try:
+                notification = f"[チャット] {sender_name}さんからメッセージがあります:\n{message_text[:50]}..."
+                send_line_message(participant_id, notification)
+            except Exception as e:
+                logger.error(f"LINE通知エラー: {str(e)}")
+        
+    except Exception as e:
+        logger.error(f"メッセージ送信エラー: {str(e)}")
+        conn.rollback()
+        flash('メッセージの送信に失敗しました', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(f'/chat/room/{room_id}')
+
+# 管理者用チャット機能
+@app.route('/admin/chat')
+@admin_required
+def admin_chat():
+    return render_template('admin/chat/index.html')
+
+# APIエンドポイント: ユーザー一覧取得
+@app.route('/admin/api/users')
+@admin_required
+def api_users():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # ユーザー一覧を取得（未読メッセージ数と最新メッセージも取得）
+    cursor.execute('''
+        SELECT u.line_user_id, u.name, u.email, u.created_at,
+               (SELECT COUNT(*) FROM admin_chat_messages 
+                WHERE line_user_id = u.line_user_id AND is_from_admin = 0 AND read_status = 0) AS unread_count,
+               (SELECT message FROM admin_chat_messages 
+                WHERE line_user_id = u.line_user_id 
+                ORDER BY sent_at DESC LIMIT 1) AS last_message
+        FROM users u
+        ORDER BY unread_count DESC, 
+                 (SELECT MAX(sent_at) FROM admin_chat_messages WHERE line_user_id = u.line_user_id) DESC NULLS LAST,
+                 u.created_at DESC
+    ''')
+    
+    users = []
+    for row in cursor.fetchall():
+        users.append({
+            'line_user_id': row['line_user_id'],
+            'name': row['name'],
+            'email': row['email'],
+            'created_at': row['created_at'],
+            'unread_count': row['unread_count'],
+            'last_message': row['last_message']
+        })
+    
+    conn.close()
+    return jsonify({'success': True, 'users': users})
+
+# APIエンドポイント: ユーザー情報取得
+@app.route('/admin/api/user/<line_user_id>')
+@admin_required
+def api_user_info(line_user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # ユーザー情報を取得
+    cursor.execute('''
+        SELECT u.*, COUNT(o.id) as order_count
+        FROM users u
+        LEFT JOIN orders o ON u.line_user_id = o.line_user_id
+        WHERE u.line_user_id = ?
+        GROUP BY u.line_user_id
+    ''', (line_user_id,))
+    
+    user_row = cursor.fetchone()
+    if not user_row:
+        conn.close()
+        return jsonify({'success': False, 'error': 'ユーザーが見つかりません'})
+    
+    user = {
+        'line_user_id': user_row['line_user_id'],
+        'name': user_row['name'],
+        'email': user_row['email'],
+        'created_at': user_row['created_at'],
+        'order_count': user_row['order_count']
+    }
+    
+    conn.close()
+    return jsonify({'success': True, 'user': user})
+
+# APIエンドポイント: チャット履歴取得
+@app.route('/admin/api/chat/<line_user_id>')
+@admin_required
+def api_chat_history(line_user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # チャット履歴を取得
+    cursor.execute('''
+        SELECT *
+        FROM admin_chat_messages
+        WHERE line_user_id = ?
+        ORDER BY sent_at
+    ''', (line_user_id,))
+    
+    messages = []
+    for row in cursor.fetchall():
+        messages.append({
+            'id': row['id'],
+            'admin_id': row['admin_id'],
+            'line_user_id': row['line_user_id'],
+            'message': row['message'],
+            'is_from_admin': bool(row['is_from_admin']),
+            'sent_at': row['sent_at']
+        })
+    
+    # 未読メッセージを既読に更新
+    cursor.execute('''
+        UPDATE admin_chat_messages
+        SET read_status = 1
+        WHERE line_user_id = ? AND is_from_admin = 0 AND read_status = 0
+    ''', (line_user_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'messages': messages})
+
+# APIエンドポイント: メッセージ送信
+@app.route('/admin/api/send-message', methods=['POST'])
+@admin_required
+def api_send_message():
+    data = request.json
+    user_id = data.get('user_id')
+    message = data.get('message')
+    
+    if not user_id or not message:
+        return jsonify({'success': False, 'error': '必要なパラメータが不足しています'})
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # メッセージをデータベースに保存
+        cursor.execute('''
+            INSERT INTO admin_chat_messages (admin_id, line_user_id, message, is_from_admin, sent_at)
+            VALUES (?, ?, ?, 1, datetime('now'))
+        ''', (session['admin_id'], user_id, message))
+        
+        conn.commit()
+        
+        # LINE APIを使用してメッセージを送信
+        try:
+            send_line_message(user_id, message)
+        except Exception as e:
+            logger.error(f"LINE API送信エラー: {str(e)}")
+            # LINE APIの送信に失敗しても処理は続行
+        
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"メッセージ送信エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# APIエンドポイント: ユーザーメモ取得
+@app.route('/admin/api/user-note/<line_user_id>')
+@admin_required
+def api_user_note(line_user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # メモを取得
+    cursor.execute('''
+        SELECT *
+        FROM user_notes
+        WHERE line_user_id = ? AND admin_id = ?
+    ''', (line_user_id, session['admin_id']))
+    
+    note_row = cursor.fetchone()
+    conn.close()
+    
+    if note_row:
+        return jsonify({'success': True, 'note': note_row['note']})
+    else:
+        return jsonify({'success': True, 'note': ''})
+
+# APIエンドポイント: ユーザーメモ保存
+@app.route('/admin/api/save-note', methods=['POST'])
+@admin_required
+def api_save_note():
+    data = request.json
+    user_id = data.get('user_id')
+    note = data.get('note')
+    
+    if not user_id:
+        return jsonify({'success': False, 'error': 'ユーザーIDが必要です'})
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # 既存のメモがあるか確認
+        cursor.execute('''
+            SELECT id
+            FROM user_notes
+            WHERE line_user_id = ? AND admin_id = ?
+        ''', (user_id, session['admin_id']))
+        
+        note_row = cursor.fetchone()
+        
+        if note_row:
+            # 既存のメモを更新
+            cursor.execute('''
+                UPDATE user_notes
+                SET note = ?, updated_at = datetime('now')
+                WHERE id = ?
+            ''', (note, note_row['id']))
+        else:
+            # 新規メモを作成
+            cursor.execute('''
+                INSERT INTO user_notes (line_user_id, admin_id, note, created_at, updated_at)
+                VALUES (?, ?, ?, datetime('now'), datetime('now'))
+            ''', (user_id, session['admin_id'], note))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"メモ保存エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))

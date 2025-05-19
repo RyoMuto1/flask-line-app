@@ -1,0 +1,496 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}チャット管理{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    /* 全体のレイアウト */
+    .chat-container {
+        display: flex;
+        height: calc(100vh - 120px);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    /* 左ペイン：ユーザーリスト */
+    .users-pane {
+        width: 300px;
+        border-right: 1px solid #ddd;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+    }
+    
+    .user-list-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .user-list-item:hover, .user-list-item.active {
+        background-color: #e9ecef;
+    }
+    
+    .user-list-item .unread-badge {
+        background-color: #ff5a5f;
+        color: white;
+        border-radius: 50%;
+        padding: 3px 6px;
+        font-size: 0.7rem;
+    }
+    
+    .search-box {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    /* 中央ペイン：チャット内容 */
+    .chat-pane {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+    }
+    
+    .chat-header {
+        padding: 10px 15px;
+        border-bottom: 1px solid #ddd;
+        background-color: #f8f9fa;
+    }
+    
+    .messages-container {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: #f5f5f5;
+    }
+    
+    .message {
+        max-width: 80%;
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 15px;
+        position: relative;
+        clear: both;
+    }
+    
+    .message-admin {
+        background-color: #dcf8c6;
+        float: right;
+    }
+    
+    .message-user {
+        background-color: #f1f0f0;
+        float: left;
+    }
+    
+    .message-info {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 5px;
+        text-align: right;
+    }
+    
+    .message-input {
+        padding: 15px;
+        border-top: 1px solid #ddd;
+        background-color: #fff;
+    }
+    
+    /* 右ペイン：ユーザー情報とメモ */
+    .info-pane {
+        width: 300px;
+        border-left: 1px solid #ddd;
+        background-color: #f8f9fa;
+        overflow-y: auto;
+    }
+    
+    .user-info {
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .user-notes {
+        padding: 15px;
+    }
+    
+    .note-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    /* ローディングとエラー表示 */
+    .loading-spinner {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h1 class="mb-4">チャット管理</h1>
+    
+    <div class="row mb-3">
+        <div class="col">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">ダッシュボードに戻る</a>
+        </div>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="chat-container">
+        <!-- 左ペイン：ユーザーリスト -->
+        <div class="users-pane">
+            <div class="search-box">
+                <input type="text" id="userSearch" class="form-control" placeholder="ユーザーを検索...">
+            </div>
+            <div id="userList" class="user-list">
+                <!-- ユーザーリストはJavaScriptで動的に生成 -->
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> 読み込み中...
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中央ペイン：チャット内容 -->
+        <div class="chat-pane">
+            <div class="chat-header" id="chatHeader">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" id="selectedUserName">ユーザーを選択してください</h5>
+                    <div class="user-status" id="userStatus"></div>
+                </div>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state">
+                    <i class="far fa-comments fa-3x mb-3"></i>
+                    <p>左側からユーザーを選択して会話を開始してください</p>
+                </div>
+            </div>
+            
+            <div class="message-input">
+                <form id="messageForm" style="display: none;">
+                    <div class="input-group">
+                        <input type="text" id="messageInput" class="form-control" placeholder="メッセージを入力..." required>
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> 送信
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 右ペイン：ユーザー情報とメモ -->
+        <div class="info-pane">
+            <div class="user-info" id="userInfo">
+                <!-- ユーザー情報はJavaScriptで動的に生成 -->
+                <div class="empty-state">
+                    <p>ユーザーを選択してください</p>
+                </div>
+            </div>
+            
+            <div class="user-notes" id="userNotes" style="display: none;">
+                <div class="note-title">
+                    <h5>メモ</h5>
+                    <button id="saveNoteBtn" class="btn btn-sm btn-primary">保存</button>
+                </div>
+                <textarea id="noteInput" class="form-control" rows="5" placeholder="このユーザーに関するメモを入力..."></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    let selectedUserId = null;
+    let users = [];
+    
+    // ページ読み込み時の処理
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUsers();
+        
+        // メッセージ送信フォームの処理
+        document.getElementById('messageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!selectedUserId) return;
+            
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message) {
+                sendMessage(selectedUserId, message);
+                messageInput.value = '';
+            }
+        });
+        
+        // メモの保存処理
+        document.getElementById('saveNoteBtn').addEventListener('click', function() {
+            if (!selectedUserId) return;
+            
+            const note = document.getElementById('noteInput').value.trim();
+            saveUserNote(selectedUserId, note);
+        });
+        
+        // ユーザー検索処理
+        document.getElementById('userSearch').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filterUsers(searchTerm);
+        });
+    });
+    
+    // ユーザーリストの読み込み
+    function loadUsers() {
+        fetch('/admin/api/users')
+            .then(response => response.json())
+            .then(data => {
+                users = data.users;
+                renderUserList(users);
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+                document.getElementById('userList').innerHTML = '<div class="empty-state">ユーザーの読み込みに失敗しました</div>';
+            });
+    }
+    
+    // ユーザーリストのレンダリング
+    function renderUserList(usersList) {
+        const userListElement = document.getElementById('userList');
+        userListElement.innerHTML = '';
+        
+        if (usersList.length === 0) {
+            userListElement.innerHTML = '<div class="empty-state">ユーザーが見つかりません</div>';
+            return;
+        }
+        
+        usersList.forEach(user => {
+            const userItem = document.createElement('div');
+            userItem.className = 'user-list-item';
+            userItem.dataset.userId = user.line_user_id;
+            
+            if (selectedUserId === user.line_user_id) {
+                userItem.classList.add('active');
+            }
+            
+            let unreadBadge = '';
+            if (user.unread_count > 0) {
+                unreadBadge = `<span class="unread-badge float-right">${user.unread_count}</span>`;
+            }
+            
+            userItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${user.name}</strong>
+                        <div class="small text-muted">${user.last_message || '新規ユーザー'}</div>
+                    </div>
+                    ${unreadBadge}
+                </div>
+            `;
+            
+            userItem.addEventListener('click', function() {
+                selectUser(user.line_user_id);
+            });
+            
+            userListElement.appendChild(userItem);
+        });
+    }
+    
+    // ユーザーの選択
+    function selectUser(userId) {
+        selectedUserId = userId;
+        
+        // ユーザーリストのアクティブ状態を更新
+        document.querySelectorAll('.user-list-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.userId === userId) {
+                item.classList.add('active');
+            }
+        });
+        
+        // ユーザー情報の読み込み
+        loadUserInfo(userId);
+        
+        // チャット履歴の読み込み
+        loadChatHistory(userId);
+        
+        // メモの読み込み
+        loadUserNote(userId);
+        
+        // メッセージフォームを表示
+        document.getElementById('messageForm').style.display = 'block';
+        
+        // メモ欄を表示
+        document.getElementById('userNotes').style.display = 'block';
+    }
+    
+    // ユーザー情報の読み込み
+    function loadUserInfo(userId) {
+        fetch(`/admin/api/user/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                renderUserInfo(data.user);
+            })
+            .catch(error => {
+                console.error('Error loading user info:', error);
+                document.getElementById('userInfo').innerHTML = '<div class="empty-state">ユーザー情報の読み込みに失敗しました</div>';
+            });
+    }
+    
+    // ユーザー情報のレンダリング
+    function renderUserInfo(user) {
+        const userInfoElement = document.getElementById('userInfo');
+        document.getElementById('selectedUserName').textContent = user.name;
+        
+        userInfoElement.innerHTML = `
+            <h4>${user.name}</h4>
+            <div class="mt-3">
+                <div class="mb-2"><strong>メール:</strong> ${user.email || '未設定'}</div>
+                <div class="mb-2"><strong>登録日:</strong> ${user.created_at}</div>
+                <div class="mb-2"><strong>注文数:</strong> ${user.order_count || 0}件</div>
+            </div>
+        `;
+    }
+    
+    // チャット履歴の読み込み
+    function loadChatHistory(userId) {
+        fetch(`/admin/api/chat/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                renderChatHistory(data.messages);
+            })
+            .catch(error => {
+                console.error('Error loading chat history:', error);
+                document.getElementById('messagesContainer').innerHTML = '<div class="empty-state">チャット履歴の読み込みに失敗しました</div>';
+            });
+    }
+    
+    // チャット履歴のレンダリング
+    function renderChatHistory(messages) {
+        const messagesContainer = document.getElementById('messagesContainer');
+        messagesContainer.innerHTML = '';
+        
+        if (messages.length === 0) {
+            messagesContainer.innerHTML = '<div class="empty-state">まだメッセージはありません</div>';
+            return;
+        }
+        
+        messages.forEach(message => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.is_from_admin ? 'message-admin' : 'message-user'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${message.message}</div>
+                <div class="message-info">${message.sent_at}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+        });
+        
+        // 最新メッセージにスクロール
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // メッセージの送信
+    function sendMessage(userId, message) {
+        fetch('/admin/api/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // メッセージが送信されたら履歴を再読み込み
+                loadChatHistory(userId);
+            } else {
+                alert('メッセージの送信に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            alert('メッセージの送信に失敗しました');
+        });
+    }
+    
+    // ユーザーメモの読み込み
+    function loadUserNote(userId) {
+        fetch(`/admin/api/user-note/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('noteInput').value = data.note || '';
+            })
+            .catch(error => {
+                console.error('Error loading user note:', error);
+                document.getElementById('noteInput').value = '';
+            });
+    }
+    
+    // ユーザーメモの保存
+    function saveUserNote(userId, note) {
+        fetch('/admin/api/save-note', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                note: note
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('メモを保存しました');
+            } else {
+                alert('メモの保存に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving note:', error);
+            alert('メモの保存に失敗しました');
+        });
+    }
+    
+    // ユーザーの検索フィルタリング
+    function filterUsers(searchTerm) {
+        if (!searchTerm) {
+            renderUserList(users);
+            return;
+        }
+        
+        const filteredUsers = users.filter(user => {
+            return user.name.toLowerCase().includes(searchTerm) || 
+                  (user.email && user.email.toLowerCase().includes(searchTerm));
+        });
+        
+        renderUserList(filteredUsers);
+    }
+</script>
+{% endblock %} 

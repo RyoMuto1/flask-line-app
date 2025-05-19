@@ -61,4 +61,22 @@
         </div>
     </div>
 </div>
+
+<ul class="nav">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">ダッシュボード</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('line_source_analytics') }}">LINE流入分析</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin_chat') }}">チャット管理</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin_change_password') }}">パスワード変更</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin_logout') }}">ログアウト</a>
+    </li>
+</ul>
 {% endblock %} 
