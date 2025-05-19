@@ -1873,13 +1873,39 @@ def update_user_profile(user_id):
 def admin_tags():
     conn = get_db()
     c = conn.cursor()
-    c.execute('''
-        SELECT t.*, COUNT(ut.id) as user_count
-        FROM tags t
-        LEFT JOIN user_tags ut ON t.id = ut.tag_id
-        GROUP BY t.id
-        ORDER BY t.order_index, t.created_at DESC
-    ''')
+    
+    # order_indexカラムの存在確認
+    c.execute("PRAGMA table_info(tags)")
+    columns = [row[1] for row in c.fetchall()]
+    
+    # クエリの構築 - order_indexカラムがある場合はそれでソート
+    if 'order_index' in columns:
+        query = '''
+            SELECT t.*, COUNT(ut.id) as user_count
+            FROM tags t
+            LEFT JOIN user_tags ut ON t.id = ut.tag_id
+            GROUP BY t.id
+            ORDER BY t.order_index, t.created_at DESC
+        '''
+    else:
+        # order_indexカラムがない場合は作成日のみでソート
+        query = '''
+            SELECT t.*, COUNT(ut.id) as user_count
+            FROM tags t
+            LEFT JOIN user_tags ut ON t.id = ut.tag_id
+            GROUP BY t.id
+            ORDER BY t.created_at DESC
+        '''
+        
+        # order_indexカラムを追加
+        try:
+            c.execute('ALTER TABLE tags ADD COLUMN order_index INTEGER')
+            conn.commit()
+            logger.info("tagsテーブルにorder_indexカラムを追加しました")
+        except Exception as e:
+            logger.error(f"order_indexカラム追加エラー: {str(e)}")
+    
+    c.execute(query)
     tags = [dict(row) for row in c.fetchall()]
     conn.close()
     return render_template('admin/tags.html', tags=tags)
