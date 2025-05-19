@@ -344,6 +344,39 @@ def init_db():
         conn.commit()
         logger.info("ordersテーブルのマイグレーションが完了しました")
 
+    # タグ管理テーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tags'")
+    if not c.fetchone():
+        logger.info("tagsテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                color TEXT DEFAULT '#2196f3',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("tagsテーブルを作成しました")
+
+    # ユーザーとタグの紐付けテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_tags'")
+    if not c.fetchone():
+        logger.info("user_tagsテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE user_tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT NOT NULL,
+                tag_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (line_user_id) REFERENCES users(line_user_id),
+                FOREIGN KEY (tag_id) REFERENCES tags(id),
+                UNIQUE(line_user_id, tag_id)
+            )
+        ''')
+        conn.commit()
+        logger.info("user_tagsテーブルを作成しました")
+
     conn.row_factory = sqlite3.Row
     return conn
 
