@@ -618,14 +618,21 @@
             // アイコンとメッセージバブルを追加
             let avatarHtml = '';
             if (!message.is_from_admin) {
-                // 2つの方法でアイコンを用意（画像読み込みエラー時のフォールバック）
-                avatarHtml = `
-                    <div class="message-avatar">
-                        <img src="https://ui-avatars.com/api/?name=U&background=cccccc&color=ffffff" 
-                             alt="User" 
-                             onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'default-avatar\'>U</span>';">
-                    </div>
-                `;
+                // LINEのプロフィール画像があれば使用、なければデフォルトアイコン
+                if (message.profile_image_url) {
+                    avatarHtml = `
+                        <div class="message-avatar">
+                            <img src="${message.profile_image_url}" alt="User Avatar" 
+                                 onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'default-avatar\'>U</span>';">
+                        </div>
+                    `;
+                } else {
+                    avatarHtml = `
+                        <div class="message-avatar">
+                            <span class="default-avatar">U</span>
+                        </div>
+                    `;
+                }
             }
             
             messageDiv.innerHTML = `

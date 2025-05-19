@@ -154,6 +154,7 @@ def init_db():
                 line_user_id TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 email TEXT,
+                profile_image_url TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -168,6 +169,12 @@ def init_db():
             c.execute("ALTER TABLE users ADD COLUMN email TEXT")
             conn.commit()
             logger.info("usersテーブルにemail列を追加しました")
+        # profile_image_url列をusersテーブルに追加（なければ）
+        if 'profile_image_url' not in columns:
+            logger.info("usersテーブルにprofile_image_url列を追加します")
+            c.execute("ALTER TABLE users ADD COLUMN profile_image_url TEXT")
+            conn.commit()
+            logger.info("usersテーブルにprofile_image_url列を追加しました")
 
     # 管理者テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'")
@@ -544,6 +551,11 @@ def webhook():
             
             for event in events:
                 event_type = event.get('type')
+                user_id = event.get('source', {}).get('userId')
+                
+                if user_id:
+                    # ユーザープロフィールを更新（非同期にするのが理想的ですが、簡略化のため同期処理）
+                    update_user_profile(user_id)
                 
                 # メッセージイベントを処理
                 if event_type == 'message':
@@ -551,7 +563,6 @@ def webhook():
                     
                     # テキストメッセージを処理
                     if message_type == 'text':
-                        user_id = event.get('source', {}).get('userId')
                         message_text = event.get('message', {}).get('text')
                         
                         if user_id and message_text:
@@ -676,6 +687,9 @@ def callback():
 
         session['line_user_id']   = user_id
         session['line_user_name'] = user_name
+
+        # ユーザープロフィールを更新（画像URLなどを取得）
+        update_user_profile(user_id)
 
         # ユーザー情報を保存
         conn = get_db()
@@ -1540,7 +1554,7 @@ def api_users():
     
     # ユーザー一覧を取得（未読メッセージ数と最新メッセージも取得）
     cursor.execute('''
-        SELECT u.line_user_id, u.name, u.email, u.created_at,
+        SELECT u.line_user_id, u.name, u.email, u.profile_image_url, u.created_at,
                (SELECT COUNT(*) FROM admin_chat_messages 
                 WHERE line_user_id = u.line_user_id AND is_from_admin = 0 AND read_status = 0) AS unread_count,
                (SELECT message FROM admin_chat_messages 
@@ -1558,6 +1572,7 @@ def api_users():
             'line_user_id': row['line_user_id'],
             'name': row['name'],
             'email': row['email'],
+            'profile_image_url': row['profile_image_url'],
             'created_at': row['created_at'],
             'unread_count': row['unread_count'],
             'last_message': row['last_message']
@@ -1591,6 +1606,7 @@ def api_user_info(line_user_id):
         'line_user_id': user_row['line_user_id'],
         'name': user_row['name'],
         'email': user_row['email'],
+        'profile_image_url': user_row['profile_image_url'],
         'created_at': user_row['created_at'],
         'order_count': user_row['order_count']
     }
@@ -1604,6 +1620,11 @@ def api_user_info(line_user_id):
 def api_chat_history(line_user_id):
     conn = get_db()
     cursor = conn.cursor()
+    
+    # ユーザー情報を取得（プロフィール画像URL用）
+    cursor.execute('SELECT profile_image_url FROM users WHERE line_user_id = ?', (line_user_id,))
+    user_row = cursor.fetchone()
+    profile_image_url = user_row['profile_image_url'] if user_row else None
     
     # チャット履歴を取得
     cursor.execute('''
@@ -1621,7 +1642,8 @@ def api_chat_history(line_user_id):
             'line_user_id': row['line_user_id'],
             'message': row['message'],
             'is_from_admin': bool(row['is_from_admin']),
-            'sent_at': row['sent_at']
+            'sent_at': row['sent_at'],
+            'profile_image_url': profile_image_url if not bool(row['is_from_admin']) else None
         })
     
     # 未読メッセージを既読に更新
@@ -1743,6 +1765,64 @@ def api_save_note():
     except Exception as e:
         logger.error(f"メモ保存エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
+
+# LINE ユーザープロフィール取得
+def get_line_user_profile(user_id):
+    try:
+        # LINEのチャネルアクセストークンを使用
+        token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+        
+        # LINEユーザープロフィールエンドポイント
+        url = f"https://api.line.me/v2/bot/profile/{user_id}"
+        
+        # リクエストヘッダー
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        # プロフィール情報を取得
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            profile_data = response.json()
+            logger.info(f"LINEユーザープロフィール取得成功: {profile_data.get('displayName')}")
+            return profile_data
+        else:
+            logger.error(f"LINEユーザープロフィール取得エラー: {response.status_code} {response.text}")
+            return None
+    except Exception as e:
+        logger.error(f"LINEユーザープロフィール取得中に例外発生: {str(e)}")
+        return None
+
+# ユーザープロフィール情報の更新
+def update_user_profile(user_id):
+    try:
+        profile_data = get_line_user_profile(user_id)
+        if not profile_data:
+            return False
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # ユーザー情報を更新
+        cursor.execute('''
+            UPDATE users
+            SET name = ?, profile_image_url = ?
+            WHERE line_user_id = ?
+        ''', (
+            profile_data.get('displayName', '名称不明'),
+            profile_data.get('pictureUrl', None),
+            user_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        logger.info(f"ユーザープロフィール情報を更新しました: {user_id}")
+        return True
+    except Exception as e:
+        logger.error(f"ユーザープロフィール更新エラー: {str(e)}")
+        return False
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
