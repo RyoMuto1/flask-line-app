@@ -87,17 +87,27 @@
     }
     
     .message-avatar {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         overflow: hidden;
         margin-right: 8px;
+        background-color: #cccccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
     }
     
     .message-avatar img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+    }
+    
+    .message-avatar .default-avatar {
+        font-size: 18px;
     }
     
     .message-admin .message-avatar {
@@ -221,7 +231,7 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <h1 class="mb-4">チャット管理</h1>
+    <h3 class="mb-3">チャット管理</h3>
     
     <div class="row mb-3">
         <div class="col">
@@ -608,9 +618,12 @@
             // アイコンとメッセージバブルを追加
             let avatarHtml = '';
             if (!message.is_from_admin) {
+                // 2つの方法でアイコンを用意（画像読み込みエラー時のフォールバック）
                 avatarHtml = `
                     <div class="message-avatar">
-                        <img src="https://via.placeholder.com/40/cccccc/ffffff?text=U" alt="User">
+                        <img src="https://ui-avatars.com/api/?name=U&background=cccccc&color=ffffff" 
+                             alt="User" 
+                             onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'default-avatar\'>U</span>';">
                     </div>
                 `;
             }
