@@ -281,15 +281,17 @@ function renderFolderContent(folderId) {
   // タグリスト表示
   var html = '';
   if (tagsToShow.length > 0) {
-    tagsToShow.forEach(function(tag) {
+    tagsToShow.forEach(function(tag, index) {
+      // 最後の3行は上方向に開く
+      var isNearBottom = index >= tagsToShow.length - 3;
       html += '<tr>';
       html += '<td>' + tag.name + '</td>';
       html += '<td class="text-end"><a href="#" class="tag-users-link" data-id="' + tag.id + '">' + tag.user_count + '人</a></td>';
       html += '<td class="text-end">' + formatDate(tag.created_at) + '</td>';
       html += '<td class="text-end">';
-      html += '<div class="dropdown">';
+      html += '<div class="' + (isNearBottom ? 'dropup' : 'dropdown') + '">';
       html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="tag-action-' + tag.id + '" data-bs-toggle="dropdown" aria-expanded="false">操作</button>';
-      html += '<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="tag-action-' + tag.id + '" style="min-width: 240px; position: static;">';
+      html += '<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="tag-action-' + tag.id + '" style="min-width: 240px; max-height: 200px; overflow-y: auto;">';
       html += '<li><a class="dropdown-item edit-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit me-2"></i>名前を変更</a></li>';
       html += '<li><a class="dropdown-item tag-copy-btn" href="#" data-name="' + tag.name + '"><i class="fas fa-copy me-2"></i>タグ名をクリップボードにコピー</a></li>';
       html += '<li><hr class="dropdown-divider"></li>';
