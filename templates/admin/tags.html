@@ -1,0 +1,65 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}タグ管理{% endblock %}
+
+{% block content %}
+<h2>タグ管理</h2>
+<div class="mb-3">
+    <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
+        <i class="fas fa-plus"></i> 新規タグ作成
+    </a>
+</div>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>タグ名</th>
+            <th>色</th>
+            <th>作成日</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tag in tags %}
+        <tr>
+            <td>{{ tag.id }}</td>
+            <td>{{ tag.name }}</td>
+            <td><span style="display:inline-block;width:20px;height:20px;background:{{ tag.color }};border-radius:4px;"></span> {{ tag.color }}</td>
+            <td>{{ tag.created_at }}</td>
+            <td>
+                <a href="#" class="btn btn-sm btn-secondary disabled">編集</a>
+                <a href="#" class="btn btn-sm btn-danger disabled">削除</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- 新規タグ作成モーダル（今はダミー） -->
+<div class="modal fade" id="createTagModal" tabindex="-1" aria-labelledby="createTagModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createTagModalLabel">新規タグ作成</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label for="tagName" class="form-label">タグ名</label>
+            <input type="text" class="form-control" id="tagName" placeholder="例: VIP, 購入見込み, 友人など">
+          </div>
+          <div class="mb-3">
+            <label for="tagColor" class="form-label">色</label>
+            <input type="color" class="form-control form-control-color" id="tagColor" value="#2196f3" title="タグの色を選択">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+        <button type="button" class="btn btn-primary" disabled>作成（ダミー）</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

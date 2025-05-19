@@ -1857,6 +1857,17 @@ def update_user_profile(user_id):
         logger.error(f"ユーザープロフィール更新エラー: {str(e)}")
         return False
 
+# タグ管理画面
+@app.route('/admin/tags')
+@admin_required
+def admin_tags():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT * FROM tags ORDER BY created_at DESC')
+    tags = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return render_template('admin/tags.html', tags=tags)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port)
