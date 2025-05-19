@@ -4,36 +4,45 @@
 
 {% block content %}
 <h2>タグ管理</h2>
-<div class="mb-3">
-    <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
-        <i class="fas fa-plus"></i> 新規タグ作成
-    </a>
+<div class="row">
+  <!-- 左カラム：フォルダツリー -->
+  <div class="col-md-4" id="tag-folder-col">
+    <div class="card">
+      <div class="card-header bg-light"><strong><i class="fas fa-folder"></i> タグフォルダ</strong></div>
+      <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+        <ul class="list-unstyled" id="tagTree">
+          {% macro render_tag_tree(tags, parent_id=None) %}
+            {% for tag in tags if tag.parent_id == parent_id %}
+              <li>
+                <a href="#" class="tag-folder-link" data-id="{{ tag.id }}">
+                  <i class="fas fa-folder"></i> {{ tag.name }} <span class="text-muted small">({{ tag.user_count }}人)</span>
+                </a>
+                {% set children = tags|selectattr('parent_id', 'equalto', tag.id)|list %}
+                {% if children %}
+                  <ul class="ms-4">
+                    {{ render_tag_tree(tags, tag.id) }}
+                  </ul>
+                {% endif %}
+              </li>
+            {% endfor %}
+          {% endmacro %}
+          {{ render_tag_tree(tags) }}
+        </ul>
+        <div class="mt-3">
+          <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTagModal">
+            <i class="fas fa-plus"></i> 新規タグ作成
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 右カラム：タグ詳細 -->
+  <div class="col-md-8" id="tag-detail-col">
+    <div id="tagDetailBox">
+      <div class="alert alert-info">左のフォルダからタグを選択してください。</div>
+    </div>
+  </div>
 </div>
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>タグ名</th>
-            <th>人数</th>
-            <th>作成日</th>
-            <th>操作</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for tag in tags %}
-        <tr>
-            <td>{{ tag.id }}</td>
-            <td>{{ tag.name }}</td>
-            <td>{{ tag.user_count }}人</td>
-            <td>{{ tag.created_at }}</td>
-            <td>
-                <a href="#" class="btn btn-sm btn-secondary disabled">編集</a>
-                <a href="#" class="btn btn-sm btn-danger disabled">削除</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 
 <!-- 新規タグ作成モーダル -->
 <div class="modal fade" id="createTagModal" tabindex="-1" aria-labelledby="createTagModalLabel" aria-hidden="true">
@@ -49,6 +58,15 @@
               <label for="tagName" class="form-label">タグ名</label>
               <input type="text" class="form-control" id="tagName" name="name" placeholder="例: VIP, 購入見込み, 友人など" required>
             </div>
+            <div class="mb-3">
+              <label for="parentTag" class="form-label">親フォルダ</label>
+              <select class="form-select" id="parentTag" name="parent_id">
+                <option value="">(トップレベル)</option>
+                {% for tag in tags if not tag.parent_id %}
+                  <option value="{{ tag.id }}">{{ tag.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
             <div id="createTagError" class="text-danger small"></div>
         </div>
         <div class="modal-footer">
@@ -59,16 +77,65 @@
     </div>
   </div>
 </div>
+
+<!-- タグ編集モーダル -->
+<div class="modal fade" id="editTagModal" tabindex="-1" aria-labelledby="editTagModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editTagForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editTagModalLabel">タグ編集</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editTagId" name="tag_id">
+            <div class="mb-3">
+              <label for="editTagName" class="form-label">タグ名</label>
+              <input type="text" class="form-control" id="editTagName" name="name" required>
+            </div>
+            <div id="editTagError" class="text-danger small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
+// タグ詳細表示用のデータを用意
+var tagData = JSON.parse('{{ tags|tojson|safe }}');
+
+function renderTagDetail(tagId) {
+  var tag = tagData.find(function(t) { return t.id == tagId; });
+  if (!tag) return;
+  var html = '<div class="card"><div class="card-header bg-light"><strong><i class="fas fa-tag"></i> ' + tag.name + '</strong></div><div class="card-body">';
+  html += '<div class="mb-2"><strong>タグ名：</strong>' + tag.name + '</div>';
+  html += '<div class="mb-2"><strong>人数：</strong>' + tag.user_count + '人</div>';
+  html += '<div class="mb-2"><strong>作成日：</strong>' + tag.created_at + '</div>';
+  html += '<div class="mb-2"><button class="btn btn-secondary btn-sm edit-tag-btn" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit"></i> 編集</button> <button class="btn btn-danger btn-sm delete-tag-btn" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash"></i> 削除</button></div>';
+  html += '</div></div>';
+  $('#tagDetailBox').html(html);
+}
+
 $(function() {
+  // フォルダツリークリックで詳細表示
+  $('#tagTree').on('click', '.tag-folder-link', function(e) {
+    e.preventDefault();
+    var tagId = $(this).data('id');
+    renderTagDetail(tagId);
+  });
+
+  // タグ新規作成
   $('#createTagForm').on('submit', function(e) {
     e.preventDefault();
-    const $form = $(this);
-    const $btn = $form.find('button[type=submit]');
+    var $form = $(this);
+    var $btn = $form.find('button[type=submit]');
     $btn.prop('disabled', true);
     $('#createTagError').text('');
     $.post('/admin/tags/create', $form.serialize())
@@ -90,6 +157,58 @@ $(function() {
   $('#createTagModal').on('hidden.bs.modal', function() {
     $('#createTagForm')[0].reset();
     $('#createTagError').text('');
+  });
+
+  // タグ編集モーダル表示
+  $(document).on('click', '.edit-tag-btn', function(e) {
+    e.preventDefault();
+    var tagId = $(this).data('id');
+    var tagName = $(this).data('name');
+    $('#editTagId').val(tagId);
+    $('#editTagName').val(tagName);
+    $('#editTagError').text('');
+    $('#editTagModal').modal('show');
+  });
+  // タグ編集保存
+  $('#editTagForm').on('submit', function(e) {
+    e.preventDefault();
+    var tagId = $('#editTagId').val();
+    var $form = $(this);
+    var $btn = $form.find('button[type=submit]');
+    $btn.prop('disabled', true);
+    $('#editTagError').text('');
+    $.post('/admin/tags/edit/' + tagId, $form.serialize())
+      .done(function(res) {
+        if (res.success) {
+          location.reload();
+        } else {
+          $('#editTagError').text(res.error || '保存に失敗しました');
+        }
+      })
+      .fail(function(xhr) {
+        $('#editTagError').text(xhr.responseJSON?.error || '保存に失敗しました');
+      })
+      .always(function() {
+        $btn.prop('disabled', false);
+      });
+  });
+  // タグ削除
+  $(document).on('click', '.delete-tag-btn', function(e) {
+    e.preventDefault();
+    var tagId = $(this).data('id');
+    var tagName = $(this).data('name');
+    if (!confirm('タグ「' + tagName + '」を削除します。よろしいですか？')) return;
+    $.post('/admin/tags/delete/' + tagId)
+      .done(function(res) {
+        if (res.success) {
+          location.reload();
+        } else {
+          alert(res.error || '削除に失敗しました');
+        }
+      })
+      .fail(function(xhr) {
+        alert(xhr.responseJSON?.error || '削除に失敗しました');
+      });
   });
 });
 </script>
