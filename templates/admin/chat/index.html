@@ -601,7 +601,9 @@
         
         messages.forEach(message => {
             // 日付の区切りを追加
-            const messageDate = new Date(message.sent_at);
+            // UTCとしてパースし、JSTに変換
+            const messageDate = new Date(message.sent_at + 'Z'); // 'Z'でUTC解釈
+            messageDate.setHours(messageDate.getHours() + 9);    // JSTに変換
             const formattedDate = messageDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
             
             if (!currentDate || formattedDate !== currentDate) {
