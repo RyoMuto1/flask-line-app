@@ -1895,6 +1895,23 @@ def admin_tags():
     conn.close()
     return render_template('admin/tags.html', tags=tags)
 
+# タグ新規作成API
+@app.route('/admin/tags/create', methods=['POST'])
+@admin_required
+def create_tag():
+    name = request.form.get('name')
+    if not name:
+        return jsonify({'success': False, 'error': 'タグ名は必須です'}), 400
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('INSERT INTO tags (name, created_at) VALUES (?, datetime("now"))', (name,))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port)
