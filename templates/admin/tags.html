@@ -3,43 +3,66 @@
 {% block title %}タグ管理{% endblock %}
 
 {% block content %}
-<h2>タグ管理</h2>
-<div class="row">
-  <!-- 左カラム：フォルダツリー -->
-  <div class="col-md-4" id="tag-folder-col">
-    <div class="card">
-      <div class="card-header bg-light"><strong><i class="fas fa-folder"></i> タグフォルダ</strong></div>
-      <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
-        <ul class="list-unstyled" id="tagTree">
-          {% macro render_tag_tree(tags, parent_id=None) %}
-            {% for tag in tags if tag.parent_id == parent_id %}
-              <li>
-                <a href="#" class="tag-folder-link" data-id="{{ tag.id }}">
-                  <i class="fas fa-folder"></i> {{ tag.name }} <span class="text-muted small">({{ tag.user_count }}人)</span>
-                </a>
-                {% set children = tags|selectattr('parent_id', 'equalto', tag.id)|list %}
-                {% if children %}
-                  <ul class="ms-4">
-                    {{ render_tag_tree(tags, tag.id) }}
-                  </ul>
-                {% endif %}
-              </li>
-            {% endfor %}
-          {% endmacro %}
-          {{ render_tag_tree(tags) }}
-        </ul>
-        <div class="mt-3">
-          <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTagModal">
-            <i class="fas fa-plus"></i> 新規タグ作成
-          </a>
-        </div>
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">タグ</h2>
+    <button class="btn btn-outline-secondary" id="showManualBtn">
+      <i class="fas fa-book"></i> マニュアル
+    </button>
+  </div>
+  
+  <p class="text-muted">友だちを分類するタグを管理できます。</p>
+  
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex gap-2">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+          <i class="fas fa-plus"></i> 新しいフォルダ
+        </button>
+        <button class="btn btn-outline-secondary" id="reorderBtn">
+          <i class="fas fa-sort"></i> 並び替え
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
+          <i class="fas fa-plus"></i> 新しいタグ
+        </button>
+        <button class="btn btn-outline-secondary" id="reorderTagsBtn">
+          <i class="fas fa-sort"></i> 並び替え
+        </button>
+        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importTagsModal">
+          <i class="fas fa-file-upload"></i> CSVアップロード
+        </button>
       </div>
     </div>
   </div>
-  <!-- 右カラム：タグ詳細 -->
-  <div class="col-md-8" id="tag-detail-col">
-    <div id="tagDetailBox">
-      <div class="alert alert-info">左のフォルダからタグを選択してください。</div>
+  
+  <div class="row">
+    <!-- タグリスト -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="bg-light">
+                <tr>
+                  <th style="width: 40px;">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="selectAllTags">
+                      <label class="form-check-label" for="selectAllTags"></label>
+                    </div>
+                  </th>
+                  <th>タグ名</th>
+                  <th class="text-end">友だち数</th>
+                  <th class="text-end">登録日</th>
+                  <th class="text-end" style="width: 100px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="tagList">
+                <!-- タグリストはJavaScriptで生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -54,24 +77,79 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-            <div class="mb-3">
-              <label for="tagName" class="form-label">タグ名</label>
-              <input type="text" class="form-control" id="tagName" name="name" placeholder="例: VIP, 購入見込み, 友人など" required>
-            </div>
-            <div class="mb-3">
-              <label for="parentTag" class="form-label">親フォルダ</label>
-              <select class="form-select" id="parentTag" name="parent_id">
-                <option value="">(トップレベル)</option>
-                {% for tag in tags if not tag.parent_id %}
-                  <option value="{{ tag.id }}">{{ tag.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div id="createTagError" class="text-danger small"></div>
+          <div class="mb-3">
+            <label for="tagName" class="form-label">タグ名</label>
+            <input type="text" class="form-control" id="tagName" name="name" placeholder="例: VIP, 購入見込み, 友人など" required>
+          </div>
+          <div class="mb-3">
+            <label for="parentTag" class="form-label">親フォルダ</label>
+            <select class="form-select" id="parentTag" name="parent_id">
+              <option value="">(トップレベル)</option>
+              {% for tag in tags if not tag.parent_id %}
+                <option value="{{ tag.id }}">{{ tag.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="createTagError" class="text-danger small"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
           <button type="submit" class="btn btn-primary">作成</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- フォルダ作成モーダル -->
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="createFolderForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createFolderModalLabel">新規フォルダ作成</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="folderName" class="form-label">フォルダ名</label>
+            <input type="text" class="form-control" id="folderName" name="name" placeholder="例: 顧客ランク、興味カテゴリなど" required>
+          </div>
+          <div id="createFolderError" class="text-danger small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+          <button type="submit" class="btn btn-primary">作成</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CSVインポートモーダル -->
+<div class="modal fade" id="importTagsModal" tabindex="-1" aria-labelledby="importTagsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="importTagsForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importTagsModalLabel">CSVからタグをインポート</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="csvFile" class="form-label">CSVファイル</label>
+            <input type="file" class="form-control" id="csvFile" name="csv_file" accept=".csv" required>
+          </div>
+          <div class="alert alert-info">
+            <small>CSVフォーマット: タグ名,親フォルダID（オプション）<br>
+            例: VIP顧客<br>
+            例: 新規顧客,1</small>
+          </div>
+          <div id="importTagsError" class="text-danger small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+          <button type="submit" class="btn btn-primary">インポート</button>
         </div>
       </form>
     </div>
@@ -88,12 +166,12 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-            <input type="hidden" id="editTagId" name="tag_id">
-            <div class="mb-3">
-              <label for="editTagName" class="form-label">タグ名</label>
-              <input type="text" class="form-control" id="editTagName" name="name" required>
-            </div>
-            <div id="editTagError" class="text-danger small"></div>
+          <input type="hidden" id="editTagId" name="tag_id">
+          <div class="mb-3">
+            <label for="editTagName" class="form-label">タグ名</label>
+            <input type="text" class="form-control" id="editTagName" name="name" required>
+          </div>
+          <div id="editTagError" class="text-danger small"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
@@ -111,26 +189,81 @@
 // タグ詳細表示用のデータを用意
 var tagData = JSON.parse('{{ tags|tojson|safe }}');
 
-function renderTagDetail(tagId) {
-  var tag = tagData.find(function(t) { return t.id == tagId; });
-  if (!tag) return;
-  var html = '<div class="card"><div class="card-header bg-light"><strong><i class="fas fa-tag"></i> ' + tag.name + '</strong></div><div class="card-body">';
-  html += '<div class="mb-2"><strong>タグ名：</strong>' + tag.name + '</div>';
-  html += '<div class="mb-2"><strong>人数：</strong>' + tag.user_count + '人</div>';
-  html += '<div class="mb-2"><strong>作成日：</strong>' + tag.created_at + '</div>';
-  html += '<div class="mb-2"><button class="btn btn-secondary btn-sm edit-tag-btn" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit"></i> 編集</button> <button class="btn btn-danger btn-sm delete-tag-btn" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash"></i> 削除</button></div>';
-  html += '</div></div>';
-  $('#tagDetailBox').html(html);
+// タグリスト表示用
+function renderTagList() {
+  var html = '';
+  
+  // タグごとに行を生成
+  tagData.forEach(function(tag) {
+    var folderIcon = tag.parent_id ? '' : '<i class="fas fa-folder text-warning me-1"></i>';
+    var tagType = tag.parent_id ? 'タグ' : 'フォルダ';
+    
+    html += '<tr>';
+    html += '<td><div class="form-check"><input class="form-check-input tag-checkbox" type="checkbox" value="' + tag.id + '"></div></td>';
+    html += '<td>' + folderIcon + tag.name + '</td>';
+    html += '<td class="text-end">' + tag.user_count + '人</td>';
+    html += '<td class="text-end">' + formatDate(tag.created_at) + '</td>';
+    html += '<td class="text-end"><div class="dropdown">';
+    html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>';
+    html += '<ul class="dropdown-menu dropdown-menu-end">';
+    html += '<li><a class="dropdown-item edit-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit me-2"></i>編集</a></li>';
+    html += '<li><a class="dropdown-item delete-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash me-2"></i>削除</a></li>';
+    html += '</ul></div></td>';
+    html += '</tr>';
+  });
+  
+  // タグがない場合
+  if (tagData.length === 0) {
+    html = '<tr><td colspan="5" class="text-center py-3">タグがありません。新しいタグを作成してください。</td></tr>';
+  }
+  
+  $('#tagList').html(html);
+}
+
+// 日付フォーマット
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  var date = new Date(dateStr.replace(' ', 'T') + 'Z');
+  return date.getFullYear() + '.' + 
+         (date.getMonth() + 1).toString().padStart(2, '0') + '.' + 
+         date.getDate().toString().padStart(2, '0');
 }
 
 $(function() {
-  // フォルダツリークリックで詳細表示
-  $('#tagTree').on('click', '.tag-folder-link', function(e) {
-    e.preventDefault();
-    var tagId = $(this).data('id');
-    renderTagDetail(tagId);
+  // 初期表示
+  renderTagList();
+  
+  // 全選択チェックボックス
+  $('#selectAllTags').on('change', function() {
+    $('.tag-checkbox').prop('checked', $(this).prop('checked'));
   });
-
+  
+  // フォルダ作成
+  $('#createFolderForm').on('submit', function(e) {
+    e.preventDefault();
+    var name = $('#folderName').val();
+    if (!name) return;
+    
+    var $btn = $(this).find('button[type=submit]');
+    $btn.prop('disabled', true);
+    $('#createFolderError').text('');
+    
+    $.post('/admin/tags/create', {name: name})
+      .done(function(res) {
+        if (res.success) {
+          location.reload();
+        } else {
+          $('#createFolderError').text(res.error || '作成に失敗しました');
+        }
+      })
+      .fail(function(xhr) {
+        $('#createFolderError').text(xhr.responseJSON?.error || '作成に失敗しました');
+      })
+      .always(function() {
+        $btn.prop('disabled', false);
+      });
+  });
+  
   // タグ新規作成
   $('#createTagForm').on('submit', function(e) {
     e.preventDefault();
@@ -138,6 +271,7 @@ $(function() {
     var $btn = $form.find('button[type=submit]');
     $btn.prop('disabled', true);
     $('#createTagError').text('');
+    
     $.post('/admin/tags/create', $form.serialize())
       .done(function(res) {
         if (res.success) {
@@ -153,10 +287,11 @@ $(function() {
         $btn.prop('disabled', false);
       });
   });
+  
   // モーダルを閉じたらフォームリセット
-  $('#createTagModal').on('hidden.bs.modal', function() {
-    $('#createTagForm')[0].reset();
-    $('#createTagError').text('');
+  $('.modal').on('hidden.bs.modal', function() {
+    $(this).find('form')[0].reset();
+    $(this).find('.text-danger').text('');
   });
 
   // タグ編集モーダル表示
@@ -169,6 +304,7 @@ $(function() {
     $('#editTagError').text('');
     $('#editTagModal').modal('show');
   });
+  
   // タグ編集保存
   $('#editTagForm').on('submit', function(e) {
     e.preventDefault();
@@ -177,6 +313,7 @@ $(function() {
     var $btn = $form.find('button[type=submit]');
     $btn.prop('disabled', true);
     $('#editTagError').text('');
+    
     $.post('/admin/tags/edit/' + tagId, $form.serialize())
       .done(function(res) {
         if (res.success) {
@@ -192,12 +329,15 @@ $(function() {
         $btn.prop('disabled', false);
       });
   });
+  
   // タグ削除
   $(document).on('click', '.delete-tag-btn', function(e) {
     e.preventDefault();
     var tagId = $(this).data('id');
     var tagName = $(this).data('name');
+    
     if (!confirm('タグ「' + tagName + '」を削除します。よろしいですか？')) return;
+    
     $.post('/admin/tags/delete/' + tagId)
       .done(function(res) {
         if (res.success) {
@@ -209,6 +349,41 @@ $(function() {
       .fail(function(xhr) {
         alert(xhr.responseJSON?.error || '削除に失敗しました');
       });
+  });
+  
+  // CSVインポート
+  $('#importTagsForm').on('submit', function(e) {
+    e.preventDefault();
+    var formData = new FormData();
+    var file = $('#csvFile')[0].files[0];
+    if (!file) return;
+    
+    formData.append('csv_file', file);
+    
+    var $btn = $(this).find('button[type=submit]');
+    $btn.prop('disabled', true);
+    $('#importTagsError').text('');
+    
+    $.ajax({
+      url: '/admin/tags/import',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(res) {
+        if (res.success) {
+          location.reload();
+        } else {
+          $('#importTagsError').text(res.error || 'インポートに失敗しました');
+        }
+      },
+      error: function(xhr) {
+        $('#importTagsError').text(xhr.responseJSON?.error || 'インポートに失敗しました');
+      },
+      complete: function() {
+        $btn.prop('disabled', false);
+      }
+    });
   });
 });
 </script>

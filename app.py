@@ -352,33 +352,22 @@ def init_db():
             CREATE TABLE tags (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                parent_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (parent_id) REFERENCES tags(id)
             )
         ''')
         conn.commit()
         logger.info("tagsテーブルを作成しました")
     else:
-        # 既存のtagsテーブルからcolorカラムを削除（もし存在すれば）
+        # 既存のtagsテーブルにparent_idカラムを追加（なければ）
         c.execute("PRAGMA table_info(tags)")
         columns = [row[1] for row in c.fetchall()]
-        if 'color' in columns:
-            logger.info("tagsテーブルからcolorカラムを削除します")
-            # SQLiteはカラム削除が直接できないので一時テーブルでマイグレーション
-            c.execute('''
-                CREATE TABLE tags_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            c.execute('''
-                INSERT INTO tags_new (id, name, created_at)
-                SELECT id, name, created_at FROM tags
-            ''')
-            c.execute('DROP TABLE tags')
-            c.execute('ALTER TABLE tags_new RENAME TO tags')
+        if 'parent_id' not in columns:
+            logger.info("tagsテーブルにparent_idカラムを追加します")
+            c.execute('ALTER TABLE tags ADD COLUMN parent_id INTEGER')
             conn.commit()
-            logger.info("tagsテーブルのcolorカラム削除完了")
+            logger.info("tagsテーブルにparent_idカラムを追加しました")
 
     # ユーザーとタグの紐付けテーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_tags'")
@@ -1900,16 +1889,125 @@ def admin_tags():
 @admin_required
 def create_tag():
     name = request.form.get('name')
+    parent_id = request.form.get('parent_id') or None
+    
     if not name:
         return jsonify({'success': False, 'error': 'タグ名は必須です'}), 400
+    
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute('INSERT INTO tags (name, created_at) VALUES (?, datetime("now"))', (name,))
+        c.execute('INSERT INTO tags (name, parent_id, created_at) VALUES (?, ?, datetime("now"))', (name, parent_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/tags/import', methods=['POST'])
+@admin_required
+def import_tags():
+    if 'csv_file' not in request.files:
+        return jsonify({'success': False, 'error': 'CSVファイルが必要です'}), 400
+        
+    file = request.files['csv_file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'ファイルが選択されていません'}), 400
+        
+    if not file.filename.endswith('.csv'):
+        return jsonify({'success': False, 'error': 'CSVファイルのみアップロード可能です'}), 400
+    
+    try:
+        # CSVファイルを読み込む
+        csv_content = file.read().decode('utf-8')
+        lines = csv_content.strip().split('\n')
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 各行を処理
+        success_count = 0
+        for line in lines:
+            parts = line.strip().split(',')
+            if len(parts) == 0 or not parts[0].strip():
+                continue
+                
+            name = parts[0].strip()
+            parent_id = None
+            
+            # 親IDがある場合
+            if len(parts) > 1 and parts[1].strip():
+                parent_id = parts[1].strip()
+                
+            # タグを保存
+            c.execute('INSERT INTO tags (name, parent_id, created_at) VALUES (?, ?, datetime("now"))', (name, parent_id))
+            success_count += 1
+            
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': f'{success_count}件のタグをインポートしました'})
+    except Exception as e:
+        logger.error(f"タグインポートエラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/tags/edit/<int:tag_id>', methods=['POST'])
+@admin_required
+def edit_tag(tag_id):
+    name = request.form.get('name')
+    if not name:
+        return jsonify({'success': False, 'error': 'タグ名は必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # タグが存在するか確認
+        c.execute('SELECT id FROM tags WHERE id = ?', (tag_id,))
+        tag = c.fetchone()
+        if not tag:
+            return jsonify({'success': False, 'error': 'タグが見つかりません'}), 404
+        
+        # タグ名を更新
+        c.execute('UPDATE tags SET name = ? WHERE id = ?', (name, tag_id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"タグ更新エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/tags/delete/<int:tag_id>', methods=['POST'])
+@admin_required
+def delete_tag(tag_id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # タグが存在するか確認
+        c.execute('SELECT id FROM tags WHERE id = ?', (tag_id,))
+        tag = c.fetchone()
+        if not tag:
+            return jsonify({'success': False, 'error': 'タグが見つかりません'}), 404
+            
+        # このタグを親とするタグがないか確認
+        c.execute('SELECT COUNT(*) as count FROM tags WHERE parent_id = ?', (tag_id,))
+        child_count = c.fetchone()['count']
+        if child_count > 0:
+            return jsonify({'success': False, 'error': 'このフォルダには子タグが含まれています。先に子タグを削除してください。'}), 400
+        
+        # 関連するuser_tagsを削除
+        c.execute('DELETE FROM user_tags WHERE tag_id = ?', (tag_id,))
+        
+        # タグを削除
+        c.execute('DELETE FROM tags WHERE id = ?', (tag_id,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"タグ削除エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
