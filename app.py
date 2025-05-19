@@ -1878,7 +1878,7 @@ def admin_tags():
         FROM tags t
         LEFT JOIN user_tags ut ON t.id = ut.tag_id
         GROUP BY t.id
-        ORDER BY t.created_at DESC
+        ORDER BY t.order_index, t.created_at DESC
     ''')
     tags = [dict(row) for row in c.fetchall()]
     conn.close()
@@ -2062,6 +2062,38 @@ def remove_tag_from_user():
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"タグ削除エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/tags/reorder', methods=['POST'])
+@admin_required
+def reorder_tags():
+    try:
+        data = request.json
+        folder_order = data.get('folder_order', [])
+        
+        if not folder_order:
+            return jsonify({'success': False, 'error': '並び替え情報が不正です'}), 400
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 既存のフォルダにorder_indexカラムがなければ追加
+        c.execute("PRAGMA table_info(tags)")
+        columns = [row[1] for row in c.fetchall()]
+        if 'order_index' not in columns:
+            c.execute('ALTER TABLE tags ADD COLUMN order_index INTEGER')
+            logger.info("tagsテーブルにorder_indexカラムを追加しました")
+        
+        # 各フォルダに順序情報を保存
+        for i, folder_id in enumerate(folder_order):
+            c.execute('UPDATE tags SET order_index = ? WHERE id = ?', (i, folder_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"フォルダ並び替えエラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
