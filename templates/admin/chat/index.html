@@ -230,6 +230,7 @@
     let selectedUserId = null;
     let users = [];
     let socket = null;
+    let pollingInterval = null;
     
     // ページ読み込み時の処理
     document.addEventListener('DOMContentLoaded', function() {
@@ -237,6 +238,9 @@
         
         // Socket.IO接続
         connectSocket();
+        
+        // 自動更新ポーリングを開始（WebSocketが失敗した場合のフォールバック）
+        startPolling();
         
         // メッセージ送信フォームの処理
         document.getElementById('messageForm').addEventListener('submit', function(e) {
@@ -265,37 +269,106 @@
             const searchTerm = this.value.toLowerCase();
             filterUsers(searchTerm);
         });
+        
+        // ページを離れる前にSocketとポーリングをクリーンアップ
+        window.addEventListener('beforeunload', function() {
+            if (socket) {
+                socket.disconnect();
+            }
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        });
     });
     
     // Socket.IO接続
     function connectSocket() {
-        socket = io();
-        
-        // 接続イベント
-        socket.on('connect', function() {
-            console.log('Socket.IO connected');
-        });
-        
-        // 切断イベント
-        socket.on('disconnect', function() {
-            console.log('Socket.IO disconnected');
-        });
-        
-        // 新しいメッセージを受信したとき
-        socket.on('new_message', function(data) {
-            console.log('New message received:', data);
-            
-            // 現在選択されているユーザーと一致する場合はチャットを更新
-            if (selectedUserId === data.user_id) {
-                loadChatHistory(selectedUserId);
-                
-                // 音を鳴らす（オプション）
-                playNotificationSound();
+        try {
+            // 現在の接続を閉じる
+            if (socket) {
+                socket.disconnect();
             }
             
-            // ユーザーリストを再読み込み（未読カウントを更新するため）
+            // 明示的にパスとトランスポートを指定して接続
+            socket = io({
+                path: '/socket.io',
+                transports: ['websocket', 'polling'],
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                timeout: 5000
+            });
+            
+            // 接続イベント
+            socket.on('connect', function() {
+                console.log('Socket.IO connected successfully');
+                // 接続成功したらステータス表示を更新
+                const statusEl = document.getElementById('userStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="badge badge-success">リアルタイム接続中</span>';
+                }
+            });
+            
+            // 切断イベント
+            socket.on('disconnect', function() {
+                console.log('Socket.IO disconnected');
+                const statusEl = document.getElementById('userStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="badge badge-warning">接続が切断されました</span>';
+                }
+            });
+            
+            // 接続エラー
+            socket.on('connect_error', function(error) {
+                console.error('Socket.IO connection error:', error);
+                const statusEl = document.getElementById('userStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="badge badge-danger">接続エラー</span>';
+                }
+                // ポーリングによるフォールバックを確実に動作させる
+                startPolling();
+            });
+            
+            // 新しいメッセージを受信したとき
+            socket.on('new_message', function(data) {
+                console.log('New message received:', data);
+                
+                // 現在選択されているユーザーと一致する場合はチャットを更新
+                if (selectedUserId === data.user_id) {
+                    loadChatHistory(selectedUserId);
+                    
+                    // 音を鳴らす
+                    playNotificationSound();
+                }
+                
+                // ユーザーリストを再読み込み（未読カウントを更新するため）
+                loadUsers();
+            });
+        } catch (e) {
+            console.error('Error initializing Socket.IO:', e);
+            // WebSocket接続に失敗した場合、ポーリングに頼る
+            startPolling();
+        }
+    }
+    
+    // ポーリングによる定期更新
+    function startPolling() {
+        // 既存のポーリングがあれば停止
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+        
+        // 10秒ごとに更新
+        pollingInterval = setInterval(function() {
+            // ユーザーリストを更新
             loadUsers();
-        });
+            
+            // 選択中のユーザーがいればチャット履歴も更新
+            if (selectedUserId) {
+                loadChatHistory(selectedUserId);
+            }
+        }, 10000); // 10秒ごと
+        
+        console.log('Polling started as WebSocket fallback');
     }
     
     // 通知音を再生
@@ -312,7 +385,15 @@
         audio.src = 'https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3'; // 例として使用
         audio.style.display = 'none';
         document.body.appendChild(audio);
-        audio.play().catch(e => console.log('Notification sound error:', e));
+        
+        // 通知音の再生
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(function(error) {
+                console.log('Notification sound error:', error);
+                // 自動再生ポリシーなどによりエラーが発生した場合の処理
+            });
+        }
     }
     
     // ユーザーリストの読み込み
