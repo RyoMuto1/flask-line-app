@@ -50,7 +50,7 @@
       <div id="tagContent">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <div id="selectedTagName">フォルダを選択してください</div>
+            <div id="selectedTagName">タグ一覧</div>
             <div class="form-group ms-auto me-2">
               <input type="text" class="form-control form-control-sm" id="tagSearchInput" placeholder="タグ検索..." style="width: 200px;">
             </div>
@@ -270,9 +270,6 @@ function renderFolderContent(folderId) {
   // 未分類フォルダの場合はトップレベルタグを表示
   var isUnclassified = (folderId === 'unclassified');
   var folderName = isUnclassified ? '未分類' : tagData.find(function(t) { return t.id == folderId; }).name;
-  
-  // ヘッダーを更新
-  $('#selectedTagName').html('<i class="fas fa-folder text-warning"></i> ' + folderName);
   
   // 表示するタグ
   var tagsToShow = [];
