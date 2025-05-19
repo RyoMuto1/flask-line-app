@@ -49,33 +49,20 @@
     <div class="col-md-9">
       <div id="tagContent">
         <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <div id="selectedTagName">タグ一覧</div>
-            <div class="form-group ms-auto me-2">
-              <input type="text" class="form-control form-control-sm" id="tagSearchInput" placeholder="タグ検索..." style="width: 200px;">
-            </div>
-          </div>
           <div class="card-body p-0">
             <div class="table-responsive">
               <table class="table table-hover mb-0">
                 <thead class="bg-light">
                   <tr>
-                    <th style="width: 40px;">
-                      <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="selectAllTags">
-                        <label class="form-check-label" for="selectAllTags"></label>
-                      </div>
-                    </th>
                     <th>タグ名</th>
                     <th class="text-end">友だち数</th>
                     <th class="text-end">登録日</th>
-                    <th class="text-end" style="width: 100px;">操作</th>
                   </tr>
                 </thead>
                 <tbody id="tagListContainer">
                   <!-- 選択したフォルダのタグ一覧はJavaScriptで生成 -->
                   <tr>
-                    <td colspan="5" class="text-center py-3">フォルダを選択するとタグ一覧が表示されます</td>
+                    <td colspan="3" class="text-center py-3">フォルダを選択するとタグ一覧が表示されます</td>
                   </tr>
                 </tbody>
               </table>
@@ -284,23 +271,85 @@ function renderFolderContent(folderId) {
   if (tagsToShow.length > 0) {
     tagsToShow.forEach(function(tag) {
       html += '<tr>';
-      html += '<td><div class="form-check"><input class="form-check-input tag-checkbox" type="checkbox" value="' + tag.id + '"></div></td>';
       html += '<td>' + tag.name + '</td>';
-      html += '<td class="text-end">' + tag.user_count + '人</td>';
+      html += '<td class="text-end"><a href="#" class="tag-users-link" data-id="' + tag.id + '">' + tag.user_count + '人</a></td>';
       html += '<td class="text-end">' + formatDate(tag.created_at) + '</td>';
-      html += '<td class="text-end"><div class="dropdown">';
-      html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>';
-      html += '<ul class="dropdown-menu dropdown-menu-end">';
-      html += '<li><a class="dropdown-item edit-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit me-2"></i>編集</a></li>';
-      html += '<li><a class="dropdown-item delete-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash me-2"></i>削除</a></li>';
-      html += '</ul></div></td>';
       html += '</tr>';
     });
   } else {
-    html = '<tr><td colspan="5" class="text-center py-3">このフォルダにはタグがありません</td></tr>';
+    html = '<tr><td colspan="3" class="text-center py-3">このフォルダにはタグがありません</td></tr>';
   }
   
   $('#tagListContainer').html(html);
+  
+  // 友だち数クリックイベントを設定
+  $('.tag-users-link').on('click', function(e) {
+    e.preventDefault();
+    var tagId = $(this).data('id');
+    showTagUsers(tagId);
+  });
+}
+
+// タグに紐づくユーザー一覧を表示
+function showTagUsers(tagId) {
+  var tag = tagData.find(function(t) { return t.id == tagId; });
+  if (!tag) return;
+  
+  // ユーザー一覧を取得してモーダルで表示
+  $.getJSON('/admin/tags/users/' + tagId)
+    .done(function(res) {
+      if (res.success && res.users) {
+        var modal = $('<div class="modal fade" tabindex="-1">');
+        var modalContent = $('<div class="modal-dialog modal-lg"><div class="modal-content"></div></div>');
+        var header = $('<div class="modal-header"><h5 class="modal-title">タグ「' + tag.name + '」が付与されている友だち</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>');
+        var body = $('<div class="modal-body">');
+        
+        if (res.users.length > 0) {
+          var table = $('<table class="table table-hover">');
+          var tbody = $('<tbody>');
+          
+          res.users.forEach(function(user) {
+            var tr = $('<tr>');
+            var tdName = $('<td>');
+            if (user.profile_image_url) {
+              tdName.append($('<img>').attr('src', user.profile_image_url).addClass('rounded-circle me-2').css({width: '30px', height: '30px'}));
+            }
+            tdName.append(document.createTextNode(user.name));
+            
+            tr.append(tdName);
+            tr.append($('<td class="text-end">').text(formatDate(user.created_at)));
+            tr.append($('<td class="text-end">').append(
+              $('<a>').attr('href', '/admin/user/' + user.line_user_id).attr('target', '_blank').addClass('btn btn-sm btn-outline-primary').append(
+                $('<i>').addClass('fas fa-user me-1')
+              ).append('詳細')
+            ));
+            
+            tbody.append(tr);
+          });
+          
+          table.append(tbody);
+          body.append(table);
+        } else {
+          body.append($('<p class="text-center">').text('このタグが付与されている友だちはいません'));
+        }
+        
+        modalContent.find('.modal-content').append(header).append(body);
+        modal.append(modalContent);
+        
+        $('body').append(modal);
+        var modalObj = new bootstrap.Modal(modal[0]);
+        modalObj.show();
+        
+        modal.on('hidden.bs.modal', function() {
+          modal.remove();
+        });
+      } else {
+        alert('ユーザー情報の取得に失敗しました');
+      }
+    })
+    .fail(function() {
+      alert('エラーが発生しました');
+    });
 }
 
 // 日付フォーマット
