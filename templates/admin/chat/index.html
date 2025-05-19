@@ -335,9 +335,6 @@
                 // 現在選択されているユーザーと一致する場合はチャットを更新
                 if (selectedUserId === data.user_id) {
                     loadChatHistory(selectedUserId);
-                    
-                    // 音を鳴らす
-                    playNotificationSound();
                 }
                 
                 // ユーザーリストを再読み込み（未読カウントを更新するため）
@@ -369,31 +366,6 @@
         }, 10000); // 10秒ごと
         
         console.log('Polling started as WebSocket fallback');
-    }
-    
-    // 通知音を再生
-    function playNotificationSound() {
-        // 既存の通知音要素を削除
-        const existingAudio = document.getElementById('notificationSound');
-        if (existingAudio) {
-            existingAudio.remove();
-        }
-        
-        // 新しい通知音要素を作成して再生
-        const audio = document.createElement('audio');
-        audio.id = 'notificationSound';
-        audio.src = 'https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3'; // 例として使用
-        audio.style.display = 'none';
-        document.body.appendChild(audio);
-        
-        // 通知音の再生
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(function(error) {
-                console.log('Notification sound error:', error);
-                // 自動再生ポリシーなどによりエラーが発生した場合の処理
-            });
-        }
     }
     
     // ユーザーリストの読み込み
