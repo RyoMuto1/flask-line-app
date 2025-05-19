@@ -2010,6 +2010,60 @@ def delete_tag(tag_id):
         logger.error(f"タグ削除エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/tags/users/<int:tag_id>')
+@admin_required
+def tag_users(tag_id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # タグが存在するか確認
+        c.execute('SELECT id FROM tags WHERE id = ?', (tag_id,))
+        tag = c.fetchone()
+        if not tag:
+            return jsonify({'success': False, 'error': 'タグが見つかりません'}), 404
+        
+        # タグに紐づくユーザー一覧を取得
+        c.execute('''
+            SELECT u.line_user_id, u.name, u.email, u.profile_image_url, u.created_at
+            FROM users u
+            JOIN user_tags ut ON u.line_user_id = ut.line_user_id
+            WHERE ut.tag_id = ?
+            ORDER BY u.name
+        ''', (tag_id,))
+        
+        users = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify({'success': True, 'users': users})
+    except Exception as e:
+        logger.error(f"タグユーザー取得エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/tags/remove-user', methods=['POST'])
+@admin_required
+def remove_tag_from_user():
+    data = request.json
+    user_id = data.get('user_id')
+    tag_id = data.get('tag_id')
+    
+    if not user_id or not tag_id:
+        return jsonify({'success': False, 'error': 'ユーザーIDとタグIDは必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # タグとユーザーの関連を削除
+        c.execute('DELETE FROM user_tags WHERE line_user_id = ? AND tag_id = ?', (user_id, tag_id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"タグ削除エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port)

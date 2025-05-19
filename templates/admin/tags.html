@@ -36,30 +36,50 @@
   </div>
   
   <div class="row">
-    <!-- タグリスト -->
-    <div class="col-12">
-      <div class="card">
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="bg-light">
-                <tr>
-                  <th style="width: 40px;">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="selectAllTags">
-                      <label class="form-check-label" for="selectAllTags"></label>
-                    </div>
-                  </th>
-                  <th>タグ名</th>
-                  <th class="text-end">友だち数</th>
-                  <th class="text-end">登録日</th>
-                  <th class="text-end" style="width: 100px;">操作</th>
-                </tr>
-              </thead>
-              <tbody id="tagList">
-                <!-- タグリストはJavaScriptで生成 -->
-              </tbody>
-            </table>
+    <!-- 左カラム：フォルダツリー -->
+    <div class="col-md-3">
+      <div class="card mb-3">
+        <div class="list-group list-group-flush" id="tagFolderList">
+          <!-- フォルダリストはJavaScriptで生成 -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右カラム：タグ詳細とユーザーリスト -->
+    <div class="col-md-9">
+      <div id="tagContent">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div id="selectedTagName">タグを選択してください</div>
+            <div class="form-group ms-auto me-2">
+              <input type="text" class="form-control form-control-sm" id="userSearchInput" placeholder="ユーザー検索..." style="width: 200px;">
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                  <tr>
+                    <th style="width: 40px;">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAllUsers">
+                        <label class="form-check-label" for="selectAllUsers"></label>
+                      </div>
+                    </th>
+                    <th>ユーザー名</th>
+                    <th>メールアドレス</th>
+                    <th class="text-end">登録日</th>
+                    <th class="text-end" style="width: 100px;">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="userList">
+                  <!-- 選択したタグのユーザーはJavaScriptで生成 -->
+                  <tr>
+                    <td colspan="5" class="text-center py-3">タグを選択するとユーザー一覧が表示されます</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -188,36 +208,92 @@
 <script>
 // タグ詳細表示用のデータを用意
 var tagData = JSON.parse('{{ tags|tojson|safe }}');
+// 現在選択中のタグID
+var currentTagId = null;
 
-// タグリスト表示用
-function renderTagList() {
+// フォルダーツリーを表示
+function renderFolderList() {
   var html = '';
   
-  // タグごとに行を生成
-  tagData.forEach(function(tag) {
-    var folderIcon = tag.parent_id ? '' : '<i class="fas fa-folder text-warning me-1"></i>';
-    var tagType = tag.parent_id ? 'タグ' : 'フォルダ';
+  // まずトップレベルのフォルダーを表示 (parent_id が null または undefined のもの)
+  var topLevelFolders = tagData.filter(function(t) { return !t.parent_id; });
+  
+  // 未分類（フォルダに属さないタグ）を先頭に追加
+  html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center folder-item active" data-id="unclassified">';
+  html += '<span><i class="fas fa-folder text-warning"></i> 未分類</span>';
+  html += '<span class="badge bg-secondary rounded-pill">(' + getUnclassifiedTagCount() + ')</span>';
+  html += '</a>';
+  
+  // トップレベルフォルダーを表示
+  topLevelFolders.forEach(function(folder) {
+    var childTags = getChildTags(folder.id);
+    html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center folder-item" data-id="' + folder.id + '">';
+    html += '<span><i class="fas fa-folder text-warning"></i> ' + folder.name + '</span>';
+    html += '<span class="badge bg-secondary rounded-pill">(' + childTags.length + ')</span>';
+    html += '</a>';
     
-    html += '<tr>';
-    html += '<td><div class="form-check"><input class="form-check-input tag-checkbox" type="checkbox" value="' + tag.id + '"></div></td>';
-    html += '<td>' + folderIcon + tag.name + '</td>';
-    html += '<td class="text-end">' + tag.user_count + '人</td>';
-    html += '<td class="text-end">' + formatDate(tag.created_at) + '</td>';
-    html += '<td class="text-end"><div class="dropdown">';
-    html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>';
-    html += '<ul class="dropdown-menu dropdown-menu-end">';
-    html += '<li><a class="dropdown-item edit-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit me-2"></i>編集</a></li>';
-    html += '<li><a class="dropdown-item delete-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash me-2"></i>削除</a></li>';
-    html += '</ul></div></td>';
-    html += '</tr>';
+    // このフォルダの子タグのリストを追加 (初期状態では非表示)
+    html += '<div class="list-group child-tags" id="children-' + folder.id + '" style="display:none;">';
+    childTags.forEach(function(tag) {
+      html += '<a href="#" class="list-group-item list-group-item-action ps-4 tag-item" data-id="' + tag.id + '">';
+      html += tag.name + ' <span class="text-muted small">(' + tag.user_count + '人)</span>';
+      html += '</a>';
+    });
+    html += '</div>';
   });
   
-  // タグがない場合
-  if (tagData.length === 0) {
-    html = '<tr><td colspan="5" class="text-center py-3">タグがありません。新しいタグを作成してください。</td></tr>';
+  $('#tagFolderList').html(html);
+}
+
+// 未分類のタグを取得（親IDを持たないトップレベルタグ）
+function getUnclassifiedTagCount() {
+  return tagData.filter(function(t) { return !t.parent_id; }).length;
+}
+
+// 指定されたフォルダに属する子タグを取得
+function getChildTags(folderId) {
+  return tagData.filter(function(t) { return t.parent_id == folderId; });
+}
+
+// フォルダが選択されたときの表示
+function renderFolderContent(folderId) {
+  // 未分類フォルダの場合はトップレベルタグを表示
+  var isUnclassified = (folderId === 'unclassified');
+  var folderName = isUnclassified ? '未分類' : tagData.find(function(t) { return t.id == folderId; }).name;
+  
+  // ヘッダーを更新
+  $('#selectedTagName').html('<i class="fas fa-folder text-warning"></i> ' + folderName + ' <span class="text-muted">フォルダ</span>');
+  
+  // 表示するタグ
+  var tagsToShow = [];
+  if (isUnclassified) {
+    tagsToShow = tagData.filter(function(t) { return !t.parent_id; });
+  } else {
+    tagsToShow = getChildTags(folderId);
   }
   
-  $('#tagList').html(html);
+  // タグリスト表示
+  var html = '';
+  if (tagsToShow.length > 0) {
+    tagsToShow.forEach(function(tag) {
+      html += '<tr>';
+      html += '<td><div class="form-check"><input class="form-check-input tag-checkbox" type="checkbox" value="' + tag.id + '"></div></td>';
+      html += '<td>' + tag.name + '</td>';
+      html += '<td>' + (tag.email || '-') + '</td>';
+      html += '<td class="text-end">' + formatDate(tag.created_at) + '</td>';
+      html += '<td class="text-end"><div class="dropdown">';
+      html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>';
+      html += '<ul class="dropdown-menu dropdown-menu-end">';
+      html += '<li><a class="dropdown-item edit-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit me-2"></i>編集</a></li>';
+      html += '<li><a class="dropdown-item delete-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash me-2"></i>削除</a></li>';
+      html += '</ul></div></td>';
+      html += '</tr>';
+    });
+  } else {
+    html = '<tr><td colspan="5" class="text-center py-3">このフォルダにはタグがありません</td></tr>';
+  }
+  
+  $('#userList').html(html);
 }
 
 // 日付フォーマット
@@ -231,10 +307,85 @@ function formatDate(dateStr) {
 
 $(function() {
   // 初期表示
-  renderTagList();
+  renderFolderList();
   
+  // フォルダクリックイベント
+  $(document).on('click', '.folder-item', function(e) {
+    e.preventDefault();
+    
+    // アクティブクラスを切り替え
+    $('.folder-item').removeClass('active');
+    $(this).addClass('active');
+    
+    var folderId = $(this).data('id');
+    
+    // 子タグの表示切り替え
+    $('.child-tags').hide();
+    $('#children-' + folderId).toggle();
+    
+    // フォルダの内容を表示
+    renderFolderContent(folderId);
+  });
+  
+  // タグクリックイベント
+  $(document).on('click', '.tag-item', function(e) {
+    e.preventDefault();
+    
+    // アクティブクラスを切り替え
+    $('.tag-item').removeClass('active');
+    $(this).addClass('active');
+    
+    // タグの詳細表示
+    var tagId = $(this).data('id');
+    currentTagId = tagId; // 現在選択中のタグIDを更新
+    var tag = tagData.find(function(t) { return t.id == tagId; });
+    
+    if (tag) {
+      $('#selectedTagName').html(tag.name + ' <span class="text-muted">タグ</span>');
+      
+      // ユーザー一覧を取得
+      $.getJSON('/admin/tags/users/' + tagId)
+        .done(function(res) {
+          if (res.success && res.users) {
+            renderTagUsers(res.users);
+          } else {
+            $('#userList').html('<tr><td colspan="5" class="text-center py-3">このタグに関連付けられたユーザーはいません</td></tr>');
+          }
+        })
+        .fail(function() {
+          $('#userList').html('<tr><td colspan="5" class="text-center py-3 text-danger">ユーザー情報の取得に失敗しました</td></tr>');
+        });
+    }
+  });
+
+  // ユーザー一覧表示
+  function renderTagUsers(users) {
+    var html = '';
+    
+    if (users.length > 0) {
+      users.forEach(function(user) {
+        html += '<tr>';
+        html += '<td><div class="form-check"><input class="form-check-input user-checkbox" type="checkbox" value="' + user.line_user_id + '"></div></td>';
+        html += '<td>' + (user.profile_image_url ? '<img src="' + user.profile_image_url + '" class="rounded-circle me-2" style="width:25px;height:25px;">' : '') + user.name + '</td>';
+        html += '<td>' + (user.email || '-') + '</td>';
+        html += '<td class="text-end">' + formatDate(user.created_at) + '</td>';
+        html += '<td class="text-end"><div class="dropdown">';
+        html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>';
+        html += '<ul class="dropdown-menu dropdown-menu-end">';
+        html += '<li><a class="dropdown-item view-user-btn" href="/admin/user/' + user.line_user_id + '" target="_blank"><i class="fas fa-user me-2"></i>詳細</a></li>';
+        html += '<li><a class="dropdown-item remove-tag-btn" href="#" data-user="' + user.line_user_id + '" data-tag="' + currentTagId + '"><i class="fas fa-times me-2"></i>タグを外す</a></li>';
+        html += '</ul></div></td>';
+        html += '</tr>';
+      });
+    } else {
+      html = '<tr><td colspan="5" class="text-center py-3">このタグに関連付けられたユーザーはいません</td></tr>';
+    }
+    
+    $('#userList').html(html);
+  }
+
   // 全選択チェックボックス
-  $('#selectAllTags').on('change', function() {
+  $('#selectAllUsers').on('change', function() {
     $('.tag-checkbox').prop('checked', $(this).prop('checked'));
   });
   
@@ -382,6 +533,37 @@ $(function() {
       },
       complete: function() {
         $btn.prop('disabled', false);
+      }
+    });
+  });
+
+  // デフォルトで未分類フォルダーをアクティブに
+  $('.folder-item[data-id="unclassified"]').click();
+
+  // タグを外す機能
+  $(document).on('click', '.remove-tag-btn', function(e) {
+    e.preventDefault();
+    var userId = $(this).data('user');
+    var tagId = $(this).data('tag');
+    
+    if (!confirm('このユーザーからタグを外しますか？')) return;
+    
+    $.ajax({
+      url: '/admin/tags/remove-user',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({ user_id: userId, tag_id: tagId }),
+      success: function(res) {
+        if (res.success) {
+          // 成功したら該当ユーザーの行を削除
+          alert('タグを外しました');
+          $(e.target).closest('tr').remove();
+        } else {
+          alert(res.error || 'タグを外すことができませんでした');
+        }
+      },
+      error: function() {
+        alert('エラーが発生しました');
       }
     });
   });
