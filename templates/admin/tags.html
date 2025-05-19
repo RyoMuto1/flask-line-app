@@ -261,9 +261,17 @@ function renderFolderContent(folderId) {
   // 表示するタグ
   var tagsToShow = [];
   if (isUnclassified) {
-    tagsToShow = tagData.filter(function(t) { return !t.parent_id; });
+    // 未分類フォルダの場合は、親IDがなく、かつ自身が親でない（＝子タグを持たない）タグを表示
+    tagsToShow = tagData.filter(function(t) { 
+      return !t.parent_id && !isFolder(t.id); 
+    });
   } else {
     tagsToShow = getChildTags(folderId);
+  }
+  
+  // 指定したタグがフォルダかどうか判定（子タグを持つかどうか）
+  function isFolder(tagId) {
+    return tagData.some(function(t) { return t.parent_id == tagId; });
   }
   
   // タグリスト表示
