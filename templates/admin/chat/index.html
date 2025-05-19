@@ -224,13 +224,19 @@
 
 {% block scripts %}
 {{ super() }}
+<!-- Socket.IO クライアント -->
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 <script>
     let selectedUserId = null;
     let users = [];
+    let socket = null;
     
     // ページ読み込み時の処理
     document.addEventListener('DOMContentLoaded', function() {
         loadUsers();
+        
+        // Socket.IO接続
+        connectSocket();
         
         // メッセージ送信フォームの処理
         document.getElementById('messageForm').addEventListener('submit', function(e) {
@@ -260,6 +266,54 @@
             filterUsers(searchTerm);
         });
     });
+    
+    // Socket.IO接続
+    function connectSocket() {
+        socket = io();
+        
+        // 接続イベント
+        socket.on('connect', function() {
+            console.log('Socket.IO connected');
+        });
+        
+        // 切断イベント
+        socket.on('disconnect', function() {
+            console.log('Socket.IO disconnected');
+        });
+        
+        // 新しいメッセージを受信したとき
+        socket.on('new_message', function(data) {
+            console.log('New message received:', data);
+            
+            // 現在選択されているユーザーと一致する場合はチャットを更新
+            if (selectedUserId === data.user_id) {
+                loadChatHistory(selectedUserId);
+                
+                // 音を鳴らす（オプション）
+                playNotificationSound();
+            }
+            
+            // ユーザーリストを再読み込み（未読カウントを更新するため）
+            loadUsers();
+        });
+    }
+    
+    // 通知音を再生
+    function playNotificationSound() {
+        // 既存の通知音要素を削除
+        const existingAudio = document.getElementById('notificationSound');
+        if (existingAudio) {
+            existingAudio.remove();
+        }
+        
+        // 新しい通知音要素を作成して再生
+        const audio = document.createElement('audio');
+        audio.id = 'notificationSound';
+        audio.src = 'https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3'; // 例として使用
+        audio.style.display = 'none';
+        document.body.appendChild(audio);
+        audio.play().catch(e => console.log('Notification sound error:', e));
+    }
     
     // ユーザーリストの読み込み
     function loadUsers() {

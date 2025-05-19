@@ -12,6 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 from functools import wraps  # 追加
 import urllib.parse  # URLエンコーディング用に追加
+from flask_socketio import SocketIO  # 追加
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,8 @@ load_dotenv()
 app = Flask(__name__)
 # セッション用の鍵
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
+# Socket.IO の初期化
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 管理者認証用デコレータ
 def admin_required(f):
@@ -556,6 +559,9 @@ def webhook():
                             
                             conn.commit()
                             conn.close()
+                            
+                            # WebSocketを通じて管理画面に通知
+                            notify_new_message(user_id, message_text, is_from_admin=False)
         except Exception as e:
             logger.error(f"Webhookイベント処理エラー: {str(e)}")
     except Exception as e:
@@ -1653,6 +1659,10 @@ def api_send_message():
             # LINE APIの送信に失敗しても処理は続行
         
         conn.close()
+        
+        # WebSocketを通じて他の管理画面にも通知
+        notify_new_message(user_id, message, is_from_admin=True)
+        
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"メッセージ送信エラー: {str(e)}")
@@ -1728,4 +1738,21 @@ def api_save_note():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    socketio.run(app, host='0.0.0.0', port=port)
+
+# SocketIOイベントハンドラ
+@socketio.on('connect')
+def handle_connect():
+    logger.info('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    logger.info('Client disconnected')
+
+# 新しいメッセージが届いたときに全クライアントに通知
+def notify_new_message(user_id, message, is_from_admin=False):
+    socketio.emit('new_message', {
+        'user_id': user_id,
+        'message': message,
+        'is_from_admin': is_from_admin
+    })
