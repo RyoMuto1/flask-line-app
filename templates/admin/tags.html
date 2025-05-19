@@ -14,7 +14,7 @@
         <tr>
             <th>ID</th>
             <th>タグ名</th>
-            <th>色</th>
+            <th>人数</th>
             <th>作成日</th>
             <th>操作</th>
         </tr>
@@ -24,7 +24,7 @@
         <tr>
             <td>{{ tag.id }}</td>
             <td>{{ tag.name }}</td>
-            <td><span style="display:inline-block;width:20px;height:20px;background:{{ tag.color }};border-radius:4px;"></span> {{ tag.color }}</td>
+            <td>{{ tag.user_count }}人</td>
             <td>{{ tag.created_at }}</td>
             <td>
                 <a href="#" class="btn btn-sm btn-secondary disabled">編集</a>
@@ -48,10 +48,6 @@
           <div class="mb-3">
             <label for="tagName" class="form-label">タグ名</label>
             <input type="text" class="form-control" id="tagName" placeholder="例: VIP, 購入見込み, 友人など">
-          </div>
-          <div class="mb-3">
-            <label for="tagColor" class="form-label">色</label>
-            <input type="color" class="form-control form-control-color" id="tagColor" value="#2196f3" title="タグの色を選択">
           </div>
         </form>
       </div>

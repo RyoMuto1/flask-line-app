@@ -352,12 +352,33 @@ def init_db():
             CREATE TABLE tags (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                color TEXT DEFAULT '#2196f3',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         conn.commit()
         logger.info("tagsテーブルを作成しました")
+    else:
+        # 既存のtagsテーブルからcolorカラムを削除（もし存在すれば）
+        c.execute("PRAGMA table_info(tags)")
+        columns = [row[1] for row in c.fetchall()]
+        if 'color' in columns:
+            logger.info("tagsテーブルからcolorカラムを削除します")
+            # SQLiteはカラム削除が直接できないので一時テーブルでマイグレーション
+            c.execute('''
+                CREATE TABLE tags_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            c.execute('''
+                INSERT INTO tags_new (id, name, created_at)
+                SELECT id, name, created_at FROM tags
+            ''')
+            c.execute('DROP TABLE tags')
+            c.execute('ALTER TABLE tags_new RENAME TO tags')
+            conn.commit()
+            logger.info("tagsテーブルのcolorカラム削除完了")
 
     # ユーザーとタグの紐付けテーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_tags'")
@@ -1863,7 +1884,13 @@ def update_user_profile(user_id):
 def admin_tags():
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT * FROM tags ORDER BY created_at DESC')
+    c.execute('''
+        SELECT t.*, COUNT(ut.id) as user_count
+        FROM tags t
+        LEFT JOIN user_tags ut ON t.id = ut.tag_id
+        GROUP BY t.id
+        ORDER BY t.created_at DESC
+    ''')
     tags = [dict(row) for row in c.fetchall()]
     conn.close()
     return render_template('admin/tags.html', tags=tags)
