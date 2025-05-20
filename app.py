@@ -2038,7 +2038,7 @@ def delete_tag(tag_id):
 
 @app.route('/admin/tags/users/<int:tag_id>')
 @admin_required
-def tag_users(tag_id):
+def tag_users_api(tag_id):
     try:
         conn = get_db()
         c = conn.cursor()
@@ -2120,37 +2120,6 @@ def reorder_tags():
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"フォルダ並び替えエラー: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# タグのユーザー一覧表示
-@app.route('/admin/tags/users/<int:tag_id>')
-@admin_required
-def tag_users(tag_id):
-    try:
-        conn = get_db()
-        c = conn.cursor()
-        
-        # タグが存在するか確認
-        c.execute('SELECT id FROM tags WHERE id = ?', (tag_id,))
-        tag = c.fetchone()
-        if not tag:
-            return jsonify({'success': False, 'error': 'タグが見つかりません'}), 404
-        
-        # タグに紐づくユーザー一覧を取得
-        c.execute('''
-            SELECT u.line_user_id, u.name, u.email, u.profile_image_url, u.created_at
-            FROM users u
-            JOIN user_tags ut ON u.line_user_id = ut.line_user_id
-            WHERE ut.tag_id = ?
-            ORDER BY u.name
-        ''', (tag_id,))
-        
-        users = [dict(row) for row in c.fetchall()]
-        conn.close()
-        
-        return jsonify({'success': True, 'users': users})
-    except Exception as e:
-        logger.error(f"タグユーザー取得エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # チャット管理画面用のユーザータグ取得API
