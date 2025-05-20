@@ -587,6 +587,11 @@
         
         userInfoElement.innerHTML = `
             <h4>${user.name}</h4>
+            <div class="my-2">
+                <a href="/admin/user/${user.line_user_id}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-person-badge"></i> 詳細ページ
+                </a>
+            </div>
             <div class="mt-3">
                 <div class="mb-2"><strong>メール:</strong> ${user.email || '未設定'}</div>
                 <div class="mb-2"><strong>登録日:</strong> ${user.created_at}</div>

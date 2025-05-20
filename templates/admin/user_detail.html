@@ -90,6 +90,28 @@
     </div>
     {% endif %}
 
+    <!-- ユーザータグ情報 -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">タグ情報</h5>
+                    <button id="editTagsBtn" class="btn btn-sm btn-light">
+                        <i class="bi bi-pencil"></i> 編集
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="tagsDisplay">
+                        <!-- タグはJavaScriptで動的に生成 -->
+                        <div class="empty-state">
+                            <p class="text-muted">タグを読み込み中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- 注文履歴 -->
     <div class="row">
         <div class="col-md-12">
@@ -139,4 +161,252 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // ページ読み込み時にタグを取得
+    document.addEventListener('DOMContentLoaded', function() {
+        // URLからユーザーIDを取得
+        const pathParts = window.location.pathname.split('/');
+        const userId = pathParts[pathParts.length - 1];
+        
+        if (userId) {
+            // ユーザータグを読み込む
+            loadUserTags(userId);
+            
+            // 編集ボタンのイベントリスナー
+            document.getElementById('editTagsBtn').addEventListener('click', function() {
+                // タグ編集モーダルを表示する前に、現在のタグ情報を取得
+                fetch(`/admin/api/user-tags/${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        showTagEditModal(data.tags || [], userId);
+                    })
+                    .catch(error => {
+                        console.error('Error loading tags for editing:', error);
+                        alert('タグ情報の読み込みに失敗しました');
+                    });
+            });
+        }
+    });
+    
+    // ユーザーのタグ読み込み
+    function loadUserTags(userId) {
+        fetch(`/admin/api/user-tags/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                renderUserTags(data.tags || []);
+            })
+            .catch(error => {
+                console.error('Error loading user tags:', error);
+                document.getElementById('tagsDisplay').innerHTML = '<div class="empty-state"><p class="text-muted">タグの読み込みに失敗しました</p></div>';
+            });
+    }
+    
+    // ユーザーのタグを表示
+    function renderUserTags(tags) {
+        const tagsContainer = document.getElementById('tagsDisplay');
+        tagsContainer.innerHTML = '';
+        
+        if (!tags || tags.length === 0) {
+            tagsContainer.innerHTML = '<div class="empty-state"><p class="text-muted">タグがありません</p></div>';
+            return;
+        }
+        
+        // フォルダごとにタグをグループ化
+        const folderGroups = {};
+        
+        tags.forEach(tag => {
+            const folderName = tag.folder_name || '未分類';
+            if (!folderGroups[folderName]) {
+                folderGroups[folderName] = [];
+            }
+            folderGroups[folderName].push(tag);
+        });
+        
+        // フォルダごとにタグを表示
+        Object.keys(folderGroups).forEach(folderName => {
+            const folderDiv = document.createElement('div');
+            folderDiv.className = 'mb-3';
+            
+            // フォルダ名
+            folderDiv.innerHTML = `<h6 class="mb-2"><i class="bi bi-folder text-warning"></i> ${folderName}</h6>`;
+            
+            // タグリスト
+            const tagsDiv = document.createElement('div');
+            tagsDiv.className = 'ms-3 d-flex flex-wrap';
+            
+            folderGroups[folderName].forEach(tag => {
+                const tagBadge = document.createElement('span');
+                tagBadge.className = 'badge bg-info text-white me-2 mb-2';
+                tagBadge.textContent = tag.name;
+                tagBadge.style.padding = '5px 10px';
+                tagsDiv.appendChild(tagBadge);
+            });
+            
+            folderDiv.appendChild(tagsDiv);
+            tagsContainer.appendChild(folderDiv);
+        });
+    }
+    
+    // タグ編集モーダルを表示
+    function showTagEditModal(currentTags, userId) {
+        // すでにモーダルが存在する場合は削除
+        const existingModal = document.getElementById('tagEditModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // すべてのタグとフォルダを取得
+        fetch('/admin/api/all-tags')
+            .then(response => response.json())
+            .then(data => {
+                const allTags = data.tags || [];
+                
+                // フォルダとタグを別々に整理
+                const folders = allTags.filter(tag => tag.is_folder);
+                const tags = allTags.filter(tag => !tag.is_folder);
+                
+                // モーダルを作成
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'tagEditModal';
+                modal.tabIndex = '-1';
+                modal.setAttribute('aria-labelledby', 'tagEditModalLabel');
+                modal.setAttribute('aria-hidden', 'true');
+                
+                let modalHtml = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="tagEditModalLabel">タグを編集</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="tag-selection-container">
+                `;
+                
+                // フォルダごとにタグを表示
+                folders.forEach(folder => {
+                    const folderTags = tags.filter(tag => tag.parent_id === folder.id);
+                    
+                    modalHtml += `
+                        <div class="folder-section mb-3">
+                            <h6><i class="bi bi-folder text-warning"></i> ${folder.name}</h6>
+                            <div class="tag-options ms-3">
+                    `;
+                    
+                    folderTags.forEach(tag => {
+                        const isChecked = currentTags.some(t => t.id === tag.id);
+                        modalHtml += `
+                            <div class="form-check form-check-inline mb-2">
+                                <input class="form-check-input tag-checkbox" type="checkbox" 
+                                    id="tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
+                                <label class="form-check-label" for="tag-${tag.id}">${tag.name}</label>
+                            </div>
+                        `;
+                    });
+                    
+                    modalHtml += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // 未分類のタグ（親IDがないもの）
+                const unclassifiedTags = tags.filter(tag => !tag.parent_id);
+                if (unclassifiedTags.length > 0) {
+                    modalHtml += `
+                        <div class="folder-section mb-3">
+                            <h6><i class="bi bi-folder text-warning"></i> 未分類</h6>
+                            <div class="tag-options ms-3">
+                    `;
+                    
+                    unclassifiedTags.forEach(tag => {
+                        const isChecked = currentTags.some(t => t.id === tag.id);
+                        modalHtml += `
+                            <div class="form-check form-check-inline mb-2">
+                                <input class="form-check-input tag-checkbox" type="checkbox" 
+                                    id="tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
+                                <label class="form-check-label" for="tag-${tag.id}">${tag.name}</label>
+                            </div>
+                        `;
+                    });
+                    
+                    modalHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                modalHtml += `
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                <button type="button" class="btn btn-primary" id="saveTagsBtn">保存</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                modal.innerHTML = modalHtml;
+                document.body.appendChild(modal);
+                
+                // モーダルを表示
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
+                
+                // 保存ボタンのイベントリスナー
+                document.getElementById('saveTagsBtn').addEventListener('click', function() {
+                    // 選択されたタグIDを取得
+                    const selectedTagIds = [];
+                    document.querySelectorAll('.tag-checkbox:checked').forEach(checkbox => {
+                        selectedTagIds.push(parseInt(checkbox.value));
+                    });
+                    
+                    // タグを保存
+                    saveUserTags(userId, selectedTagIds, modalInstance);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading all tags:', error);
+                alert('タグ情報の読み込みに失敗しました');
+            });
+    }
+    
+    // ユーザーのタグを保存
+    function saveUserTags(userId, tagIds, modalInstance) {
+        fetch('/admin/api/save-user-tags', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                tag_ids: tagIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // モーダルを閉じる
+                modalInstance.hide();
+                
+                // タグ表示を更新
+                loadUserTags(userId);
+                
+                alert('タグを保存しました');
+            } else {
+                alert('タグの保存に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving tags:', error);
+            alert('タグの保存に失敗しました');
+        });
+    }
+</script>
 {% endblock %} 
