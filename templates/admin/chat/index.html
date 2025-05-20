@@ -378,15 +378,6 @@
             }
         });
         
-        // メモの保存処理
-        document.getElementById('saveNoteBtn').addEventListener('click', function() {
-            if (!selectedUserId) return;
-            
-            const noteModal = bootstrap.Modal.getInstance(document.getElementById('noteEditModal'));
-            const note = document.getElementById('noteModalInput').value.trim();
-            saveUserNote(selectedUserId, note, noteModal);
-        });
-        
         // ユーザー検索処理
         document.getElementById('userSearch').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
@@ -926,6 +917,12 @@
                 // モーダルを表示
                 const modalInstance = new bootstrap.Modal(modal);
                 modalInstance.show();
+                
+                // 保存ボタンのイベントリスナーを追加
+                document.getElementById('saveNoteBtn').addEventListener('click', function() {
+                    const noteText = document.getElementById('noteModalInput').value.trim();
+                    saveUserNote(userId, noteText, modalInstance);
+                });
             })
             .catch(error => {
                 console.error('Error loading note for editing:', error);
