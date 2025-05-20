@@ -2122,6 +2122,129 @@ def reorder_tags():
         logger.error(f"フォルダ並び替えエラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# タグのユーザー一覧表示
+@app.route('/admin/tags/users/<int:tag_id>')
+@admin_required
+def tag_users(tag_id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # タグが存在するか確認
+        c.execute('SELECT id FROM tags WHERE id = ?', (tag_id,))
+        tag = c.fetchone()
+        if not tag:
+            return jsonify({'success': False, 'error': 'タグが見つかりません'}), 404
+        
+        # タグに紐づくユーザー一覧を取得
+        c.execute('''
+            SELECT u.line_user_id, u.name, u.email, u.profile_image_url, u.created_at
+            FROM users u
+            JOIN user_tags ut ON u.line_user_id = ut.line_user_id
+            WHERE ut.tag_id = ?
+            ORDER BY u.name
+        ''', (tag_id,))
+        
+        users = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify({'success': True, 'users': users})
+    except Exception as e:
+        logger.error(f"タグユーザー取得エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# チャット管理画面用のユーザータグ取得API
+@app.route('/admin/api/user-tags/<line_user_id>')
+@admin_required
+def api_user_tags(line_user_id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # ユーザーが存在するか確認
+        c.execute('SELECT line_user_id FROM users WHERE line_user_id = ?', (line_user_id,))
+        user = c.fetchone()
+        if not user:
+            return jsonify({'success': False, 'error': 'ユーザーが見つかりません'}), 404
+        
+        # ユーザーに紐づくタグ一覧を取得（フォルダ名も含む）
+        c.execute('''
+            SELECT t.id, t.name, t.parent_id, p.name as folder_name
+            FROM tags t
+            JOIN user_tags ut ON t.id = ut.tag_id
+            LEFT JOIN tags p ON t.parent_id = p.id
+            WHERE ut.line_user_id = ?
+            ORDER BY p.name, t.name
+        ''', (line_user_id,))
+        
+        tags = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify({'success': True, 'tags': tags})
+    except Exception as e:
+        logger.error(f"ユーザータグ取得エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 全タグ一覧取得API（フォルダ含む）
+@app.route('/admin/api/all-tags')
+@admin_required
+def api_all_tags():
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # すべてのタグを取得
+        c.execute('''
+            SELECT t.id, t.name, t.parent_id,
+                   CASE WHEN EXISTS (SELECT 1 FROM tags WHERE parent_id = t.id) THEN 1 ELSE 0 END as is_folder
+            FROM tags t
+            ORDER BY t.parent_id, t.name
+        ''')
+        
+        tags = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify({'success': True, 'tags': tags})
+    except Exception as e:
+        logger.error(f"全タグ取得エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ユーザーのタグ保存API
+@app.route('/admin/api/save-user-tags', methods=['POST'])
+@admin_required
+def api_save_user_tags():
+    data = request.json
+    line_user_id = data.get('user_id')
+    tag_ids = data.get('tag_ids', [])
+    
+    if not line_user_id:
+        return jsonify({'success': False, 'error': 'ユーザーIDは必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # ユーザーが存在するか確認
+        c.execute('SELECT line_user_id FROM users WHERE line_user_id = ?', (line_user_id,))
+        user = c.fetchone()
+        if not user:
+            return jsonify({'success': False, 'error': 'ユーザーが見つかりません'}), 404
+        
+        # 現在のタグ関連をすべて削除
+        c.execute('DELETE FROM user_tags WHERE line_user_id = ?', (line_user_id,))
+        
+        # 新しいタグ関連を追加
+        for tag_id in tag_ids:
+            c.execute('INSERT INTO user_tags (line_user_id, tag_id) VALUES (?, ?)', (line_user_id, tag_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"ユーザータグ保存エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port)
