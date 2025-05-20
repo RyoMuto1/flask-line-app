@@ -653,58 +653,69 @@
             return;
         }
         
-        let currentDate = null;
+        // メッセージを日付ごとにグループ化
+        const messagesByDate = {};
         
         messages.forEach(message => {
-            // 日付の区切りを追加
             const messageDate = new Date(message.sent_at + 'Z'); // JSTで自動表示
             const formattedDate = messageDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
             
-            if (!currentDate || formattedDate !== currentDate) {
-                const dateDiv = document.createElement('div');
-                dateDiv.className = 'date-separator';
-                dateDiv.innerHTML = `<span class="date-text">${formattedDate}</span>`;
-                messagesContainer.appendChild(dateDiv);
-                currentDate = formattedDate;
+            if (!messagesByDate[formattedDate]) {
+                messagesByDate[formattedDate] = [];
             }
             
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${message.is_from_admin ? 'message-admin' : 'message-user'}`;
+            messagesByDate[formattedDate].push(message);
+        });
+        
+        // 日付ごとにメッセージを表示
+        Object.keys(messagesByDate).forEach(date => {
+            // 日付セパレータの追加
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'date-separator';
+            dateDiv.innerHTML = `<span class="date-text">${date}</span>`;
+            messagesContainer.appendChild(dateDiv);
             
-            // 時間のフォーマット
-            const time = messageDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-            
-            // アイコンとメッセージバブルを追加
-            let avatarHtml = '';
-            if (!message.is_from_admin) {
-                // LINEのプロフィール画像があれば使用、なければデフォルトアイコン
-                if (message.profile_image_url) {
-                    avatarHtml = `
-                        <div class="message-avatar">
-                            <img src="${message.profile_image_url}" alt="User Avatar" 
-                                 onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'default-avatar\'>U</span>';">
-                        </div>
-                    `;
-                } else {
-                    avatarHtml = `
-                        <div class="message-avatar">
-                            <span class="default-avatar">U</span>
-                        </div>
-                    `;
+            // その日のメッセージを表示
+            messagesByDate[date].forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${message.is_from_admin ? 'message-admin' : 'message-user'}`;
+                
+                // 時間のフォーマット
+                const messageDate = new Date(message.sent_at + 'Z');
+                const time = messageDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                
+                // アイコンとメッセージバブルを追加
+                let avatarHtml = '';
+                if (!message.is_from_admin) {
+                    // LINEのプロフィール画像があれば使用、なければデフォルトアイコン
+                    if (message.profile_image_url) {
+                        avatarHtml = `
+                            <div class="message-avatar">
+                                <img src="${message.profile_image_url}" alt="User Avatar" 
+                                     onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\"default-avatar\">U</span>';">
+                            </div>
+                        `;
+                    } else {
+                        avatarHtml = `
+                            <div class="message-avatar">
+                                <span class="default-avatar">U</span>
+                            </div>
+                        `;
+                    }
                 }
-            }
-            
-            messageDiv.innerHTML = `
-                ${avatarHtml}
-                <div class="message-content-wrapper">
-                    <div class="message-bubble">
-                        <div class="message-content">${message.message}</div>
+                
+                messageDiv.innerHTML = `
+                    ${avatarHtml}
+                    <div class="message-content-wrapper">
+                        <div class="message-bubble">
+                            <div class="message-content">${message.message}</div>
+                        </div>
+                        <div class="message-info">${time}</div>
                     </div>
-                    <div class="message-info">${time}</div>
-                </div>
-            `;
-            
-            messagesContainer.appendChild(messageDiv);
+                `;
+                
+                messagesContainer.appendChild(messageDiv);
+            });
         });
         
         // 最新メッセージにスクロール
