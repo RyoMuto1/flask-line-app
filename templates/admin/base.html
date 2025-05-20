@@ -16,13 +16,23 @@
             background-color: #343a40;
             color: white;
             padding-top: 2rem;
+            width: 100px;  /* 横幅を狭く */
         }
         
         .admin-sidebar .nav-link {
             color: rgba(255, 255, 255, 0.8);
-            padding: 0.5rem 1rem;
-            margin-bottom: 0.5rem;
+            padding: 0.75rem 0.5rem;
+            margin-bottom: 1rem;
             border-radius: 0.25rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .admin-sidebar .nav-link i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
         }
         
         .admin-sidebar .nav-link:hover {
@@ -36,10 +46,11 @@
         }
         
         .admin-sidebar .sidebar-heading {
-            padding: 0.875rem 1.25rem;
-            font-size: 1.2rem;
+            padding: 0.5rem;
+            font-size: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             margin-bottom: 1rem;
+            text-align: center;
         }
         
         /* コンテンツ領域 */
@@ -63,37 +74,44 @@
     <div class="container-fluid">
         <div class="row">
             <!-- サイドバー -->
-            <nav class="col-md-2 d-none d-md-block admin-sidebar">
+            <nav class="col-auto d-none d-md-block admin-sidebar">
                 <div class="sidebar-heading">
-                    <i class="fas fa-cogs"></i> 管理画面
+                    <i class="fas fa-cogs"></i><br>管理画面
                 </div>
                 <div class="nav flex-column">
                     <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}">
-                        <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                        <i class="fas fa-home"></i>
+                        <span>ホーム</span>
                     </a>
                     <a href="{{ url_for('admin_chat') }}" class="nav-link {% if request.path == url_for('admin_chat') %}active{% endif %}">
-                        <i class="fas fa-comments"></i> チャット管理
+                        <i class="fas fa-comments"></i>
+                        <span>チャット</span>
                     </a>
                     <a href="{{ url_for('admin_tags') }}" class="nav-link {% if request.path == url_for('admin_tags') %}active{% endif %}">
-                        <i class="fas fa-tags"></i> タグ管理
+                        <i class="fas fa-tags"></i>
+                        <span>タグ</span>
                     </a>
                     <a href="{{ url_for('line_source_analytics') }}" class="nav-link {% if request.path == url_for('line_source_analytics') %}active{% endif %}">
-                        <i class="fab fa-line"></i> LINE流入分析
+                        <i class="fab fa-line"></i>
+                        <span>分析</span>
                     </a>
                     <a href="{{ url_for('admin_change_password') }}" class="nav-link {% if request.path == url_for('admin_change_password') %}active{% endif %}">
-                        <i class="fas fa-key"></i> パスワード変更
+                        <i class="fas fa-key"></i>
+                        <span>パスワード</span>
                     </a>
                     <a href="{{ url_for('admin_list') }}" class="nav-link {% if request.path == url_for('admin_list') %}active{% endif %}">
-                        <i class="fas fa-users-cog"></i> 管理者一覧
+                        <i class="fas fa-users-cog"></i>
+                        <span>管理者</span>
                     </a>
                     <a href="{{ url_for('admin_logout') }}" class="nav-link">
-                        <i class="fas fa-sign-out-alt"></i> ログアウト
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>ログアウト</span>
                     </a>
                 </div>
             </nav>
             
             <!-- メインコンテンツ -->
-            <main class="col-md-10 ml-sm-auto admin-content">
+            <main class="col ml-sm-auto admin-content">
                 {% block content %}{% endblock %}
             </main>
         </div>
