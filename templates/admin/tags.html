@@ -228,7 +228,7 @@ function renderFolderList() {
   // 未分類（フォルダに属さないタグ）を先頭に追加
   html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center folder-item active" data-id="unclassified">';
   html += '<span><i class="fas fa-folder text-warning"></i> 未分類</span>';
-  html += '<span class="badge bg-secondary rounded-pill">' + getUnclassifiedTagCount() + '</span>';
+  html += '<span class="text-secondary">(' + getUnclassifiedTagCount() + ')</span>';
   html += '</a>';
   
   // トップレベルフォルダーを表示（シンプルに一覧のみ）
@@ -236,7 +236,7 @@ function renderFolderList() {
     var childTags = getChildTags(folder.id);
     html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center folder-item" data-id="' + folder.id + '">';
     html += '<span><i class="fas fa-folder text-warning"></i> ' + folder.name + '</span>';
-    html += '<span class="badge bg-secondary rounded-pill">' + childTags.length + '</span>';
+    html += '<span class="text-secondary">(' + childTags.length + ')</span>';
     html += '</a>';
   });
   
