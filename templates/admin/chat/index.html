@@ -332,12 +332,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="user-actions mt-3 d-flex justify-content-center">
-                <a id="userDetailLink" href="#" class="btn btn-outline-primary" target="_blank">
-                    <i class="fas fa-user"></i> ユーザー詳細
-                </a>
-            </div>
         </div>
     </div>
 </div>
@@ -619,11 +613,12 @@
                     <td>${formatDateTime(user.created_at)}</td>
                 </tr>
             </table>
+            <div class="mt-3 d-flex justify-content-center">
+                <a id="userDetailLink" href="/admin/user/${user.line_user_id}" class="btn btn-outline-primary" target="_blank">
+                    <i class="fas fa-user"></i> ユーザー詳細
+                </a>
+            </div>
         `;
-        
-        // ユーザー詳細リンクを更新
-        const userDetailLink = document.getElementById('userDetailLink');
-        userDetailLink.href = `/admin/user/${user.line_user_id}`;
         
         // メモとタグのエリアを表示
         document.getElementById('userNotes').style.display = 'block';
