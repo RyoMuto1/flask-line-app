@@ -16,12 +16,12 @@
             background-color: #343a40;
             color: white;
             padding-top: 2rem;
-            width: 80px;  /* 横幅を80pxに変更 */
+            width: 100px;  /* 横幅を80pxから100pxに変更 */
         }
         
         .admin-sidebar .nav-link {
             color: rgba(255, 255, 255, 0.8);
-            padding: 0.75rem 0.5rem;
+            padding: 0.75rem 0.25rem; /* 左右のpaddingを0.5remから0.25remに縮小 */
             margin-bottom: 1rem;
             border-radius: 0.25rem;
             text-align: center;
@@ -41,7 +41,8 @@
         }
         
         .admin-sidebar .nav-link span {
-            font-size: 10px;
+            font-size: 9px; /* フォントサイズを10pxから9pxに縮小 */
+            white-space: nowrap; /* テキストを折り返さないようにする */
         }
         
         .admin-sidebar .nav-link:hover {
