@@ -2536,7 +2536,7 @@ def api_status_markers():
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute('SELECT id, name, color FROM status_markers ORDER BY sort_order ASC')
+        c.execute('SELECT id, name, color FROM status_markers ORDER BY order_index ASC')
         
         markers = []
         for row in c.fetchall():
