@@ -1635,15 +1635,18 @@ def api_users():
     conn = get_db()
     cursor = conn.cursor()
     
-    # ユーザー一覧を取得（未読メッセージ数と最新メッセージも取得）
+    # ユーザー一覧を取得（未読メッセージ数と最新メッセージ、対応マークも取得）
     cursor.execute('''
         SELECT u.line_user_id, u.name, u.email, u.profile_image_url, u.created_at,
                (SELECT COUNT(*) FROM admin_chat_messages 
                 WHERE line_user_id = u.line_user_id AND is_from_admin = 0 AND read_status = 0) AS unread_count,
                (SELECT message FROM admin_chat_messages 
                 WHERE line_user_id = u.line_user_id 
-                ORDER BY sent_at DESC LIMIT 1) AS last_message
+                ORDER BY sent_at DESC LIMIT 1) AS last_message,
+               sm.name as status_marker_name, sm.color as status_marker_color
         FROM users u
+        LEFT JOIN user_status_markers usm ON u.line_user_id = usm.line_user_id
+        LEFT JOIN status_markers sm ON usm.marker_id = sm.id
         ORDER BY unread_count DESC, 
                  (SELECT MAX(sent_at) FROM admin_chat_messages WHERE line_user_id = u.line_user_id) DESC NULLS LAST,
                  u.created_at DESC
@@ -1658,7 +1661,9 @@ def api_users():
             'profile_image_url': row['profile_image_url'],
             'created_at': row['created_at'],
             'unread_count': row['unread_count'],
-            'last_message': row['last_message']
+            'last_message': row['last_message'],
+            'status_marker_name': row['status_marker_name'],
+            'status_marker_color': row['status_marker_color']
         })
     
     conn.close()
@@ -1671,11 +1676,14 @@ def api_user_info(line_user_id):
     conn = get_db()
     cursor = conn.cursor()
     
-    # ユーザー情報を取得
+    # ユーザー情報を取得（対応マークも含む）
     cursor.execute('''
-        SELECT u.*, COUNT(o.id) as order_count
+        SELECT u.*, COUNT(o.id) as order_count,
+               sm.id as status_marker_id, sm.name as status_marker_name, sm.color as status_marker_color
         FROM users u
         LEFT JOIN orders o ON u.line_user_id = o.line_user_id
+        LEFT JOIN user_status_markers usm ON u.line_user_id = usm.line_user_id
+        LEFT JOIN status_markers sm ON usm.marker_id = sm.id
         WHERE u.line_user_id = ?
         GROUP BY u.line_user_id
     ''', (line_user_id,))
@@ -1691,7 +1699,10 @@ def api_user_info(line_user_id):
         'email': user_row['email'],
         'profile_image_url': user_row['profile_image_url'],
         'created_at': user_row['created_at'],
-        'order_count': user_row['order_count']
+        'order_count': user_row['order_count'],
+        'status_marker_id': user_row['status_marker_id'],
+        'status_marker_name': user_row['status_marker_name'],
+        'status_marker_color': user_row['status_marker_color']
     }
     
     conn.close()
@@ -2489,11 +2500,64 @@ def api_all_status_markers():
         logger.error(f"全対応マーク取得エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/api/update-user-status-marker', methods=['POST'])
+@admin_required
+def api_update_user_status_marker():
+    data = request.json
+    user_id = data.get('user_id')
+    marker_id = data.get('marker_id')
+    
+    if not user_id:
+        return jsonify({'success': False, 'error': 'ユーザーIDは必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 既存の対応マークを削除
+        c.execute('DELETE FROM user_status_markers WHERE line_user_id = ?', (user_id,))
+        
+        # 新しい対応マークを設定（marker_idがNoneでない場合）
+        if marker_id:
+            c.execute('INSERT INTO user_status_markers (line_user_id, marker_id) VALUES (?, ?)', 
+                     (user_id, marker_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"対応マーク更新エラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/status-markers')
+@admin_required
+def api_status_markers():
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT id, name, color FROM status_markers ORDER BY sort_order ASC')
+        
+        markers = []
+        for row in c.fetchall():
+            markers.append({
+                'id': row['id'],
+                'name': row['name'],
+                'color': row['color']
+            })
+        
+        conn.close()
+        return jsonify({'success': True, 'markers': markers})
+    except Exception as e:
+        logger.error(f"対応マーク一覧取得エラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    socketio.run(app, host='0.0.0.0', port=port)
+    init_db()
+    logger.info("アプリケーションを開始しています...")
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
 else:
-    # gunicornから参照されるオブジェクト
+    # gunicornから参照されるオブジェクト（本番環境用）
     application = socketio.wsgi_app
 
 # SocketIOイベントハンドラ

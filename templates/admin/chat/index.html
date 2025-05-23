@@ -237,6 +237,82 @@
         font-weight: bold;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
+    
+    /* 対応マーク用スタイル */
+    .status-marker-inline {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: bold;
+        color: white;
+        margin-left: 5px;
+        vertical-align: middle;
+    }
+    
+    .status-marker-large {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 10px;
+        cursor: pointer;
+        text-align: center;
+        width: 100%;
+        transition: opacity 0.2s;
+    }
+    
+    .status-marker-large:hover {
+        opacity: 0.8;
+    }
+    
+    .status-marker-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+    
+    .status-marker-dropdown.show {
+        display: block;
+    }
+    
+    .status-marker-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        font-size: 12px;
+        font-weight: bold;
+        transition: background-color 0.2s;
+    }
+    
+    .status-marker-option:last-child {
+        border-bottom: none;
+    }
+    
+    .status-marker-option:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .status-marker-option.none {
+        color: #6c757d;
+        font-weight: normal;
+    }
+    
+    .status-marker-container {
+        position: relative;
+        margin-bottom: 15px;
+    }
 </style>
 {% endblock %}
 
@@ -539,10 +615,16 @@
                 unreadBadge = `<span class="unread-badge float-right">${user.unread_count}</span>`;
             }
             
+            // 対応マークの表示処理を追加
+            let statusMarkerHtml = '';
+            if (user.status_marker_name && user.status_marker_color) {
+                statusMarkerHtml = `<span class="status-marker-inline" style="background-color: ${user.status_marker_color};">${user.status_marker_name}</span>`;
+            }
+            
             userItem.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <strong>${user.name}</strong>
+                        <strong>${user.name}${statusMarkerHtml}</strong>
                         <div class="small text-muted">${user.last_message || '新規ユーザー'}</div>
                     </div>
                     ${unreadBadge}
@@ -608,6 +690,32 @@
         const userInfoElement = document.getElementById('userInfo');
         const profileImg = user.profile_image_url || 'https://via.placeholder.com/100';
         
+        // 対応マークの表示HTML
+        let statusMarkerHtml = '';
+        if (user.status_marker_name && user.status_marker_color) {
+            statusMarkerHtml = `
+                <div class="status-marker-container">
+                    <div class="status-marker-large" style="background-color: ${user.status_marker_color};" onclick="showStatusMarkerDropdown()">
+                        ${user.status_marker_name}
+                    </div>
+                    <div class="status-marker-dropdown" id="statusMarkerDropdown">
+                        <!-- 対応マーク一覧はJavaScriptで動的に生成 -->
+                    </div>
+                </div>
+            `;
+        } else {
+            statusMarkerHtml = `
+                <div class="status-marker-container">
+                    <div class="status-marker-large" style="background-color: #6c757d;" onclick="showStatusMarkerDropdown()">
+                        対応マークなし
+                    </div>
+                    <div class="status-marker-dropdown" id="statusMarkerDropdown">
+                        <!-- 対応マーク一覧はJavaScriptで動的に生成 -->
+                    </div>
+                </div>
+            `;
+        }
+        
         userInfoElement.innerHTML = `
             <div class="text-center mb-3">
                 <img src="${profileImg}" alt="${user.name}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
@@ -624,7 +732,11 @@
                     <i class="fas fa-user"></i> ユーザー詳細
                 </a>
             </div>
+            ${statusMarkerHtml}
         `;
+        
+        // 対応マーク一覧を読み込み
+        loadStatusMarkerOptions(user.line_user_id);
         
         // メモとタグのエリアを表示
         document.getElementById('userNotes').style.display = 'block';
@@ -824,6 +936,92 @@
         renderUserList(filteredUsers);
     }
     
+    // 対応マーク選択肢の読み込み
+    function loadStatusMarkerOptions(userId) {
+        fetch('/admin/api/status-markers')
+            .then(response => response.json())
+            .then(data => {
+                renderStatusMarkerOptions(data.markers || [], userId);
+            })
+            .catch(error => {
+                console.error('Error loading status markers:', error);
+            });
+    }
+    
+    // 対応マーク選択肢のレンダリング
+    function renderStatusMarkerOptions(markers, userId) {
+        const dropdown = document.getElementById('statusMarkerDropdown');
+        if (!dropdown) return;
+        
+        dropdown.innerHTML = '';
+        
+        // 「対応マークなし」オプション
+        const noneOption = document.createElement('div');
+        noneOption.className = 'status-marker-option none';
+        noneOption.textContent = '対応マークなし';
+        noneOption.onclick = () => updateUserStatusMarker(userId, null);
+        dropdown.appendChild(noneOption);
+        
+        // 各対応マーク
+        markers.forEach(marker => {
+            const option = document.createElement('div');
+            option.className = 'status-marker-option';
+            option.style.color = marker.color;
+            option.textContent = marker.name;
+            option.onclick = () => updateUserStatusMarker(userId, marker.id);
+            dropdown.appendChild(option);
+        });
+    }
+    
+    // 対応マークドロップダウンの表示/非表示
+    function showStatusMarkerDropdown() {
+        const dropdown = document.getElementById('statusMarkerDropdown');
+        if (!dropdown) return;
+        
+        dropdown.classList.toggle('show');
+        
+        // 外側をクリックした時にドロップダウンを閉じる
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.status-marker-container')) {
+                dropdown.classList.remove('show');
+            }
+        });
+    }
+    
+    // ユーザーの対応マークを更新
+    function updateUserStatusMarker(userId, markerId) {
+        fetch('/admin/api/update-user-status-marker', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                marker_id: markerId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // ドロップダウンを閉じる
+                const dropdown = document.getElementById('statusMarkerDropdown');
+                if (dropdown) dropdown.classList.remove('show');
+                
+                // ユーザー情報を再読み込み
+                loadUserInfo(userId);
+                
+                // ユーザーリストも更新
+                loadUsers();
+            } else {
+                alert('対応マークの更新に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating status marker:', error);
+            alert('対応マークの更新に失敗しました');
+        });
+    }
+
     // ユーザーのタグ読み込み
     function loadUserTags(userId) {
         fetch(`/admin/api/user-tags/${userId}`)
