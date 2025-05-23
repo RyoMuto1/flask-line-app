@@ -100,6 +100,10 @@
                         <i class="fas fa-tags"></i>
                         <span>タグ</span>
                     </a>
+                    <a href="{{ url_for('admin_status_markers') }}" class="nav-link {% if request.path == url_for('admin_status_markers') %}active{% endif %}">
+                        <i class="fas fa-check-circle"></i>
+                        <span>対応マーク</span>
+                    </a>
                     <a href="{{ url_for('line_source_analytics') }}" class="nav-link {% if request.path == url_for('line_source_analytics') %}active{% endif %}">
                         <i class="fab fa-line"></i>
                         <span>流入経路</span>

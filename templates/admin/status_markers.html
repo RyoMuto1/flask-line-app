@@ -1,0 +1,410 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}対応マーク管理{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.css" />
+<style>
+    .status-marker-list {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        overflow: hidden;
+    }
+    
+    .status-marker-item {
+        padding: 1rem;
+        background-color: #fff;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .status-marker-item:last-child {
+        border-bottom: none;
+    }
+    
+    .status-marker-drag-handle {
+        cursor: grab;
+        margin-right: 0.5rem;
+        color: #6c757d;
+    }
+    
+    .status-marker-name {
+        flex: 1;
+        padding: 0.5rem;
+        margin-right: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+    }
+    
+    .status-marker-name:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .status-marker-color {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        cursor: pointer;
+        border: 1px solid #dee2e6;
+    }
+    
+    .status-marker-actions button {
+        margin-left: 0.5rem;
+    }
+    
+    .color-picker-container {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+    }
+    
+    .color-picker-container.show {
+        display: block;
+    }
+    
+    .color-option {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin: 0.25rem;
+        cursor: pointer;
+        display: inline-block;
+        border: 1px solid #dee2e6;
+    }
+    
+    .color-option.selected {
+        border: 2px solid #000;
+    }
+    
+    /* アニメーション効果 */
+    .status-marker-item {
+        transition: background-color 0.2s;
+    }
+    
+    .status-marker-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .status-marker-item.sortable-ghost {
+        background-color: #e9ecef;
+        opacity: 0.5;
+    }
+    
+    .add-button {
+        margin-top: 1rem;
+    }
+    
+    /* 編集中のスタイル */
+    .editing .status-marker-name {
+        border-color: #80bdff;
+        background-color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">対応マーク管理</h1>
+
+<!-- フラッシュメッセージ -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">対応マーク一覧</h5>
+    </div>
+    <div class="card-body">
+        <p class="card-text">顧客や注文の状態を表す対応マークを管理できます。</p>
+        <p class="card-text">対応マークはドラッグ＆ドロップで並び替えることができます。</p>
+        
+        <!-- 対応マーク一覧 -->
+        <div class="status-marker-list" id="statusMarkerList">
+            {% for marker in markers %}
+            <div class="status-marker-item" data-id="{{ marker.id }}">
+                <div class="status-marker-drag-handle">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+                <div class="status-marker-index">
+                    {{ loop.index }}
+                </div>
+                <input type="text" class="status-marker-name" value="{{ marker.name }}" data-id="{{ marker.id }}">
+                <div class="status-marker-color" style="background-color: {{ marker.color }}" data-id="{{ marker.id }}"></div>
+                <div class="status-marker-actions">
+                    <button class="btn btn-sm btn-primary set-button" data-id="{{ marker.id }}">設定</button>
+                    <button class="btn btn-sm btn-danger delete-button" data-id="{{ marker.id }}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- 色選択のポップオーバー -->
+        <div class="color-picker-container" id="colorPickerContainer">
+            <div class="row">
+                <div class="col-12 mb-2 text-center">
+                    <strong>色を選択</strong>
+                </div>
+            </div>
+            <div class="color-options">
+                <!-- カラーパレット（1行目） -->
+                <div class="color-option" style="background-color: #dc3545" data-color="#dc3545"></div>
+                <div class="color-option" style="background-color: #e67e22" data-color="#e67e22"></div>
+                <div class="color-option" style="background-color: #f1c40f" data-color="#f1c40f"></div>
+                <div class="color-option" style="background-color: #2ecc71" data-color="#2ecc71"></div>
+                <div class="color-option" style="background-color: #3498db" data-color="#3498db"></div>
+                <div class="color-option" style="background-color: #9b59b6" data-color="#9b59b6"></div>
+                <div class="color-option" style="background-color: #e84393" data-color="#e84393"></div>
+                <div class="color-option" style="background-color: #696969" data-color="#696969"></div>
+                
+                <!-- カラーパレット（2行目） -->
+                <div class="color-option" style="background-color: #e74c3c" data-color="#e74c3c"></div>
+                <div class="color-option" style="background-color: #e67e22" data-color="#e67e22"></div>
+                <div class="color-option" style="background-color: #f39c12" data-color="#f39c12"></div>
+                <div class="color-option" style="background-color: #27ae60" data-color="#27ae60"></div>
+                <div class="color-option" style="background-color: #2980b9" data-color="#2980b9"></div>
+                <div class="color-option" style="background-color: #8e44ad" data-color="#8e44ad"></div>
+                <div class="color-option" style="background-color: #d81b60" data-color="#d81b60"></div>
+                <div class="color-option" style="background-color: #444444" data-color="#444444"></div>
+            </div>
+        </div>
+        
+        <!-- 新規追加ボタン -->
+        <button class="btn btn-primary add-button" id="addStatusMarkerButton">
+            <i class="fas fa-plus"></i> 新しい対応マークを追加
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 対応マークの並べ替え機能
+    const statusMarkerList = document.getElementById('statusMarkerList');
+    if (statusMarkerList) {
+        const sortable = new Sortable(statusMarkerList, {
+            handle: '.status-marker-drag-handle',
+            animation: 150,
+            onEnd: function() {
+                saveOrder();
+            }
+        });
+    }
+    
+    // 対応マーク順序の保存
+    function saveOrder() {
+        const markerItems = document.querySelectorAll('.status-marker-item');
+        const orderData = Array.from(markerItems).map(item => item.dataset.id);
+        
+        fetch('/admin/status-markers/reorder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                marker_order: orderData
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 順序の番号を更新
+                markerItems.forEach((item, index) => {
+                    item.querySelector('.status-marker-index').textContent = index + 1;
+                });
+            } else {
+                alert('並び替えの保存に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+    
+    // 対応マーク名の編集
+    const markerNames = document.querySelectorAll('.status-marker-name');
+    markerNames.forEach(nameInput => {
+        nameInput.addEventListener('blur', function() {
+            const markerId = this.dataset.id;
+            const newName = this.value.trim();
+            
+            if (newName === '') {
+                alert('対応マーク名は空にできません');
+                return;
+            }
+            
+            const parentItem = this.closest('.status-marker-item');
+            const colorEl = parentItem.querySelector('.status-marker-color');
+            const color = colorEl.style.backgroundColor;
+            
+            saveMarkerChanges(markerId, newName, color);
+        });
+        
+        nameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                this.blur();
+            }
+        });
+    });
+    
+    // 色選択の表示
+    const markerColors = document.querySelectorAll('.status-marker-color');
+    const colorPicker = document.getElementById('colorPickerContainer');
+    let currentColorTarget = null;
+    
+    markerColors.forEach(colorEl => {
+        colorEl.addEventListener('click', function(e) {
+            currentColorTarget = this;
+            const rect = this.getBoundingClientRect();
+            colorPicker.style.left = rect.left + 'px';
+            colorPicker.style.top = (rect.bottom + 5) + 'px';
+            colorPicker.classList.add('show');
+            e.stopPropagation();
+        });
+    });
+    
+    // 色選択の非表示（ページ全体をクリックした場合）
+    document.addEventListener('click', function(e) {
+        if (!colorPicker.contains(e.target) && !e.target.classList.contains('status-marker-color')) {
+            colorPicker.classList.remove('show');
+        }
+    });
+    
+    // 色の選択
+    const colorOptions = document.querySelectorAll('.color-option');
+    colorOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            if (currentColorTarget) {
+                const color = this.dataset.color;
+                currentColorTarget.style.backgroundColor = color;
+                
+                const markerId = currentColorTarget.dataset.id;
+                const parentItem = currentColorTarget.closest('.status-marker-item');
+                const nameInput = parentItem.querySelector('.status-marker-name');
+                const name = nameInput.value;
+                
+                saveMarkerChanges(markerId, name, color);
+                
+                colorPicker.classList.remove('show');
+            }
+        });
+    });
+    
+    // 対応マークの変更保存
+    function saveMarkerChanges(markerId, name, color) {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('color', color);
+        
+        fetch(`/admin/status-markers/edit/${markerId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('保存に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+    
+    // 削除ボタンの処理
+    const deleteButtons = document.querySelectorAll('.delete-button');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const markerId = this.dataset.id;
+            if (confirm('この対応マークを削除してもよろしいですか？')) {
+                deleteMarker(markerId);
+            }
+        });
+    });
+    
+    // 対応マークの削除
+    function deleteMarker(markerId) {
+        fetch(`/admin/status-markers/delete/${markerId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const markerItem = document.querySelector(`.status-marker-item[data-id="${markerId}"]`);
+                if (markerItem) {
+                    markerItem.remove();
+                    // インデックスの更新
+                    const markerItems = document.querySelectorAll('.status-marker-item');
+                    markerItems.forEach((item, index) => {
+                        item.querySelector('.status-marker-index').textContent = index + 1;
+                    });
+                }
+            } else {
+                alert('削除に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+    
+    // 新規対応マーク追加
+    const addButton = document.getElementById('addStatusMarkerButton');
+    addButton.addEventListener('click', function() {
+        const newName = prompt('新しい対応マーク名を入力してください：');
+        if (newName && newName.trim() !== '') {
+            addNewMarker(newName.trim());
+        }
+    });
+    
+    // 新規対応マークの追加
+    function addNewMarker(name) {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('color', '#808080'); // デフォルトカラー
+        
+        fetch('/admin/status-markers/create', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // 簡易的に画面をリロード
+            } else {
+                alert('追加に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('エラーが発生しました: ' + error);
+        });
+    }
+});
+</script>
+{% endblock %} 

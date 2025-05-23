@@ -2,6 +2,20 @@
 
 {% block title %}チャット相手を選択{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    .user-status-marker {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <h2>チャット相手を選択</h2>
@@ -24,7 +38,17 @@
                 {% for user in users %}
                     <a href="/chat/create/{{ user.line_user_id }}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ user.name }}</h5>
+                            <h5 class="mb-1">
+                                {% if user.status_marker_color %}
+                                <span class="user-status-marker" style="background-color: {{ user.status_marker_color }};" title="{{ user.status_marker_name }}"></span>
+                                {% endif %}
+                                {{ user.name }}
+                            </h5>
+                            <small>
+                                {% if user.status_marker_name %}
+                                <span class="badge text-bg-light">{{ user.status_marker_name }}</span>
+                                {% endif %}
+                            </small>
                         </div>
                         {% if user.email %}
                             <small>メール: {{ user.email }}</small>

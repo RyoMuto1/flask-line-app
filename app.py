@@ -387,6 +387,40 @@ def init_db():
         conn.commit()
         logger.info("user_tagsテーブルを作成しました")
 
+    # 対応マークテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='status_markers'")
+    if not c.fetchone():
+        logger.info("status_markersテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE status_markers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                color TEXT NOT NULL DEFAULT '#808080',
+                order_index INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("status_markersテーブルを作成しました")
+
+    # ユーザーと対応マークの関連テーブル
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_status_markers'")
+    if not c.fetchone():
+        logger.info("user_status_markersテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE user_status_markers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                line_user_id TEXT NOT NULL,
+                marker_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (line_user_id) REFERENCES users(line_user_id),
+                FOREIGN KEY (marker_id) REFERENCES status_markers(id),
+                UNIQUE(line_user_id, marker_id)
+            )
+        ''')
+        conn.commit()
+        logger.info("user_status_markersテーブルを作成しました")
+
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -1374,24 +1408,30 @@ def chat_home():
 
 @app.route('/chat/users')
 def chat_users():
-    if 'line_user_id' not in session:
+    if not session.get('line_user_id'):
         return redirect('/login')
     
-    conn = get_db()
-    c = conn.cursor()
-    
-    # 他のユーザーを検索（自分以外）
-    c.execute('''
-        SELECT *
-        FROM users
-        WHERE line_user_id != ?
-        ORDER BY name
-    ''', (session['line_user_id'],))
-    
-    users = [dict(row) for row in c.fetchall()]
-    conn.close()
-    
-    return render_template('chat/users.html', users=users)
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('''
+            SELECT u.line_user_id, u.name, u.email, u.profile_image_url,
+                   sm.name as status_marker_name, sm.color as status_marker_color
+            FROM users u
+            LEFT JOIN user_status_markers usm ON u.line_user_id = usm.line_user_id
+            LEFT JOIN status_markers sm ON usm.marker_id = sm.id
+            WHERE u.line_user_id != ?
+            ORDER BY u.name
+        ''', (session['line_user_id'],))
+        
+        users = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return render_template('chat/users.html', users=users)
+    except Exception as e:
+        logger.error(f"チャットユーザー一覧エラー: {str(e)}")
+        flash('エラーが発生しました', 'danger')
+        return redirect('/chat')
 
 @app.route('/chat/create/<target_user_id>')
 def create_chat(target_user_id):
@@ -2212,6 +2252,241 @@ def api_save_user_tags():
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"ユーザータグ保存エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 対応マーク管理画面
+@app.route('/admin/status-markers')
+@admin_required
+def admin_status_markers():
+    conn = get_db()
+    c = conn.cursor()
+    
+    # 対応マーク一覧を取得
+    c.execute('''
+        SELECT * FROM status_markers
+        ORDER BY order_index, created_at
+    ''')
+    markers = [dict(row) for row in c.fetchall()]
+    conn.close()
+    
+    return render_template('admin/status_markers.html', markers=markers)
+
+# 対応マーク作成API
+@app.route('/admin/status-markers/create', methods=['POST'])
+@admin_required
+def create_status_marker():
+    name = request.form.get('name')
+    color = request.form.get('color', '#808080')
+    
+    if not name:
+        return jsonify({'success': False, 'error': '対応マーク名は必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 最大の順序を取得
+        c.execute('SELECT MAX(order_index) as max_order FROM status_markers')
+        max_order = c.fetchone()['max_order'] or 0
+        
+        # 新しい対応マークを追加
+        c.execute('''
+            INSERT INTO status_markers (name, color, order_index, created_at)
+            VALUES (?, ?, ?, datetime("now"))
+        ''', (name, color, max_order + 1))
+        
+        marker_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'id': marker_id})
+    except Exception as e:
+        logger.error(f"対応マーク作成エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 対応マーク編集API
+@app.route('/admin/status-markers/edit/<int:marker_id>', methods=['POST'])
+@admin_required
+def edit_status_marker(marker_id):
+    name = request.form.get('name')
+    color = request.form.get('color')
+    
+    if not name:
+        return jsonify({'success': False, 'error': '対応マーク名は必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 対応マークが存在するか確認
+        c.execute('SELECT id FROM status_markers WHERE id = ?', (marker_id,))
+        marker = c.fetchone()
+        if not marker:
+            return jsonify({'success': False, 'error': '対応マークが見つかりません'}), 404
+        
+        # 対応マークを更新
+        c.execute('''
+            UPDATE status_markers
+            SET name = ?, color = ?
+            WHERE id = ?
+        ''', (name, color, marker_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"対応マーク更新エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 対応マーク削除API
+@app.route('/admin/status-markers/delete/<int:marker_id>', methods=['POST'])
+@admin_required
+def delete_status_marker(marker_id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 対応マークが存在するか確認
+        c.execute('SELECT id FROM status_markers WHERE id = ?', (marker_id,))
+        marker = c.fetchone()
+        if not marker:
+            return jsonify({'success': False, 'error': '対応マークが見つかりません'}), 404
+        
+        # 関連するuser_status_markersを削除
+        c.execute('DELETE FROM user_status_markers WHERE marker_id = ?', (marker_id,))
+        
+        # 対応マークを削除
+        c.execute('DELETE FROM status_markers WHERE id = ?', (marker_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"対応マーク削除エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 対応マーク並び替えAPI
+@app.route('/admin/status-markers/reorder', methods=['POST'])
+@admin_required
+def reorder_status_markers():
+    try:
+        data = request.json
+        marker_order = data.get('marker_order', [])
+        
+        if not marker_order:
+            return jsonify({'success': False, 'error': '並び替え情報が不正です'}), 400
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 各対応マークに順序情報を保存
+        for i, marker_id in enumerate(marker_order):
+            c.execute('UPDATE status_markers SET order_index = ? WHERE id = ?', (i, marker_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"対応マーク並び替えエラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ユーザーに対応マークを設定するAPI
+@app.route('/admin/api/save-user-status-marker', methods=['POST'])
+@admin_required
+def api_save_user_status_marker():
+    data = request.json
+    line_user_id = data.get('user_id')
+    marker_id = data.get('marker_id')
+    
+    if not line_user_id or marker_id is None:
+        return jsonify({'success': False, 'error': 'ユーザーIDと対応マークIDは必須です'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # ユーザーが存在するか確認
+        c.execute('SELECT line_user_id FROM users WHERE line_user_id = ?', (line_user_id,))
+        user = c.fetchone()
+        if not user:
+            return jsonify({'success': False, 'error': 'ユーザーが見つかりません'}), 404
+        
+        # 現在の対応マークを削除
+        c.execute('DELETE FROM user_status_markers WHERE line_user_id = ?', (line_user_id,))
+        
+        # 新しい対応マークを設定
+        if int(marker_id) > 0:  # マーカーIDが0以上の場合のみ設定
+            c.execute('''
+                INSERT INTO user_status_markers (line_user_id, marker_id)
+                VALUES (?, ?)
+            ''', (line_user_id, marker_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"ユーザー対応マーク保存エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ユーザーの対応マーク取得API
+@app.route('/admin/api/user-status-marker/<line_user_id>')
+@admin_required
+def api_user_status_marker(line_user_id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # ユーザーが存在するか確認
+        c.execute('SELECT line_user_id FROM users WHERE line_user_id = ?', (line_user_id,))
+        user = c.fetchone()
+        if not user:
+            return jsonify({'success': False, 'error': 'ユーザーが見つかりません'}), 404
+        
+        # ユーザーの対応マークを取得
+        c.execute('''
+            SELECT sm.id, sm.name, sm.color
+            FROM status_markers sm
+            JOIN user_status_markers usm ON sm.id = usm.marker_id
+            WHERE usm.line_user_id = ?
+            LIMIT 1
+        ''', (line_user_id,))
+        
+        marker = c.fetchone()
+        conn.close()
+        
+        if marker:
+            return jsonify({'success': True, 'marker': dict(marker)})
+        else:
+            return jsonify({'success': True, 'marker': None})
+    except Exception as e:
+        logger.error(f"ユーザー対応マーク取得エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 全対応マーク一覧取得API
+@app.route('/admin/api/all-status-markers')
+@admin_required
+def api_all_status_markers():
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # すべての対応マークを取得
+        c.execute('''
+            SELECT id, name, color
+            FROM status_markers
+            ORDER BY order_index, created_at
+        ''')
+        
+        markers = [dict(row) for row in c.fetchall()]
+        conn.close()
+        
+        return jsonify({'success': True, 'markers': markers})
+    except Exception as e:
+        logger.error(f"全対応マーク取得エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
