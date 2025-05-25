@@ -421,6 +421,68 @@ def init_db():
         conn.commit()
         logger.info("user_status_markersテーブルを作成しました")
 
+    # テンプレートフォルダテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='template_folders'")
+    if not c.fetchone():
+        logger.info("template_foldersテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE template_folders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                color TEXT DEFAULT '#FFA500',
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("template_foldersテーブルを作成しました")
+        
+        # デフォルトフォルダを作成
+        default_folders = [
+            ('未分類', '#FFA500', 0),
+            ('注文フォーム関連', '#FFD700', 1),
+            ('画像送信', '#87CEEB', 2),
+            ('Fテンプレ', '#DDA0DD', 3),
+            ('イラレ担当', '#98FB98', 4),
+            ('昇華在庫テンプLdeep系', '#F0E68C', 5),
+            ('昇華在庫テンプLjeep系', '#B0E0E6', 6),
+            ('いい感じ画像', '#FFB6C1', 7),
+            ('発送連絡', '#90EE90', 8),
+            ('イラレなし発注2025サッカー', '#FFEFD5', 9),
+            ('ホッケー', '#E0E0E0', 10),
+            ('バスケ', '#D2B48C', 11),
+            ('ゲームシャツ', '#F5DEB3', 12)
+        ]
+        
+        for name, color, sort_order in default_folders:
+            c.execute('''
+                INSERT INTO template_folders (name, color, sort_order)
+                VALUES (?, ?, ?)
+            ''', (name, color, sort_order))
+        conn.commit()
+        logger.info("デフォルトテンプレートフォルダを作成しました")
+
+    # テンプレートテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='message_templates'")
+    if not c.fetchone():
+        logger.info("message_templatesテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE message_templates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                folder_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL DEFAULT 'text',  -- 'text', 'image', 'video', 'carousel', 'flex'
+                content TEXT NOT NULL,              -- メッセージ内容またはJSON
+                preview_text TEXT,                  -- プレビュー用テキスト
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (folder_id) REFERENCES template_folders(id) ON DELETE CASCADE
+            )
+        ''')
+        conn.commit()
+        logger.info("message_templatesテーブルを作成しました")
+
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -2551,6 +2613,238 @@ def api_status_markers():
     except Exception as e:
         logger.error(f"対応マーク一覧取得エラー: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# テンプレート管理機能
+@app.route('/admin/templates')
+@admin_required
+def admin_templates():
+    """テンプレート管理画面"""
+    folder_id = request.args.get('folder_id', type=int)
+    search_term = request.args.get('search', '')
+    
+    conn = get_db()
+    c = conn.cursor()
+    
+    # フォルダ一覧とテンプレート数を取得
+    c.execute('''
+        SELECT f.*, 
+               COALESCE(COUNT(t.id), 0) as template_count
+        FROM template_folders f
+        LEFT JOIN message_templates t ON f.id = t.folder_id
+        GROUP BY f.id
+        ORDER BY f.sort_order, f.name
+    ''')
+    folders = c.fetchall()
+    
+    # デフォルトフォルダ選択
+    if not folder_id and folders:
+        folder_id = folders[0]['id']
+    
+    # テンプレート一覧を取得
+    templates = []
+    if folder_id:
+        query = '''
+            SELECT t.*, f.name as folder_name
+            FROM message_templates t
+            JOIN template_folders f ON t.folder_id = f.id
+            WHERE t.folder_id = ?
+        '''
+        params = [folder_id]
+        
+        if search_term:
+            query += ' AND (t.name LIKE ? OR t.preview_text LIKE ?)'
+            params.extend([f'%{search_term}%', f'%{search_term}%'])
+            
+        query += ' ORDER BY t.sort_order, t.created_at DESC'
+        
+        c.execute(query, params)
+        templates = c.fetchall()
+    
+    conn.close()
+    
+    return render_template('admin/templates.html', 
+                         folders=folders, 
+                         templates=templates,
+                         selected_folder_id=folder_id,
+                         search_term=search_term)
+
+@app.route('/admin/templates/folders/create', methods=['POST'])
+@admin_required
+def create_template_folder():
+    """テンプレートフォルダ作成"""
+    try:
+        name = request.form.get('name', '').strip()
+        color = request.form.get('color', '#FFA500')
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'フォルダ名は必須です'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 最大ソート順を取得
+        c.execute('SELECT MAX(sort_order) FROM template_folders')
+        max_order = c.fetchone()[0] or 0
+        
+        # フォルダ作成
+        c.execute('''
+            INSERT INTO template_folders (name, color, sort_order)
+            VALUES (?, ?, ?)
+        ''', (name, color, max_order + 1))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'フォルダが作成されました'})
+        
+    except Exception as e:
+        logger.error(f"フォルダ作成エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'フォルダの作成に失敗しました'})
+
+@app.route('/admin/templates/create', methods=['POST'])
+@admin_required
+def create_template():
+    """テンプレート作成"""
+    try:
+        name = request.form.get('name', '').strip()
+        template_type = request.form.get('type', 'text')
+        content = request.form.get('content', '').strip()
+        folder_id = request.form.get('folder_id', type=int)
+        
+        if not name or not content:
+            return jsonify({'success': False, 'message': 'テンプレート名と内容は必須です'})
+        
+        if not folder_id:
+            return jsonify({'success': False, 'message': 'フォルダの選択は必須です'})
+        
+        # プレビューテキストを生成
+        preview_text = content
+        if template_type == 'text':
+            preview_text = content[:100] + ('...' if len(content) > 100 else '')
+        elif template_type == 'image':
+            preview_text = f"画像: {content}"
+        elif template_type == 'video':
+            preview_text = f"動画: {content}"
+        elif template_type in ['carousel', 'flex']:
+            preview_text = f"{template_type.capitalize()}メッセージ"
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ存在確認
+        c.execute('SELECT id FROM template_folders WHERE id = ?', (folder_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': '指定されたフォルダが存在しません'})
+        
+        # 最大ソート順を取得
+        c.execute('SELECT MAX(sort_order) FROM message_templates WHERE folder_id = ?', (folder_id,))
+        max_order = c.fetchone()[0] or 0
+        
+        # テンプレート作成
+        c.execute('''
+            INSERT INTO message_templates (folder_id, name, type, content, preview_text, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (folder_id, name, template_type, content, preview_text, max_order + 1))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'テンプレートが作成されました'})
+        
+    except Exception as e:
+        logger.error(f"テンプレート作成エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'テンプレートの作成に失敗しました'})
+
+@app.route('/admin/templates/delete', methods=['POST'])
+@admin_required
+def delete_template():
+    """テンプレート削除（単体）"""
+    try:
+        data = request.get_json()
+        template_id = data.get('template_id')
+        
+        if not template_id:
+            return jsonify({'success': False, 'message': 'テンプレートIDが必要です'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # テンプレート存在確認
+        c.execute('SELECT id FROM message_templates WHERE id = ?', (template_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': 'テンプレートが見つかりません'})
+        
+        # テンプレート削除
+        c.execute('DELETE FROM message_templates WHERE id = ?', (template_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'テンプレートが削除されました'})
+        
+    except Exception as e:
+        logger.error(f"テンプレート削除エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'テンプレートの削除に失敗しました'})
+
+@app.route('/admin/templates/delete-multiple', methods=['POST'])
+@admin_required
+def delete_templates():
+    """テンプレート削除（複数）"""
+    try:
+        data = request.get_json()
+        template_ids = data.get('template_ids', [])
+        
+        if not template_ids:
+            return jsonify({'success': False, 'message': '削除するテンプレートを選択してください'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # 複数削除
+        placeholders = ','.join(['?' for _ in template_ids])
+        c.execute(f'DELETE FROM message_templates WHERE id IN ({placeholders})', template_ids)
+        
+        deleted_count = c.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': f'{deleted_count}個のテンプレートが削除されました'})
+        
+    except Exception as e:
+        logger.error(f"テンプレート一括削除エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'テンプレートの削除に失敗しました'})
+
+@app.route('/admin/templates/preview/<int:template_id>')
+@admin_required
+def preview_template(template_id):
+    """テンプレートプレビュー"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        c.execute('SELECT * FROM message_templates WHERE id = ?', (template_id,))
+        template = c.fetchone()
+        
+        if not template:
+            return jsonify({'success': False, 'message': 'テンプレートが見つかりません'})
+        
+        conn.close()
+        
+        # プレビュー用のデータを整形
+        preview_data = {
+            'id': template['id'],
+            'name': template['name'],
+            'type': template['type'],
+            'content': template['content'],
+            'preview_text': template['preview_text']
+        }
+        
+        return jsonify({'success': True, 'template': preview_data})
+        
+    except Exception as e:
+        logger.error(f"テンプレートプレビューエラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'プレビューの取得に失敗しました'})
 
 if __name__ == '__main__':
     init_db()

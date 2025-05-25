@@ -1,0 +1,717 @@
+{% extends "admin/base.html" %}
+
+{% block title %}テンプレート管理{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .template-container {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        padding: 0;
+    }
+    
+    .template-header {
+        background: white;
+        padding: 2rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .template-header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+    
+    .template-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .template-main {
+        display: flex;
+        height: calc(100vh - 200px);
+    }
+    
+    /* 左サイドバー */
+    .template-sidebar {
+        width: 280px;
+        background: white;
+        border-right: 1px solid #e9ecef;
+        padding: 1rem;
+        overflow-y: auto;
+    }
+    
+    .folder-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .new-folder-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    
+    .folder-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .folder-item {
+        padding: 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background-color 0.2s;
+    }
+    
+    .folder-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .folder-item.active {
+        background-color: #e3f2fd;
+        border-left: 3px solid #2196f3;
+    }
+    
+    .folder-icon {
+        color: #ffa500;
+        font-size: 0.9rem;
+    }
+    
+    .folder-name {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    
+    .folder-count {
+        background: #e9ecef;
+        color: #6c757d;
+        font-size: 0.8rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+    }
+    
+    /* メインコンテンツエリア */
+    .template-content {
+        flex: 1;
+        background: white;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .template-toolbar {
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .toolbar-left {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .create-template-btn {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .create-pack-btn {
+        background: #00bcd4;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .search-box {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 200px;
+    }
+    
+    .template-table {
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .template-list {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .template-list th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .template-list td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: top;
+    }
+    
+    .template-list tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .template-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .template-title {
+        font-weight: 600;
+        color: #333;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .template-type {
+        display: inline-block;
+        background: #6c757d;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        margin-right: 0.5rem;
+    }
+    
+    .template-type.text { background: #28a745; }
+    .template-type.image { background: #fd7e14; }
+    .template-type.video { background: #6f42c1; }
+    .template-type.carousel { background: #e83e8c; }
+    .template-type.flex { background: #20c997; }
+    
+    .template-preview {
+        color: #6c757d;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        max-height: 2.8rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    
+    .template-date {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .template-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+        background: white;
+        cursor: pointer;
+        text-decoration: none;
+        color: #333;
+    }
+    
+    .btn-primary {
+        background: #2196f3;
+        color: white;
+        border-color: #2196f3;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+    
+    .operation-btn {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    
+    .bottom-toolbar {
+        padding: 1rem 2rem;
+        border-top: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+    
+    .delete-selected-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    /* モーダル */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 2rem;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 600px;
+    }
+    
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        color: black;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="template-container">
+    <!-- ヘッダー -->
+    <div class="template-header">
+        <h1>テンプレート</h1>
+        <p class="template-description">
+            個別トーク・シナリオ配信・一斉配信・自動応答・リマインドなどで配信できるテンプレートを登録できます。
+        </p>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div class="template-main">
+        <!-- 左サイドバー（フォルダ一覧） -->
+        <div class="template-sidebar">
+            <div class="folder-header">
+                <button class="new-folder-btn" onclick="showNewFolderModal()">
+                    <i class="fas fa-plus"></i> 新しいフォルダ
+                </button>
+                <button class="btn-sm" onclick="reorderFolders()">並び替え</button>
+            </div>
+            
+                         <ul class="folder-list" id="folderList">
+                 {% for folder in folders %}
+                 <li class="folder-item {% if folder.id == selected_folder_id %}active{% endif %}" 
+                     onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
+                     <i class="fas fa-folder folder-icon" style="color: {{ folder.color or '#FFA500' }}"></i>
+                     <span class="folder-name">{{ folder.name }}</span>
+                     <span class="folder-count">({{ folder.template_count }})</span>
+                 </li>
+                 {% endfor %}
+             </ul>
+        </div>
+        
+        <!-- メインコンテンツエリア -->
+        <div class="template-content">
+            <!-- ツールバー -->
+            <div class="template-toolbar">
+                <div class="toolbar-left">
+                    <div class="dropdown">
+                        <button class="create-template-btn" onclick="showCreateTemplateModal()">
+                            テンプレートを作成 <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <button class="create-pack-btn" onclick="showCreatePackModal()">
+                        <i class="fas fa-plus"></i> テンプレートパックを作成
+                    </button>
+                    <button class="btn-sm" onclick="reorderTemplates()">並び替え</button>
+                </div>
+                <div class="toolbar-right">
+                    <input type="text" class="search-box" placeholder="検索" id="searchBox" onkeyup="searchTemplates()">
+                </div>
+            </div>
+            
+            <!-- テンプレート一覧 -->
+            <div class="template-table">
+                <table class="template-list">
+                    <thead>
+                        <tr>
+                            <th width="40"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th>テンプレート名</th>
+                            <th width="120">登録日</th>
+                            <th width="200">アクション</th>
+                            <th width="100">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="templateTableBody">
+                        {% for template in templates %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="template_ids" value="{{ template.id }}" class="template-checkbox">
+                            </td>
+                            <td>
+                                <div class="template-item">
+                                    <div class="template-title">{{ template.name }}</div>
+                                    <div>
+                                        <span class="template-type {{ template.type }}">
+                                            {% if template.type == 'text' %}テキスト
+                                            {% elif template.type == 'image' %}画像
+                                            {% elif template.type == 'video' %}動画
+                                            {% elif template.type == 'carousel' %}カルーセル
+                                            {% elif template.type == 'flex' %}フレックス
+                                            {% endif %}
+                                        </span>
+                                        {% if template.preview_text %}
+                                        <div class="template-preview">{{ template.preview_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="template-date">{{ template.created_at.strftime('%Y.%m.%d') }}</td>
+                            <td class="template-actions">
+                                <button class="btn-sm btn-primary" onclick="previewTemplate({{ template.id }})">プレビュー</button>
+                                <button class="btn-sm btn-danger" onclick="deleteTemplate({{ template.id }})">削除</button>
+                            </td>
+                            <td>
+                                <button class="operation-btn" onclick="editTemplate({{ template.id }})">操作 <i class="fas fa-chevron-down"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 下部ツールバー -->
+            <div class="bottom-toolbar">
+                <button class="delete-selected-btn" onclick="deleteSelectedTemplates()">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新しいフォルダ作成モーダル -->
+<div id="newFolderModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('newFolderModal')">&times;</span>
+        <h2>新しいフォルダを作成</h2>
+        <form id="newFolderForm" onsubmit="createFolder(event)">
+            <div class="form-group">
+                <label for="folderName">フォルダ名</label>
+                <input type="text" id="folderName" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="folderColor">色</label>
+                <input type="color" id="folderColor" name="color" class="form-control" value="#FFA500">
+            </div>
+            <button type="submit" class="btn btn-success">作成</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('newFolderModal')">キャンセル</button>
+        </form>
+    </div>
+</div>
+
+<!-- テンプレート作成モーダル -->
+<div id="createTemplateModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('createTemplateModal')">&times;</span>
+        <h2>テンプレートを作成</h2>
+        <form id="createTemplateForm" onsubmit="createTemplate(event)">
+            <div class="form-group">
+                <label for="templateName">テンプレート名</label>
+                <input type="text" id="templateName" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="templateType">タイプ</label>
+                <select id="templateType" name="type" class="form-control" onchange="changeTemplateType()">
+                    <option value="text">テキスト</option>
+                    <option value="image">画像</option>
+                    <option value="video">動画</option>
+                    <option value="carousel">カルーセル</option>
+                    <option value="flex">フレックス</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="templateContent">内容</label>
+                <textarea id="templateContent" name="content" class="form-control" rows="5" required></textarea>
+            </div>
+            <input type="hidden" id="templateFolderId" name="folder_id" value="{{ selected_folder_id or 1 }}">
+            <button type="submit" class="btn btn-success">作成</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('createTemplateModal')">キャンセル</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// フォルダ選択
+function selectFolder(folderId) {
+    window.location.href = `{{ url_for('admin_templates') }}?folder_id=${folderId}`;
+}
+
+// 新しいフォルダモーダル表示
+function showNewFolderModal() {
+    document.getElementById('newFolderModal').style.display = 'block';
+}
+
+// テンプレート作成モーダル表示
+function showCreateTemplateModal() {
+    document.getElementById('createTemplateModal').style.display = 'block';
+}
+
+// モーダル閉じる
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// 全選択トグル
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.template-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+// フォルダ作成
+function createFolder(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('{{ url_for("create_template_folder") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('フォルダの作成に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// テンプレート作成
+function createTemplate(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    fetch('{{ url_for("create_template") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('テンプレートの作成に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// テンプレート削除
+function deleteTemplate(templateId) {
+    if (confirm('このテンプレートを削除しますか？')) {
+        fetch(`{{ url_for('delete_template') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({template_id: templateId})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('削除に失敗しました: ' + data.message);
+            }
+        });
+    }
+}
+
+// 選択済みテンプレート削除
+function deleteSelectedTemplates() {
+    const selectedIds = Array.from(document.querySelectorAll('.template-checkbox:checked'))
+                           .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert('削除するテンプレートを選択してください');
+        return;
+    }
+    
+    if (confirm(`選択した${selectedIds.length}個のテンプレートを削除しますか？`)) {
+        fetch('{{ url_for("delete_templates") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({template_ids: selectedIds})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('削除に失敗しました: ' + data.message);
+            }
+        });
+    }
+}
+
+// 検索
+function searchTemplates() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    const rows = document.querySelectorAll('#templateTableBody tr');
+    
+    rows.forEach(row => {
+        const templateName = row.querySelector('.template-title').textContent.toLowerCase();
+        const previewText = row.querySelector('.template-preview');
+        const preview = previewText ? previewText.textContent.toLowerCase() : '';
+        
+        if (templateName.includes(searchTerm) || preview.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// プレビュー
+function previewTemplate(templateId) {
+    // プレビュー機能の実装
+    alert('プレビュー機能は実装予定です');
+}
+
+// 編集
+function editTemplate(templateId) {
+    // 編集機能の実装
+    alert('編集機能は実装予定です');
+}
+
+// テンプレートタイプ変更時
+function changeTemplateType() {
+    const type = document.getElementById('templateType').value;
+    const contentLabel = document.querySelector('label[for="templateContent"]');
+    const content = document.getElementById('templateContent');
+    
+    switch(type) {
+        case 'text':
+            contentLabel.textContent = '内容';
+            content.placeholder = 'メッセージ内容を入力してください';
+            break;
+        case 'image':
+            contentLabel.textContent = '画像URL';
+            content.placeholder = 'https://example.com/image.jpg';
+            break;
+        case 'video':
+            contentLabel.textContent = '動画URL';
+            content.placeholder = 'https://example.com/video.mp4';
+            break;
+        case 'carousel':
+        case 'flex':
+            contentLabel.textContent = 'JSON設定';
+            content.placeholder = 'JSON形式で設定を入力してください';
+            break;
+    }
+}
+
+// モーダル外クリックで閉じる
+window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %} 
