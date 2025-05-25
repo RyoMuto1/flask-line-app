@@ -2609,7 +2609,10 @@ def admin_templates():
         GROUP BY f.id
         ORDER BY f.sort_order, f.name
     ''')
-    folders = c.fetchall()
+    folders_raw = c.fetchall()
+    
+    # フォルダデータを辞書に変換
+    folders = [dict(folder) for folder in folders_raw]
     
     # デフォルトフォルダ選択
     if not folder_id and folders:
@@ -2633,7 +2636,21 @@ def admin_templates():
         query += ' ORDER BY t.sort_order, t.created_at DESC'
         
         c.execute(query, params)
-        templates = c.fetchall()
+        templates_raw = c.fetchall()
+        
+        # テンプレートデータを辞書に変換して日付を処理
+        templates = []
+        for template in templates_raw:
+            template_dict = dict(template)
+            # created_atが文字列の場合の処理
+            if template_dict['created_at']:
+                if isinstance(template_dict['created_at'], str):
+                    # 文字列から日付部分を抽出 (YYYY-MM-DD形式)
+                    template_dict['created_at'] = template_dict['created_at'][:10]
+                else:
+                    # datetimeオブジェクトの場合
+                    template_dict['created_at'] = template_dict['created_at'].strftime('%Y.%m.%d')
+            templates.append(template_dict)
     
     conn.close()
     

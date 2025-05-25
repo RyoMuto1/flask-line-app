@@ -503,7 +503,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="template-date">{{ template.created_at.strftime('%Y.%m.%d') }}</td>
+                            <td class="template-date">{{ template.created_at or '-' }}</td>
                             <td class="template-actions">
                                 <button class="btn-sm btn-primary" onclick="previewTemplate({{ template.id }})">プレビュー</button>
                                 <button class="btn-sm btn-danger" onclick="deleteTemplate({{ template.id }})">削除</button>
