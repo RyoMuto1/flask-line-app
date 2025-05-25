@@ -436,31 +436,6 @@ def init_db():
         ''')
         conn.commit()
         logger.info("template_foldersテーブルを作成しました")
-        
-        # デフォルトフォルダを作成
-        default_folders = [
-            ('未分類', '#FFA500', 0),
-            ('注文フォーム関連', '#FFD700', 1),
-            ('画像送信', '#87CEEB', 2),
-            ('Fテンプレ', '#DDA0DD', 3),
-            ('イラレ担当', '#98FB98', 4),
-            ('昇華在庫テンプLdeep系', '#F0E68C', 5),
-            ('昇華在庫テンプLjeep系', '#B0E0E6', 6),
-            ('いい感じ画像', '#FFB6C1', 7),
-            ('発送連絡', '#90EE90', 8),
-            ('イラレなし発注2025サッカー', '#FFEFD5', 9),
-            ('ホッケー', '#E0E0E0', 10),
-            ('バスケ', '#D2B48C', 11),
-            ('ゲームシャツ', '#F5DEB3', 12)
-        ]
-        
-        for name, color, sort_order in default_folders:
-            c.execute('''
-                INSERT INTO template_folders (name, color, sort_order)
-                VALUES (?, ?, ?)
-            ''', (name, color, sort_order))
-        conn.commit()
-        logger.info("デフォルトテンプレートフォルダを作成しました")
 
     # テンプレートテーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='message_templates'")
@@ -2700,6 +2675,73 @@ def create_template_folder():
     except Exception as e:
         logger.error(f"フォルダ作成エラー: {str(e)}")
         return jsonify({'success': False, 'message': 'フォルダの作成に失敗しました'})
+
+@app.route('/admin/templates/folders/edit/<int:folder_id>', methods=['POST'])
+@admin_required
+def edit_template_folder(folder_id):
+    """テンプレートフォルダ編集"""
+    try:
+        name = request.form.get('name', '').strip()
+        color = request.form.get('color', '#FFA500')
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'フォルダ名は必須です'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ存在確認
+        c.execute('SELECT id FROM template_folders WHERE id = ?', (folder_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': 'フォルダが見つかりません'})
+        
+        # フォルダ更新
+        c.execute('''
+            UPDATE template_folders 
+            SET name = ?, color = ?
+            WHERE id = ?
+        ''', (name, color, folder_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'フォルダが更新されました'})
+        
+    except Exception as e:
+        logger.error(f"フォルダ更新エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'フォルダの更新に失敗しました'})
+
+@app.route('/admin/templates/folders/delete/<int:folder_id>', methods=['POST'])
+@admin_required
+def delete_template_folder(folder_id):
+    """テンプレートフォルダ削除"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ存在確認
+        c.execute('SELECT id FROM template_folders WHERE id = ?', (folder_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': 'フォルダが見つかりません'})
+        
+        # フォルダ内のテンプレート数を確認
+        c.execute('SELECT COUNT(*) as count FROM message_templates WHERE folder_id = ?', (folder_id,))
+        template_count = c.fetchone()[0]
+        
+        if template_count > 0:
+            return jsonify({'success': False, 'message': f'このフォルダには{template_count}個のテンプレートが含まれています。先にテンプレートを削除または移動してください。'})
+        
+        # フォルダ削除
+        c.execute('DELETE FROM template_folders WHERE id = ?', (folder_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'フォルダが削除されました'})
+        
+    except Exception as e:
+        logger.error(f"フォルダ削除エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'フォルダの削除に失敗しました'})
 
 @app.route('/admin/templates/create', methods=['POST'])
 @admin_required

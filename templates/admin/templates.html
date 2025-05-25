@@ -104,6 +104,57 @@
         border-radius: 12px;
     }
     
+    .folder-edit-btn {
+        opacity: 0;
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.2rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        margin-left: 0.5rem;
+        transition: opacity 0.2s;
+    }
+    
+    .folder-item:hover .folder-edit-btn {
+        opacity: 1;
+    }
+    
+    .folder-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .folder-dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        background-color: white;
+        min-width: 120px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        border-radius: 4px;
+        z-index: 1;
+        border: 1px solid #ddd;
+    }
+    
+    .folder-dropdown-content a {
+        color: #333;
+        padding: 8px 12px;
+        text-decoration: none;
+        display: block;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    
+    .folder-dropdown-content a:hover {
+        background-color: #f1f1f1;
+    }
+    
+    .folder-dropdown.show .folder-dropdown-content {
+        display: block;
+    }
+    
     /* メインコンテンツエリア */
     .template-content {
         flex: 1;
@@ -124,11 +175,6 @@
         display: flex;
         gap: 1rem;
         align-items: center;
-    }
-    
-    .dropdown {
-        position: relative;
-        display: inline-block;
     }
     
     .create-template-btn {
@@ -382,16 +428,23 @@
                 <button class="btn-sm" onclick="reorderFolders()">並び替え</button>
             </div>
             
-                         <ul class="folder-list" id="folderList">
-                 {% for folder in folders %}
-                 <li class="folder-item {% if folder.id == selected_folder_id %}active{% endif %}" 
-                     onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
-                     <i class="fas fa-folder folder-icon" style="color: {{ folder.color or '#FFA500' }}"></i>
-                     <span class="folder-name">{{ folder.name }}</span>
-                     <span class="folder-count">({{ folder.template_count }})</span>
-                 </li>
-                 {% endfor %}
-             </ul>
+            <ul class="folder-list" id="folderList">
+                {% for folder in folders %}
+                <li class="folder-item {% if folder.id == selected_folder_id %}active{% endif %}" 
+                    onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
+                    <i class="fas fa-folder folder-icon" style="color: {{ folder.color or '#FFA500' }}"></i>
+                    <span class="folder-name">{{ folder.name }}</span>
+                    <span class="folder-count">({{ folder.template_count }})</span>
+                    <div class="folder-dropdown">
+                        <button class="folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown({{ folder.id }})">編集</button>
+                        <div class="folder-dropdown-content" id="dropdown-{{ folder.id }}">
+                            <a onclick="editFolderName({{ folder.id }}, '{{ folder.name }}', '{{ folder.color }}')">名前を変更</a>
+                            <a onclick="deleteFolder({{ folder.id }})">削除</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
         
         <!-- メインコンテンツエリア -->
@@ -492,6 +545,27 @@
     </div>
 </div>
 
+<!-- フォルダ編集モーダル -->
+<div id="editFolderModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('editFolderModal')">&times;</span>
+        <h2>フォルダ名を変更</h2>
+        <form id="editFolderForm" onsubmit="updateFolder(event)">
+            <div class="form-group">
+                <label for="editFolderName">フォルダ名</label>
+                <input type="text" id="editFolderName" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="editFolderColor">色</label>
+                <input type="color" id="editFolderColor" name="color" class="form-control" value="#FFA500">
+            </div>
+            <input type="hidden" id="editFolderId" name="folder_id">
+            <button type="submit" class="btn btn-success">更新</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editFolderModal')">キャンセル</button>
+        </form>
+    </div>
+</div>
+
 <!-- テンプレート作成モーダル -->
 <div id="createTemplateModal" class="modal">
     <div class="modal-content">
@@ -549,6 +623,84 @@ function toggleSelectAll() {
     const selectAll = document.getElementById('selectAll');
     const checkboxes = document.querySelectorAll('.template-checkbox');
     checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+// フォルダドロップダウンの表示切り替え
+function toggleFolderDropdown(folderId) {
+    const dropdown = document.getElementById(`dropdown-${folderId}`);
+    const folderDropdown = dropdown.closest('.folder-dropdown');
+    
+    // 他のドロップダウンを閉じる
+    document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+        if (el !== folderDropdown) {
+            el.classList.remove('show');
+        }
+    });
+    
+    // 現在のドロップダウンを切り替え
+    folderDropdown.classList.toggle('show');
+}
+
+// フォルダ名編集
+function editFolderName(folderId, currentName, currentColor) {
+    document.getElementById('editFolderId').value = folderId;
+    document.getElementById('editFolderName').value = currentName;
+    document.getElementById('editFolderColor').value = currentColor;
+    document.getElementById('editFolderModal').style.display = 'block';
+    
+    // ドロップダウンを閉じる
+    document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+        el.classList.remove('show');
+    });
+}
+
+// フォルダ更新
+function updateFolder(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const folderId = formData.get('folder_id');
+    
+    fetch(`{{ url_for('edit_template_folder', folder_id=0) }}`.replace('0', folderId), {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('フォルダの更新に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// フォルダ削除
+function deleteFolder(folderId) {
+    if (confirm('このフォルダを削除しますか？\n※フォルダ内にテンプレートがある場合は削除できません。')) {
+        fetch(`{{ url_for('delete_template_folder', folder_id=0) }}`.replace('0', folderId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('フォルダの削除に失敗しました: ' + data.message);
+            }
+        });
+    }
+    
+    // ドロップダウンを閉じる
+    document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+        el.classList.remove('show');
+    });
 }
 
 // フォルダ作成
@@ -667,14 +819,25 @@ function searchTemplates() {
 
 // プレビュー
 function previewTemplate(templateId) {
-    // プレビュー機能の実装
     alert('プレビュー機能は実装予定です');
 }
 
 // 編集
 function editTemplate(templateId) {
-    // 編集機能の実装
     alert('編集機能は実装予定です');
+}
+
+// 未実装の関数
+function showCreatePackModal() {
+    alert('テンプレートパック機能は実装予定です');
+}
+
+function reorderFolders() {
+    alert('フォルダ並び替え機能は実装予定です');
+}
+
+function reorderTemplates() {
+    alert('テンプレート並び替え機能は実装予定です');
 }
 
 // テンプレートタイプ変更時
@@ -712,6 +875,13 @@ window.onclick = function(event) {
             modal.style.display = 'none';
         }
     });
+    
+    // ドロップダウン外クリックで閉じる
+    if (!event.target.matches('.folder-edit-btn')) {
+        document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
 }
 </script>
 {% endblock %} 
