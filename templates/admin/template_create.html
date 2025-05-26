@@ -1,0 +1,535 @@
+{% extends "admin/base.html" %}
+
+{% block title %}テンプレート登録{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .template-create-container {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+        padding: 0;
+    }
+    
+    .template-create-header {
+        background: white;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .template-create-header h1 {
+        font-size: 1.5rem;
+        margin: 0;
+        color: #333;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .btn-manual {
+        background: none;
+        border: 1px solid #ddd;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        color: #333;
+        text-decoration: none;
+    }
+    
+    .template-create-main {
+        display: flex;
+        height: calc(100vh - 120px);
+    }
+    
+    /* 左側：設定エリア */
+    .template-form-left {
+        flex: 1;
+        background: white;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+    
+    /* 右側：プレビューエリア */
+    .template-form-right {
+        width: 350px;
+        background: white;
+        border-left: 1px solid #e9ecef;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .required {
+        color: #dc3545;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .message-type-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    
+    .tab-btn.active {
+        background: #2196f3;
+        color: white;
+        border-color: #2196f3;
+    }
+    
+    .tab-btn:hover {
+        background: #f8f9fa;
+    }
+    
+    .tab-btn.active:hover {
+        background: #1976d2;
+    }
+    
+    .message-editor {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .editor-toolbar {
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .editor-btn {
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    
+    .editor-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .message-textarea {
+        border: none;
+        border-radius: 0;
+        resize: vertical;
+        min-height: 200px;
+    }
+    
+    .char-counter {
+        padding: 0.5rem;
+        text-align: right;
+        font-size: 0.8rem;
+        color: #6c757d;
+        background: #f8f9fa;
+    }
+    
+    .btn-outline {
+        background: white;
+        border: 1px solid #ddd;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .checkbox-group {
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .icon-setting {
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #f8f9fa;
+    }
+    
+    .icon-display {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .icon-placeholder {
+        background: #e9ecef;
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    
+    .btn-change {
+        background: none;
+        border: none;
+        color: #2196f3;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .phone-preview {
+        border: 2px solid #333;
+        border-radius: 20px;
+        padding: 1rem;
+        background: #f0f0f0;
+    }
+    
+    .phone-screen {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        min-height: 400px;
+    }
+    
+    .message-preview {
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .message-bubble {
+        background: #2196f3;
+        color: white;
+        padding: 0.75rem;
+        border-radius: 18px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .template-footer {
+        background: white;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .footer-left, .footer-right {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-primary {
+        background: #2196f3;
+        color: white;
+    }
+    
+    .btn-outline-secondary {
+        background: white;
+        border: 1px solid #6c757d;
+        color: #6c757d;
+    }
+    
+    .btn:hover {
+        opacity: 0.9;
+    }
+    
+    @media (max-width: 768px) {
+        .template-create-main {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .template-form-right {
+            width: 100%;
+            border-left: none;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .template-footer {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .footer-left, .footer-right {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="template-create-container">
+    <!-- ヘッダー -->
+    <div class="template-create-header">
+        <h1>テンプレート登録</h1>
+        <div class="header-actions">
+            <a href="#" class="btn-manual">📖 マニュアル</a>
+        </div>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <form id="templateCreateForm" method="POST" action="{{ url_for('create_template') }}">
+        <div class="template-create-main">
+            <!-- 左側：設定エリア -->
+            <div class="template-form-left">
+                <div class="form-group">
+                    <label for="templateName">テンプレート名 <span class="required">必須</span></label>
+                    <input type="text" id="templateName" name="name" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="templateFolder">テンプレートフォルダ <span class="required">必須</span></label>
+                    <select id="templateFolder" name="folder_id" class="form-control" required>
+                        <option value="">未分類</option>
+                        {% for folder in folders %}
+                        <option value="{{ folder.id }}" {% if folder.id == selected_folder_id %}selected{% endif %}>{{ folder.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- メッセージタイプタブ -->
+                <div class="form-group">
+                    <label>メッセージタイプ</label>
+                    <div class="message-type-tabs">
+                        <button type="button" class="tab-btn active" data-type="text">テキスト</button>
+                        <button type="button" class="tab-btn" data-type="sticker">スタンプ</button>
+                        <button type="button" class="tab-btn" data-type="image">画像</button>
+                        <button type="button" class="tab-btn" data-type="question">質問</button>
+                        <button type="button" class="tab-btn" data-type="button">ボタン・カルーセル</button>
+                        <button type="button" class="tab-btn" data-type="location">位置情報</button>
+                        <button type="button" class="tab-btn" data-type="intro">紹介</button>
+                        <button type="button" class="tab-btn" data-type="audio">音声</button>
+                        <button type="button" class="tab-btn" data-type="video">動画</button>
+                    </div>
+                </div>
+                
+                <!-- メッセージ本文 -->
+                <div class="form-group">
+                    <label for="templateContent">本文 <span class="required">必須</span> <span class="required">短縮URL対応</span></label>
+                    <div class="message-editor">
+                        <div class="editor-toolbar">
+                            <button type="button" class="editor-btn">↶</button>
+                            <button type="button" class="editor-btn">↷</button>
+                            <button type="button" class="editor-btn">名前</button>
+                            <button type="button" class="editor-btn">友だち情報</button>
+                            <button type="button" class="editor-btn">共通情報</button>
+                            <button type="button" class="editor-btn">回答フォーム</button>
+                            <button type="button" class="editor-btn">配信日</button>
+                            <button type="button" class="editor-btn">その他</button>
+                            <button type="button" class="editor-btn">❓</button>
+                        </div>
+                        <textarea id="templateContent" name="content" class="form-control message-textarea" required placeholder="※4,500文字まで入力した場合は複数のメッセージに分割されます。"></textarea>
+                        <div class="char-counter">0/22500</div>
+                    </div>
+                </div>
+                
+                <!-- URL設定 -->
+                <div class="form-group">
+                    <button type="button" class="btn-outline">URL設定を行う</button>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="disableUrlPreview">
+                        <label for="disableUrlPreview">このメッセージではURLを短縮しない</label>
+                    </div>
+                </div>
+                
+                <!-- 公式アイコン設定 -->
+                <div class="form-group icon-setting">
+                    <div class="icon-display">
+                        <span class="icon-placeholder">公式アイコンで送信</span>
+                        <button type="button" class="btn-change">変更 ❯</button>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="allowIconChange">
+                        <label for="allowIconChange">送信時のアイコンの上書きを許可する</label>
+                    </div>
+                </div>
+                
+                <!-- 隠しフィールド -->
+                <input type="hidden" name="type" value="text" id="messageType">
+            </div>
+            
+            <!-- 右側：プレビューエリア -->
+            <div class="template-form-right">
+                <div class="preview-header">
+                    <span>プレビュー</span>
+                </div>
+                <div class="phone-preview">
+                    <div class="phone-screen">
+                        <div class="message-preview">
+                            <div class="message-bubble">
+                                <span id="previewText">メッセージプレビューがここに表示されます</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- フッター -->
+        <div class="template-footer">
+            <div class="footer-left">
+                <a href="{{ url_for('admin_templates') }}" class="btn btn-outline-secondary">戻る</a>
+            </div>
+            <div class="footer-right">
+                <button type="submit" class="btn btn-success">テンプレート登録</button>
+                <button type="button" class="btn btn-secondary">下書き保存</button>
+                <button type="button" class="btn btn-primary">テスト送信</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// メッセージタイプタブの切り替え
+function switchMessageType(type) {
+    // タブのアクティブ状態を更新
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-type="${type}"]`).classList.add('active');
+    
+    // 隠しフィールドを更新
+    document.getElementById('messageType').value = type;
+    
+    // コンテンツエリアの表示を切り替え
+    const contentArea = document.getElementById('templateContent');
+    switch(type) {
+        case 'text':
+            contentArea.placeholder = '※4,500文字まで入力した場合は複数のメッセージに分割されます。';
+            break;
+        case 'sticker':
+            contentArea.placeholder = 'スタンプ機能は実装予定です';
+            break;
+        case 'image':
+            contentArea.placeholder = '画像URL を入力してください';
+            break;
+        default:
+            contentArea.placeholder = `${type} 機能は実装予定です`;
+    }
+}
+
+// リアルタイムプレビュー
+function updatePreview() {
+    const content = document.getElementById('templateContent').value;
+    const previewElement = document.getElementById('previewText');
+    
+    if (content) {
+        previewElement.textContent = content;
+    } else {
+        previewElement.textContent = 'メッセージプレビューがここに表示されます';
+    }
+    
+    // 文字数カウンター更新
+    const counter = document.querySelector('.char-counter');
+    counter.textContent = `${content.length}/22500`;
+}
+
+// フォーム送信処理
+document.getElementById('templateCreateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('テンプレートが作成されました');
+            window.location.href = '{{ url_for("admin_templates") }}';
+        } else {
+            alert('テンプレートの作成に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+});
+
+// DOMロード後の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // メッセージタイプタブのイベントリスナー
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            switchMessageType(this.dataset.type);
+        });
+    });
+    
+    // リアルタイムプレビューのイベントリスナー
+    const contentTextarea = document.getElementById('templateContent');
+    if (contentTextarea) {
+        contentTextarea.addEventListener('input', updatePreview);
+    }
+});
+</script>
+{% endblock %} 

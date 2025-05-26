@@ -2760,10 +2760,28 @@ def delete_template_folder(folder_id):
         logger.error(f"フォルダ削除エラー: {str(e)}")
         return jsonify({'success': False, 'message': 'フォルダの削除に失敗しました'})
 
-@app.route('/admin/templates/create', methods=['POST'])
+@app.route('/admin/templates/create', methods=['GET', 'POST'])
 @admin_required
 def create_template():
     """テンプレート作成"""
+    if request.method == 'GET':
+        # GET リクエストの場合は作成ページを表示
+        folder_id = request.args.get('folder_id', type=int)
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ一覧を取得
+        c.execute('SELECT * FROM template_folders ORDER BY sort_order, name')
+        folders = [dict(folder) for folder in c.fetchall()]
+        
+        conn.close()
+        
+        return render_template('admin/template_create.html', 
+                             folders=folders, 
+                             selected_folder_id=folder_id)
+    
+    # POST リクエストの場合はテンプレート作成処理
     try:
         name = request.form.get('name', '').strip()
         template_type = request.form.get('type', 'text')
