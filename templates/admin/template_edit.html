@@ -44,7 +44,6 @@
     
     .template-create-main {
         display: block;
-        height: calc(100vh - 80px);
     }
     
     /* 左側：設定エリア */
@@ -79,11 +78,12 @@
     
     .form-control {
         width: 100%;
-        padding: 0.75rem;
+        padding: 0.5rem 0.75rem;
         border: 1px solid #ddd;
         border-radius: 4px;
         font-size: 0.9rem;
         height: 35px;
+        box-sizing: border-box;
     }
     
     .message-type-tabs {
@@ -363,7 +363,6 @@
                 <div class="form-group">
                     <label for="templateFolder">テンプレートフォルダ <span class="required">必須</span></label>
                     <select id="templateFolder" name="folder_id" class="form-control" required>
-                        <option value="">未分類</option>
                         {% for folder in folders %}
                         <option value="{{ folder.id }}" {% if folder.id == template.folder_id %}selected{% endif %}>{{ folder.name }}</option>
                         {% endfor %}
