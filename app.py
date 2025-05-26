@@ -1926,6 +1926,35 @@ def get_line_user_profile(user_id):
         logger.error(f"LINEユーザープロフィール取得中に例外発生: {str(e)}")
         return None
 
+# LINE公式アカウント情報取得
+def get_line_bot_info():
+    try:
+        # LINEのチャネルアクセストークンを使用
+        token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+        
+        # LINE Bot情報エンドポイント
+        url = "https://api.line.me/v2/bot/info"
+        
+        # リクエストヘッダー
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        # Bot情報を取得
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            bot_data = response.json()
+            logger.info(f"LINE Bot情報取得成功: {bot_data.get('displayName')}")
+            return bot_data
+        else:
+            logger.error(f"LINE Bot情報取得エラー: {response.status_code} {response.text}")
+            return None
+    except Exception as e:
+        logger.error(f"LINE Bot情報取得中に例外発生: {str(e)}")
+        return None
+
 # ユーザープロフィール情報の更新
 def update_user_profile(user_id):
     try:
@@ -2777,9 +2806,13 @@ def create_template():
         
         conn.close()
         
+        # LINE公式アカウント情報を取得
+        line_bot_info = get_line_bot_info()
+        
         return render_template('admin/template_create.html', 
                              folders=folders, 
-                             selected_folder_id=folder_id)
+                             selected_folder_id=folder_id,
+                             line_bot_info=line_bot_info)
     
     # POST リクエストの場合はテンプレート作成処理
     try:
@@ -2917,9 +2950,13 @@ def edit_template(template_id):
         
         conn.close()
         
+        # LINE公式アカウント情報を取得
+        line_bot_info = get_line_bot_info()
+        
         return render_template('admin/template_edit.html', 
                              template=dict(template),
-                             folders=folders)
+                             folders=folders,
+                             line_bot_info=line_bot_info)
     
     # POST リクエストの場合はテンプレート更新処理
     try:

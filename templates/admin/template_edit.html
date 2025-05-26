@@ -83,6 +83,7 @@
         border: 1px solid #ddd;
         border-radius: 4px;
         font-size: 0.9rem;
+        height: 35px;
     }
     
     .message-type-tabs {
@@ -202,6 +203,24 @@
         align-items: center;
         justify-content: center;
         font-size: 0.8rem;
+    }
+    
+    .bot-info-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .bot-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .bot-name {
+        font-size: 0.9rem;
+        color: #333;
     }
     
     .btn-change {
@@ -383,7 +402,18 @@
                 <!-- 公式アイコン設定 -->
                 <div class="form-group icon-setting">
                     <div class="icon-display">
+                        {% if line_bot_info %}
+                        <div class="bot-info-display">
+                            {% if line_bot_info.pictureUrl %}
+                            <img src="{{ line_bot_info.pictureUrl }}" alt="公式アイコン" class="bot-icon">
+                            {% else %}
+                            <span class="icon-placeholder">公式</span>
+                            {% endif %}
+                            <span class="bot-name">{{ line_bot_info.displayName or '公式アカウント' }}で送信</span>
+                        </div>
+                        {% else %}
                         <span class="icon-placeholder">公式アイコンで送信</span>
+                        {% endif %}
                         <button type="button" class="btn-change">変更 ❯</button>
                     </div>
                     <div class="checkbox-group">
