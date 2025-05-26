@@ -2892,6 +2892,78 @@ def delete_templates():
         logger.error(f"テンプレート一括削除エラー: {str(e)}")
         return jsonify({'success': False, 'message': 'テンプレートの削除に失敗しました'})
 
+@app.route('/admin/templates/edit/<int:template_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_template(template_id):
+    """テンプレート編集"""
+    conn = get_db()
+    c = conn.cursor()
+    
+    # テンプレート情報を取得
+    c.execute('SELECT * FROM message_templates WHERE id = ?', (template_id,))
+    template = c.fetchone()
+    
+    if not template:
+        flash('テンプレートが見つかりません', 'error')
+        return redirect(url_for('admin_templates'))
+    
+    if request.method == 'GET':
+        # GET リクエストの場合は編集ページを表示
+        # フォルダ一覧を取得
+        c.execute('SELECT * FROM template_folders ORDER BY sort_order, name')
+        folders = [dict(folder) for folder in c.fetchall()]
+        
+        conn.close()
+        
+        return render_template('admin/template_edit.html', 
+                             template=dict(template),
+                             folders=folders)
+    
+    # POST リクエストの場合はテンプレート更新処理
+    try:
+        name = request.form.get('name', '').strip()
+        template_type = request.form.get('type', 'text')
+        content = request.form.get('content', '').strip()
+        folder_id = request.form.get('folder_id', type=int)
+        
+        if not name or not content:
+            return jsonify({'success': False, 'message': 'テンプレート名と内容は必須です'})
+        
+        if not folder_id:
+            return jsonify({'success': False, 'message': 'フォルダの選択は必須です'})
+        
+        # プレビューテキストを生成
+        preview_text = content
+        if template_type == 'text':
+            preview_text = content[:100] + ('...' if len(content) > 100 else '')
+        elif template_type == 'image':
+            preview_text = f"画像: {content}"
+        elif template_type == 'video':
+            preview_text = f"動画: {content}"
+        elif template_type in ['carousel', 'flex']:
+            preview_text = f"{template_type.capitalize()}メッセージ"
+        
+        # フォルダ存在確認
+        c.execute('SELECT id FROM template_folders WHERE id = ?', (folder_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': '指定されたフォルダが存在しません'})
+        
+        # テンプレート更新
+        c.execute('''
+            UPDATE message_templates 
+            SET folder_id = ?, name = ?, type = ?, content = ?, preview_text = ?, updated_at = datetime('now')
+            WHERE id = ?
+        ''', (folder_id, name, template_type, content, preview_text, template_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'テンプレートが更新されました'})
+        
+    except Exception as e:
+        logger.error(f"テンプレート更新エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'テンプレートの更新に失敗しました'})
+
 @app.route('/admin/templates/preview/<int:template_id>')
 @admin_required
 def preview_template(template_id):
@@ -2922,6 +2994,42 @@ def preview_template(template_id):
     except Exception as e:
         logger.error(f"テンプレートプレビューエラー: {str(e)}")
         return jsonify({'success': False, 'message': 'プレビューの取得に失敗しました'})
+
+@app.route('/admin/templates/edit-name', methods=['POST'])
+@admin_required
+def edit_template_name():
+    """テンプレート名変更"""
+    try:
+        data = request.get_json()
+        template_id = data.get('template_id')
+        new_name = data.get('name', '').strip()
+        
+        if not template_id or not new_name:
+            return jsonify({'success': False, 'message': 'テンプレートIDと名前は必須です'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # テンプレート存在確認
+        c.execute('SELECT id FROM message_templates WHERE id = ?', (template_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': 'テンプレートが見つかりません'})
+        
+        # テンプレート名更新
+        c.execute('''
+            UPDATE message_templates 
+            SET name = ?, updated_at = datetime('now')
+            WHERE id = ?
+        ''', (new_name, template_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'テンプレート名が更新されました'})
+        
+    except Exception as e:
+        logger.error(f"テンプレート名更新エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'テンプレート名の更新に失敗しました'})
 
 if __name__ == '__main__':
     init_db()

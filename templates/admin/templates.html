@@ -195,6 +195,130 @@
         display: block;
     }
     
+    /* テンプレートアイテムのスタイル */
+    .template-title {
+        font-weight: 600;
+        color: #2196f3;
+        cursor: pointer;
+        margin-bottom: 0.5rem;
+    }
+    
+    .template-title:hover {
+        text-decoration: underline;
+    }
+    
+    .template-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .template-type {
+        background: #e3f2fd;
+        color: #1976d2;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .template-preview {
+        color: #6c757d;
+        font-size: 0.85rem;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    /* プレビューモーダルのスタイル */
+    .preview-modal-content {
+        max-width: 500px;
+        padding: 2rem;
+    }
+    
+    .preview-container {
+        text-align: center;
+    }
+    
+    .preview-header {
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .preview-header h3 {
+        margin: 0;
+        color: #333;
+    }
+    
+    .phone-frame {
+        background: #333;
+        border-radius: 25px;
+        padding: 20px 10px;
+        display: inline-block;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    
+    .phone-screen {
+        background: white;
+        border-radius: 15px;
+        width: 280px;
+        height: 500px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-header {
+        background: #00c851;
+        color: white;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .chat-avatar {
+        font-size: 2rem;
+    }
+    
+    .chat-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .chat-status {
+        font-size: 0.8rem;
+        opacity: 0.8;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        padding: 1rem;
+        background: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+    
+    .message-bubble {
+        max-width: 80%;
+        padding: 0.75rem 1rem;
+        border-radius: 18px;
+        margin-bottom: 0.5rem;
+        word-wrap: break-word;
+    }
+    
+    .admin-message {
+        background: #00c851;
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 5px;
+    }
+    
     /* メインコンテンツエリア */
     .template-content {
         flex: 1;
@@ -534,8 +658,8 @@
                             </td>
                             <td>
                                 <div class="template-item">
-                                    <div class="template-title">{{ template.name }}</div>
-                                    <div>
+                                    <div class="template-title" onclick="editTemplateRedirect({{ template.id }})">{{ template.name }}</div>
+                                    <div class="template-meta">
                                         <span class="template-type {{ template.type }}">
                                             {% if template.type == 'text' %}テキスト
                                             {% elif template.type == 'image' %}画像
@@ -556,7 +680,13 @@
                                 <button class="btn-sm btn-danger" onclick="deleteTemplate({{ template.id }})">削除</button>
                             </td>
                             <td>
-                                <button class="operation-btn" onclick="editTemplate({{ template.id }})">操作 <i class="fas fa-chevron-down"></i></button>
+                                <div class="template-dropdown">
+                                    <button class="operation-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})">操作 <i class="fas fa-chevron-down"></i></button>
+                                    <div class="template-dropdown-content" id="operationDropdown-{{ template.id }}">
+                                        <a onclick="editTemplateName({{ template.id }}, '{{ template.name }}')">名前を変更</a>
+                                        <a onclick="deleteTemplate({{ template.id }})">削除</a>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -609,6 +739,56 @@
             <input type="hidden" id="editFolderId" name="folder_id">
             <button type="submit" class="btn btn-success">更新</button>
             <button type="button" class="btn btn-secondary" onclick="closeModal('editFolderModal')">キャンセル</button>
+        </form>
+    </div>
+</div>
+
+<!-- プレビューモーダル -->
+<div id="previewModal" class="modal">
+    <div class="modal-content preview-modal-content">
+        <span class="close" onclick="closeModal('previewModal')">&times;</span>
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3 id="previewTemplateName">テンプレートプレビュー</h3>
+                <span id="previewTemplateType" class="template-type"></span>
+            </div>
+            <div class="preview-phone">
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="chat-header">
+                            <div class="chat-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="chat-info">
+                                <div class="chat-name">公式アカウント</div>
+                                <div class="chat-status">オンライン</div>
+                            </div>
+                        </div>
+                        <div class="chat-messages">
+                            <div class="message-bubble admin-message">
+                                <div id="previewContent">プレビュー内容がここに表示されます</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- テンプレート名編集モーダル -->
+<div id="editTemplateNameModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('editTemplateNameModal')">&times;</span>
+        <h2>テンプレート名を変更</h2>
+        <form id="editTemplateNameForm" onsubmit="updateTemplateName(event)">
+            <div class="form-group">
+                <label for="editTemplateNameInput">テンプレート名</label>
+                <input type="text" id="editTemplateNameInput" name="name" class="form-control" required>
+            </div>
+            <input type="hidden" id="editTemplateId" name="template_id">
+            <button type="submit" class="btn btn-success">更新</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editTemplateNameModal')">キャンセル</button>
         </form>
     </div>
 </div>
@@ -899,14 +1079,101 @@ function searchTemplates() {
     });
 }
 
-// プレビュー
-function previewTemplate(templateId) {
-    alert('プレビュー機能は実装予定です');
+// テンプレート編集ページにリダイレクト
+function editTemplateRedirect(templateId) {
+    window.location.href = `/admin/templates/edit/${templateId}`;
 }
 
-// 編集
-function editTemplate(templateId) {
-    alert('編集機能は実装予定です');
+// プレビュー
+function previewTemplate(templateId) {
+    fetch(`/admin/templates/preview/${templateId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const template = data.template;
+            document.getElementById('previewTemplateName').textContent = template.name;
+            document.getElementById('previewTemplateType').textContent = getTypeDisplayName(template.type);
+            document.getElementById('previewContent').textContent = template.content;
+            document.getElementById('previewModal').style.display = 'block';
+        } else {
+            alert('プレビューの取得に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// テンプレート操作ドロップダウンの表示切り替え
+function toggleTemplateOperationDropdown(templateId) {
+    const dropdown = document.getElementById(`operationDropdown-${templateId}`);
+    const templateDropdown = dropdown.closest('.template-dropdown');
+    
+    // 他のドロップダウンを閉じる
+    document.querySelectorAll('.template-dropdown.show').forEach(el => {
+        if (el !== templateDropdown) {
+            el.classList.remove('show');
+        }
+    });
+    
+    // 現在のドロップダウンを切り替え
+    templateDropdown.classList.toggle('show');
+}
+
+// テンプレート名編集
+function editTemplateName(templateId, currentName) {
+    document.getElementById('editTemplateId').value = templateId;
+    document.getElementById('editTemplateNameInput').value = currentName;
+    document.getElementById('editTemplateNameModal').style.display = 'block';
+    
+    // ドロップダウンを閉じる
+    document.querySelectorAll('.template-dropdown.show').forEach(el => {
+        el.classList.remove('show');
+    });
+}
+
+// テンプレート名更新
+function updateTemplateName(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const templateId = formData.get('template_id');
+    const newName = formData.get('name');
+    
+    fetch('/admin/templates/edit-name', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            template_id: templateId,
+            name: newName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('テンプレート名の更新に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// タイプ表示名を取得
+function getTypeDisplayName(type) {
+    const typeMap = {
+        'text': 'テキスト',
+        'image': '画像',
+        'video': '動画',
+        'carousel': 'カルーセル',
+        'flex': 'フレックス'
+    };
+    return typeMap[type] || type;
 }
 
 // 未実装の関数
@@ -961,7 +1228,11 @@ window.onclick = function(event) {
     });
     
     // ドロップダウン外クリックで閉じる
-    if (!event.target.matches('.folder-edit-btn') && !event.target.matches('.create-template-btn')) {
+    if (!event.target.matches('.folder-edit-btn') && 
+        !event.target.matches('.create-template-btn') && 
+        !event.target.matches('.operation-btn') &&
+        !event.target.closest('.folder-dropdown') &&
+        !event.target.closest('.template-dropdown')) {
         document.querySelectorAll('.folder-dropdown.show').forEach(el => {
             el.classList.remove('show');
         });
