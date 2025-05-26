@@ -2794,10 +2794,12 @@ def create_template():
         if not folder_id:
             return jsonify({'success': False, 'message': 'フォルダの選択は必須です'})
         
-        # プレビューテキストを生成
+        # プレビューテキストを生成（改行を保持）
         preview_text = content
         if template_type == 'text':
-            preview_text = content[:100] + ('...' if len(content) > 100 else '')
+            # 改行を保持したプレビューテキスト
+            preview_text = content.replace('\n', ' ').strip()
+            preview_text = preview_text[:100] + ('...' if len(preview_text) > 100 else '')
         elif template_type == 'image':
             preview_text = f"画像: {content}"
         elif template_type == 'video':
@@ -2932,10 +2934,12 @@ def edit_template(template_id):
         if not folder_id:
             return jsonify({'success': False, 'message': 'フォルダの選択は必須です'})
         
-        # プレビューテキストを生成
+        # プレビューテキストを生成（改行を保持）
         preview_text = content
         if template_type == 'text':
-            preview_text = content[:100] + ('...' if len(content) > 100 else '')
+            # 改行を保持したプレビューテキスト
+            preview_text = content.replace('\n', ' ').strip()
+            preview_text = preview_text[:100] + ('...' if len(preview_text) > 100 else '')
         elif template_type == 'image':
             preview_text = f"画像: {content}"
         elif template_type == 'video':

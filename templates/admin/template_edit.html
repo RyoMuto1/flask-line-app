@@ -13,7 +13,7 @@
     
     .template-create-header {
         background: white;
-        padding: 1.5rem 2rem;
+        padding: 0.75rem 2rem;
         border-bottom: 1px solid #e9ecef;
         display: flex;
         justify-content: space-between;
@@ -43,29 +43,26 @@
     }
     
     .template-create-main {
-        display: flex;
-        height: calc(100vh - 120px);
+        display: block;
+        height: calc(100vh - 80px);
     }
     
     /* 左側：設定エリア */
     .template-form-left {
-        flex: 1;
+        width: 100%;
         background: white;
-        padding: 2rem;
+        padding: 1rem 2rem;
         overflow-y: auto;
-    }
-    
-    /* 右側：プレビューエリア */
-    .template-form-right {
-        width: 350px;
-        background: white;
-        border-left: 1px solid #e9ecef;
-        padding: 2rem;
-        overflow-y: auto;
+        max-width: 800px;
+        margin: 0 auto;
     }
     
     .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group.content-group {
+        margin-top: 1.5rem;
     }
     
     .form-group label {
@@ -152,7 +149,10 @@
         border: none;
         border-radius: 0;
         resize: vertical;
-        min-height: 200px;
+        min-height: 300px;
+        white-space: pre-wrap;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.5;
     }
     
     .char-counter {
@@ -305,15 +305,8 @@
     }
     
     @media (max-width: 768px) {
-        .template-create-main {
-            flex-direction: column;
-            height: auto;
-        }
-        
-        .template-form-right {
-            width: 100%;
-            border-left: none;
-            border-top: 1px solid #e9ecef;
+        .template-form-left {
+            padding: 1rem;
         }
         
         .template-footer {
@@ -359,24 +352,8 @@
                     </select>
                 </div>
                 
-                <!-- メッセージタイプタブ -->
-                <div class="form-group">
-                    <label>メッセージタイプ</label>
-                    <div class="message-type-tabs">
-                        <button type="button" class="tab-btn {% if template.type == 'text' %}active{% endif %}" data-type="text">テキスト</button>
-                        <button type="button" class="tab-btn {% if template.type == 'sticker' %}active{% endif %}" data-type="sticker">スタンプ</button>
-                        <button type="button" class="tab-btn {% if template.type == 'image' %}active{% endif %}" data-type="image">画像</button>
-                        <button type="button" class="tab-btn {% if template.type == 'question' %}active{% endif %}" data-type="question">質問</button>
-                        <button type="button" class="tab-btn {% if template.type == 'button' %}active{% endif %}" data-type="button">ボタン・カルーセル</button>
-                        <button type="button" class="tab-btn {% if template.type == 'location' %}active{% endif %}" data-type="location">位置情報</button>
-                        <button type="button" class="tab-btn {% if template.type == 'intro' %}active{% endif %}" data-type="intro">紹介</button>
-                        <button type="button" class="tab-btn {% if template.type == 'audio' %}active{% endif %}" data-type="audio">音声</button>
-                        <button type="button" class="tab-btn {% if template.type == 'video' %}active{% endif %}" data-type="video">動画</button>
-                    </div>
-                </div>
-                
                 <!-- メッセージ本文 -->
-                <div class="form-group">
+                <div class="form-group content-group">
                     <label for="templateContent">本文 <span class="required">必須</span> <span class="required">短縮URL対応</span></label>
                     <div class="message-editor">
                         <div class="editor-toolbar">
@@ -418,22 +395,6 @@
                 
                 <!-- 隠しフィールド -->
                 <input type="hidden" name="type" value="{{ template.type }}" id="messageType">
-            </div>
-            
-            <!-- 右側：プレビューエリア -->
-            <div class="template-form-right">
-                <div class="preview-header">
-                    <span>プレビュー</span>
-                </div>
-                <div class="phone-preview">
-                    <div class="phone-screen">
-                        <div class="message-preview">
-                            <div class="message-bubble">
-                                <span id="previewText">{{ template.content }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -480,18 +441,9 @@ function switchMessageType(type) {
     }
 }
 
-// リアルタイムプレビュー
-function updatePreview() {
+// 文字数カウンター更新
+function updateCharCounter() {
     const content = document.getElementById('templateContent').value;
-    const previewElement = document.getElementById('previewText');
-    
-    if (content) {
-        previewElement.textContent = content;
-    } else {
-        previewElement.textContent = 'メッセージプレビューがここに表示されます';
-    }
-    
-    // 文字数カウンター更新
     const counter = document.querySelector('.char-counter');
     counter.textContent = `${content.length}/22500`;
 }
@@ -552,12 +504,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // リアルタイムプレビューのイベントリスナー
+    // 文字数カウンターのイベントリスナー
     const contentTextarea = document.getElementById('templateContent');
     if (contentTextarea) {
-        contentTextarea.addEventListener('input', updatePreview);
-        // 初期プレビューを更新
-        updatePreview();
+        contentTextarea.addEventListener('input', updateCharCounter);
+        // 初期文字数を更新
+        updateCharCounter();
     }
 });
 </script>
