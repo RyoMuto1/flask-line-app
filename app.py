@@ -96,6 +96,30 @@ def init_db():
         
         conn.commit()
         logger.info("source_analytics_foldersテーブルを作成し、デフォルトフォルダを追加しました")
+    else:
+        # テーブルが存在する場合、「未分類」フォルダがあるかチェック
+        c.execute("SELECT COUNT(*) FROM source_analytics_folders WHERE name = '未分類'")
+        uncategorized_count = c.fetchone()[0]
+        
+        if uncategorized_count == 0:
+            logger.info("「未分類」フォルダが存在しないため、追加します")
+            # 最大のsort_orderを取得
+            c.execute('SELECT MAX(sort_order) FROM source_analytics_folders')
+            max_order = c.fetchone()[0] or -1
+            
+            c.execute('''
+                INSERT INTO source_analytics_folders (name, sort_order, created_at)
+                VALUES ('未分類', ?, datetime('now'))
+            ''', (max_order + 1,))
+            
+            # 既存のfolder_idがNULLの登録リンクを「未分類」フォルダに移動
+            c.execute("SELECT id FROM source_analytics_folders WHERE name = '未分類' ORDER BY id DESC LIMIT 1")
+            uncategorized_id = c.fetchone()[0]
+            
+            c.execute('UPDATE registration_links SET folder_id = ? WHERE folder_id IS NULL', (uncategorized_id,))
+            
+            conn.commit()
+            logger.info("「未分類」フォルダを追加し、既存リンクを移動しました")
 
     # 登録リンク管理テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='registration_links'")
@@ -588,9 +612,36 @@ with app.app_context():
             else:
                 logger.warning(f"永続ディスクパスが存在しません。作成を試みます")
         
-        # データベース初期化
+        # データベース初期化（複数回実行しても安全）
         init_db()
         logger.info("データベースの初期化が完了しました")
+        
+        # 追加で「未分類」フォルダの存在確認と作成
+        try:
+            conn = get_db()
+            c = conn.cursor()
+            c.execute("SELECT COUNT(*) FROM source_analytics_folders WHERE name = '未分類'")
+            uncategorized_count = c.fetchone()[0]
+            
+            if uncategorized_count == 0:
+                logger.info("起動時チェック: 「未分類」フォルダが存在しないため、追加します")
+                c.execute('SELECT MAX(sort_order) FROM source_analytics_folders')
+                max_order = c.fetchone()[0] or -1
+                
+                c.execute('''
+                    INSERT INTO source_analytics_folders (name, sort_order, created_at)
+                    VALUES ('未分類', ?, datetime('now'))
+                ''', (max_order + 1,))
+                
+                conn.commit()
+                logger.info("起動時チェック: 「未分類」フォルダを追加しました")
+            else:
+                logger.info("起動時チェック: 「未分類」フォルダは既に存在します")
+            
+            conn.close()
+        except Exception as folder_error:
+            logger.error(f"「未分類」フォルダチェックエラー: {str(folder_error)}")
+        
     except Exception as e:
         logger.error(f"データベース初期化エラー: {str(e)}")
         # エラーがあっても続行する
@@ -1073,6 +1124,20 @@ def line_source_analytics():
     # フォルダ一覧を取得
     cursor.execute('SELECT * FROM source_analytics_folders ORDER BY sort_order, name')
     folders = cursor.fetchall()
+    
+    # フォルダが存在しない場合は「未分類」フォルダを作成
+    if not folders:
+        logger.info("フォルダが存在しないため、「未分類」フォルダを作成します")
+        cursor.execute('''
+            INSERT INTO source_analytics_folders (name, sort_order, created_at)
+            VALUES ('未分類', 0, datetime('now'))
+        ''')
+        conn.commit()
+        
+        # 再度フォルダ一覧を取得
+        cursor.execute('SELECT * FROM source_analytics_folders ORDER BY sort_order, name')
+        folders = cursor.fetchall()
+        logger.info("「未分類」フォルダを作成しました")
     
     # 選択されたフォルダIDを取得（デフォルトは「未分類」フォルダ）
     selected_folder_id = request.args.get('folder_id', type=int)

@@ -1,5 +1,10 @@
 {% extends "admin/base.html" %}
 
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/line-source-analytics.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="admin-container">
   <!-- ヘッダー -->
@@ -146,12 +151,12 @@
 </div>
 
 <!-- 新しい登録リンク作成モーダル -->
-<div class="modal fade" id="newLinkModal" tabindex="-1">
+<div class="modal fade" id="newLinkModal" tabindex="-1" aria-labelledby="newLinkModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">新しい登録リンクを作成</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="newLinkModalLabel">新しい登録リンクを作成</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="POST" action="{{ url_for('create_registration_link') }}">
         <div class="modal-body">
@@ -180,12 +185,12 @@
 </div>
 
 <!-- フォルダ作成モーダル -->
-<div class="modal fade" id="createFolderModal" tabindex="-1">
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">新しいフォルダを作成</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="createFolderModalLabel">新しいフォルダを作成</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="POST" action="{{ url_for('create_source_analytics_folder') }}">
         <div class="modal-body">
@@ -205,12 +210,12 @@
 </div>
 
 <!-- フォルダ編集モーダル -->
-<div class="modal fade" id="editFolderModal" tabindex="-1">
+<div class="modal fade" id="editFolderModal" tabindex="-1" aria-labelledby="editFolderModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">フォルダ編集</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="editFolderModalLabel">フォルダ編集</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form id="editFolderForm" method="POST">
         <div class="modal-body">
@@ -229,12 +234,12 @@
 </div>
 
 <!-- フォルダ削除確認モーダル -->
-<div class="modal fade" id="deleteFolderModal" tabindex="-1">
+<div class="modal fade" id="deleteFolderModal" tabindex="-1" aria-labelledby="deleteFolderModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">フォルダ削除の確認</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title" id="deleteFolderModalLabel">フォルダ削除の確認</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <p>フォルダ「<span id="deleteFolderName"></span>」を削除してもよろしいですか？</p>
@@ -250,32 +255,10 @@
   </div>
 </div>
 
-<style>
-.folder-badge {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
 
-.folder-actions {
-  display: none;
-  gap: 4px;
-}
-
-.sidebar-item:hover .folder-actions {
-  display: flex;
-}
-
-.folder-actions .action-btn {
-  padding: 2px 4px;
-  font-size: 0.7rem;
-}
-</style>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
     // リンクコピー機能
     document.querySelectorAll('.copy-link').forEach(button => {
         button.addEventListener('click', function() {
@@ -288,28 +271,51 @@
 
     // フォルダ編集
     document.querySelectorAll('.edit-folder-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const folderId = this.dataset.folderId;
             const folderName = this.dataset.folderName;
             
             document.getElementById('editFolderName').value = folderName;
             document.getElementById('editFolderForm').action = `/admin/line-source-analytics/folders/edit/${folderId}`;
             
-            new bootstrap.Modal(document.getElementById('editFolderModal')).show();
+            const modal = new bootstrap.Modal(document.getElementById('editFolderModal'));
+            modal.show();
         });
     });
 
     // フォルダ削除
     document.querySelectorAll('.delete-folder-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const folderId = this.dataset.folderId;
             const folderName = this.dataset.folderName;
             
             document.getElementById('deleteFolderName').textContent = folderName;
             document.getElementById('deleteFolderForm').action = `/admin/line-source-analytics/folders/delete/${folderId}`;
             
-            new bootstrap.Modal(document.getElementById('deleteFolderModal')).show();
+            const modal = new bootstrap.Modal(document.getElementById('deleteFolderModal'));
+            modal.show();
         });
     });
+
+    // モーダルが閉じられた時の処理
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function() {
+            // モーダルのバックドロップを確実に削除
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // bodyのクラスを削除
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    });
+});
 </script>
 {% endblock %} 
