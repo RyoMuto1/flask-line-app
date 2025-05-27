@@ -6,6 +6,7 @@
     overflow: hidden;
     min-height: 0;
     margin: 1rem;
+    border: none;
 }
 
 /* 左ペイン：ユーザーリスト */
@@ -48,6 +49,7 @@
 
 .search-box {
     margin-bottom: 1rem;
+    width: 100%;
 }
 
 .search-box .form-control {
@@ -55,6 +57,7 @@
     box-shadow: none;
     background-color: #f8f9fa;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .search-box .form-control:focus {
@@ -62,6 +65,7 @@
     box-shadow: none;
     background-color: #fff;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* 中央ペイン：チャット内容 */
