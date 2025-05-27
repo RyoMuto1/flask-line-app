@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="margin-top:0; padding-top:0;">
+<div class="chat-page-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
