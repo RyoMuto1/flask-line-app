@@ -58,6 +58,18 @@
         margin-bottom: 1rem;
     }
     
+    .search-box .form-control {
+        border: none;
+        box-shadow: none;
+        background-color: #f8f9fa;
+    }
+    
+    .search-box .form-control:focus {
+        border: none;
+        box-shadow: none;
+        background-color: #fff;
+    }
+    
     /* 中央ペイン：チャット内容 */
     .chat-pane {
         flex-grow: 1;
@@ -97,12 +109,18 @@
         object-fit: cover;
     }
     
+    .chat-header-name-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+    }
+    
     .chat-header-name {
         font-size: 1.1rem;
         font-weight: 600;
         margin: 0;
         color: #333;
-        flex: 1;
     }
     
     .chat-header-status {
@@ -403,8 +421,10 @@
                 <div class="chat-header-avatar" id="chatHeaderAvatar" style="display: none;">
                     <span class="default-avatar">👤</span>
                 </div>
-                <h5 class="chat-header-name" id="chatHeaderName">ユーザーを選択してください</h5>
-                <span class="chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
+                <div class="chat-header-name-container">
+                    <h5 class="chat-header-name" id="chatHeaderName">ユーザーを選択してください</h5>
+                    <span class="chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
+                </div>
                 <div class="user-status" id="userStatus"></div>
             </div>
             
