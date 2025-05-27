@@ -10,8 +10,45 @@
   
   <!-- メインコンテンツ -->
   <div class="admin-main">
-    <!-- メインコンテンツエリア（サイドバーなし） -->
-    <div class="admin-content" style="margin-left: 0;">
+    <!-- 左サイドバー（フォルダ一覧） -->
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <button class="new-folder-btn" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+          <i class="fas fa-plus"></i> 新しいフォルダ
+        </button>
+      </div>
+      
+      <ul class="sidebar-list">
+        <!-- 全体表示 -->
+        <li class="sidebar-item {% if not selected_folder_id %}active{% endif %}">
+          <a href="{{ url_for('line_source_analytics') }}" class="sidebar-link">
+            <i class="fas fa-list"></i>
+            <span>すべて</span>
+          </a>
+        </li>
+        
+        <!-- フォルダ一覧 -->
+        {% for folder in folders %}
+        <li class="sidebar-item {% if selected_folder_id == folder.id %}active{% endif %}">
+          <a href="{{ url_for('line_source_analytics', folder_id=folder.id) }}" class="sidebar-link">
+            <i class="fas fa-folder"></i>
+            <span>{{ folder.name }}</span>
+          </a>
+          <div class="folder-actions">
+            <button class="action-btn edit-folder-btn" data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}" title="編集">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-btn delete-folder-btn" data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}" title="削除">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    
+    <!-- メインコンテンツエリア -->
+    <div class="admin-content">
       <!-- ツールバー -->
       <div class="admin-toolbar">
         <div class="toolbar-left">
@@ -20,7 +57,15 @@
           </button>
         </div>
         <div class="toolbar-right">
-          <span class="text-muted">登録リンクを作成して流入経路を追跡できます</span>
+          {% if selected_folder_id %}
+            {% for folder in folders %}
+              {% if folder.id == selected_folder_id %}
+                <span class="text-muted">フォルダ: {{ folder.name }}</span>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <span class="text-muted">すべての登録リンク</span>
+          {% endif %}
         </div>
       </div>
       
@@ -42,9 +87,10 @@
           <thead>
             <tr>
               <th style="width: 30%;">リンク名</th>
-              <th style="width: 20%;">登録者数</th>
-              <th style="width: 25%;">作成日</th>
-              <th style="width: 25%;">操作</th>
+              <th style="width: 15%;">フォルダ</th>
+              <th style="width: 15%;">登録者数</th>
+              <th style="width: 20%;">作成日</th>
+              <th style="width: 20%;">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -54,6 +100,13 @@
                 <div class="data-item">
                   <div class="item-title">{{ link.name }}</div>
                 </div>
+              </td>
+              <td>
+                {% if link.folder_name %}
+                  <span class="folder-badge">{{ link.folder_name }}</span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
               </td>
               <td>
                 <a href="{{ url_for('line_source_analytics_users', link_id=link.id) }}" class="text-decoration-none">
@@ -112,10 +165,19 @@
       </div>
       <form method="POST" action="{{ url_for('create_registration_link') }}">
         <div class="modal-body">
-          <div class="form-group">
+          <div class="form-group mb-3">
             <label for="linkName" class="form-label">リンク名</label>
             <input type="text" class="form-control" id="linkName" name="name" required>
             <div class="form-text">例：Instagram用、Twitter用など</div>
+          </div>
+          <div class="form-group mb-3">
+            <label for="folderSelect" class="form-label">フォルダ</label>
+            <select class="form-select" id="folderSelect" name="folder_id">
+              <option value="">フォルダなし</option>
+              {% for folder in folders %}
+                <option value="{{ folder.id }}" {% if selected_folder_id == folder.id %}selected{% endif %}>{{ folder.name }}</option>
+              {% endfor %}
+            </select>
           </div>
           <input type="hidden" name="source" value="line">
         </div>
@@ -128,6 +190,102 @@
   </div>
 </div>
 
+<!-- フォルダ作成モーダル -->
+<div class="modal fade" id="createFolderModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">新しいフォルダを作成</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('create_source_analytics_folder') }}">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="folderName" class="form-label">フォルダ名</label>
+            <input type="text" class="form-control" id="folderName" name="name" required>
+            <div class="form-text">例：SNS、広告、イベントなど</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary">作成</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- フォルダ編集モーダル -->
+<div class="modal fade" id="editFolderModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">フォルダ編集</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editFolderForm" method="POST">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="editFolderName" class="form-label">フォルダ名</label>
+            <input type="text" class="form-control" id="editFolderName" name="name" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- フォルダ削除確認モーダル -->
+<div class="modal fade" id="deleteFolderModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">フォルダ削除の確認</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>フォルダ「<span id="deleteFolderName"></span>」を削除してもよろしいですか？</p>
+        <p class="text-warning">フォルダ内の登録リンクは「フォルダなし」に移動されます。</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <form id="deleteFolderForm" method="POST">
+          <button type="submit" class="btn btn-danger">削除する</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.folder-badge {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.folder-actions {
+  display: none;
+  gap: 4px;
+}
+
+.sidebar-item:hover .folder-actions {
+  display: flex;
+}
+
+.folder-actions .action-btn {
+  padding: 2px 4px;
+  font-size: 0.7rem;
+}
+</style>
+
 <script>
     // リンクコピー機能
     document.querySelectorAll('.copy-link').forEach(button => {
@@ -136,6 +294,32 @@
             navigator.clipboard.writeText(link).then(() => {
                 alert('リンクをコピーしました');
             });
+        });
+    });
+
+    // フォルダ編集
+    document.querySelectorAll('.edit-folder-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const folderId = this.dataset.folderId;
+            const folderName = this.dataset.folderName;
+            
+            document.getElementById('editFolderName').value = folderName;
+            document.getElementById('editFolderForm').action = `/admin/line-source-analytics/folders/edit/${folderId}`;
+            
+            new bootstrap.Modal(document.getElementById('editFolderModal')).show();
+        });
+    });
+
+    // フォルダ削除
+    document.querySelectorAll('.delete-folder-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const folderId = this.dataset.folderId;
+            const folderName = this.dataset.folderName;
+            
+            document.getElementById('deleteFolderName').textContent = folderName;
+            document.getElementById('deleteFolderForm').action = `/admin/line-source-analytics/folders/delete/${folderId}`;
+            
+            new bootstrap.Modal(document.getElementById('deleteFolderModal')).show();
         });
     });
 </script>

@@ -75,6 +75,21 @@ def init_db():
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
+    # 流入元分析フォルダテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='source_analytics_folders'")
+    if not c.fetchone():
+        logger.info("source_analytics_foldersテーブルが存在しないため、新規作成します")
+        c.execute('''
+            CREATE TABLE source_analytics_folders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        logger.info("source_analytics_foldersテーブルを作成しました")
+
     # 登録リンク管理テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='registration_links'")
     if not c.fetchone():
@@ -85,11 +100,22 @@ def init_db():
                 name TEXT NOT NULL,           -- リンクの名前（例：Instagram用）
                 source TEXT NOT NULL,         -- 流入元（例：instagram）
                 link_code TEXT UNIQUE NOT NULL, -- 一意のリンクコード
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                folder_id INTEGER,            -- フォルダID（NULL可）
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (folder_id) REFERENCES source_analytics_folders(id)
             )
         ''')
         conn.commit()
         logger.info("registration_linksテーブルを作成しました")
+    else:
+        # 既存のテーブルにfolder_id列を追加
+        c.execute("PRAGMA table_info(registration_links)")
+        columns = [row[1] for row in c.fetchall()]
+        if 'folder_id' not in columns:
+            logger.info("registration_linksテーブルにfolder_id列を追加します")
+            c.execute("ALTER TABLE registration_links ADD COLUMN folder_id INTEGER REFERENCES source_analytics_folders(id)")
+            conn.commit()
+            logger.info("registration_linksテーブルにfolder_id列を追加しました")
 
     # ユーザー登録経路テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_registrations'")
@@ -1037,14 +1063,33 @@ def line_source_analytics():
     conn = get_db()
     cursor = conn.cursor()
     
+    # フォルダ一覧を取得
+    cursor.execute('SELECT * FROM source_analytics_folders ORDER BY sort_order, name')
+    folders = cursor.fetchall()
+    
+    # 選択されたフォルダIDを取得
+    selected_folder_id = request.args.get('folder_id', type=int)
+    
     # 登録リンク一覧を取得（登録者数も含める）
-    cursor.execute('''
-        SELECT rl.*, COUNT(ur.id) as registration_count
-        FROM registration_links rl
-        LEFT JOIN user_registrations ur ON rl.id = ur.registration_link_id
-        GROUP BY rl.id
-        ORDER BY rl.created_at DESC
-    ''')
+    if selected_folder_id:
+        cursor.execute('''
+            SELECT rl.*, COUNT(ur.id) as registration_count, saf.name as folder_name
+            FROM registration_links rl
+            LEFT JOIN user_registrations ur ON rl.id = ur.registration_link_id
+            LEFT JOIN source_analytics_folders saf ON rl.folder_id = saf.id
+            WHERE rl.folder_id = ?
+            GROUP BY rl.id
+            ORDER BY rl.created_at DESC
+        ''', (selected_folder_id,))
+    else:
+        cursor.execute('''
+            SELECT rl.*, COUNT(ur.id) as registration_count, saf.name as folder_name
+            FROM registration_links rl
+            LEFT JOIN user_registrations ur ON rl.id = ur.registration_link_id
+            LEFT JOIN source_analytics_folders saf ON rl.folder_id = saf.id
+            GROUP BY rl.id
+            ORDER BY rl.created_at DESC
+        ''')
     links = cursor.fetchall()
     
     # リンクの完全なURLを生成（SQLite3.Rowはイミュータブルなので辞書に変換）
@@ -1068,7 +1113,10 @@ def line_source_analytics():
         result_links.append(link_dict)
     
     conn.close()
-    return render_template('admin/line_source_analytics.html', registration_links=result_links)
+    return render_template('admin/line_source_analytics.html', 
+                         registration_links=result_links, 
+                         folders=folders, 
+                         selected_folder_id=selected_folder_id)
 
 # 新しい登録リンクの作成
 @app.route('/admin/line-source-analytics/create-link', methods=['POST'])
@@ -1077,10 +1125,17 @@ def create_registration_link():
     try:
         name = request.form.get('name')
         source = request.form.get('source')
+        folder_id = request.form.get('folder_id')
         
         if not name or not source:
             flash('リンク名と流入元は必須です', 'error')
             return redirect(url_for('line_source_analytics'))
+        
+        # フォルダIDが空文字列の場合はNoneに変換
+        if folder_id == '':
+            folder_id = None
+        elif folder_id:
+            folder_id = int(folder_id)
         
         # ユニークなリンクコードを生成
         link_code = secrets.token_urlsafe(8)
@@ -1090,9 +1145,9 @@ def create_registration_link():
         
         try:
             cursor.execute('''
-                INSERT INTO registration_links (name, source, link_code, created_at)
-                VALUES (?, ?, ?, datetime('now'))
-            ''', (name, source, link_code))
+                INSERT INTO registration_links (name, source, link_code, folder_id, created_at)
+                VALUES (?, ?, ?, ?, datetime('now'))
+            ''', (name, source, link_code, folder_id))
             conn.commit()
             flash('登録リンクを作成しました', 'success')
         except sqlite3.IntegrityError as e:
@@ -1355,6 +1410,95 @@ def delete_admin(admin_id):
     
     flash('管理者アカウントを削除しました。', 'success')
     return redirect(url_for('admin_list'))
+
+# フォルダ作成
+@app.route('/admin/line-source-analytics/folders/create', methods=['POST'])
+@admin_required
+def create_source_analytics_folder():
+    try:
+        name = request.form.get('name')
+        
+        if not name:
+            flash('フォルダ名は必須です', 'error')
+            return redirect(url_for('line_source_analytics'))
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # 最大のsort_orderを取得
+        cursor.execute('SELECT MAX(sort_order) FROM source_analytics_folders')
+        max_order = cursor.fetchone()[0] or 0
+        
+        cursor.execute('''
+            INSERT INTO source_analytics_folders (name, sort_order, created_at)
+            VALUES (?, ?, datetime('now'))
+        ''', (name, max_order + 1))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('フォルダを作成しました', 'success')
+    except Exception as e:
+        logger.error(f"フォルダ作成エラー: {str(e)}")
+        flash('フォルダの作成に失敗しました', 'error')
+    
+    return redirect(url_for('line_source_analytics'))
+
+# フォルダ編集
+@app.route('/admin/line-source-analytics/folders/edit/<int:folder_id>', methods=['POST'])
+@admin_required
+def edit_source_analytics_folder(folder_id):
+    try:
+        name = request.form.get('name')
+        
+        if not name:
+            flash('フォルダ名は必須です', 'error')
+            return redirect(url_for('line_source_analytics'))
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute('UPDATE source_analytics_folders SET name = ? WHERE id = ?', (name, folder_id))
+        
+        if cursor.rowcount == 0:
+            flash('フォルダが見つかりません', 'error')
+        else:
+            conn.commit()
+            flash('フォルダ名を更新しました', 'success')
+        
+        conn.close()
+    except Exception as e:
+        logger.error(f"フォルダ編集エラー: {str(e)}")
+        flash('フォルダの編集に失敗しました', 'error')
+    
+    return redirect(url_for('line_source_analytics'))
+
+# フォルダ削除
+@app.route('/admin/line-source-analytics/folders/delete/<int:folder_id>', methods=['POST'])
+@admin_required
+def delete_source_analytics_folder(folder_id):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # フォルダ内のリンクのfolder_idをNULLに設定
+        cursor.execute('UPDATE registration_links SET folder_id = NULL WHERE folder_id = ?', (folder_id,))
+        
+        # フォルダを削除
+        cursor.execute('DELETE FROM source_analytics_folders WHERE id = ?', (folder_id,))
+        
+        if cursor.rowcount == 0:
+            flash('フォルダが見つかりません', 'error')
+        else:
+            conn.commit()
+            flash('フォルダを削除しました', 'success')
+        
+        conn.close()
+    except Exception as e:
+        logger.error(f"フォルダ削除エラー: {str(e)}")
+        flash('フォルダの削除に失敗しました', 'error')
+    
+    return redirect(url_for('line_source_analytics'))
 
 # 流入リンク削除機能
 @app.route('/admin/line-source-analytics/delete-link/<int:link_id>', methods=['POST'])
