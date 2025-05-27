@@ -2175,6 +2175,37 @@ def delete_tag(tag_id):
         logger.error(f"タグ削除エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/tags/delete-multiple', methods=['POST'])
+@admin_required
+def delete_multiple_tags():
+    """タグ一括削除"""
+    try:
+        tag_ids = request.form.getlist('tag_ids')
+        
+        if not tag_ids:
+            return jsonify({'success': False, 'error': '削除するタグを選択してください'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # タグに関連するユーザータグを削除
+        placeholders = ','.join(['?' for _ in tag_ids])
+        c.execute(f'DELETE FROM user_tags WHERE tag_id IN ({placeholders})', tag_ids)
+        
+        # タグを削除
+        c.execute(f'DELETE FROM tags WHERE id IN ({placeholders})', tag_ids)
+        
+        deleted_count = c.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': f'{deleted_count}個のタグが削除されました'})
+        
+    except Exception as e:
+        logger.error(f"タグ一括削除エラー: {str(e)}")
+        return jsonify({'success': False, 'error': 'タグの削除に失敗しました'})
+
 @app.route('/admin/tags/users/<int:tag_id>')
 @admin_required
 def tag_users_api(tag_id):
@@ -2260,6 +2291,75 @@ def reorder_tags():
     except Exception as e:
         logger.error(f"フォルダ並び替えエラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/tags/folders/delete/<int:folder_id>', methods=['POST'])
+@admin_required
+def delete_tag_folder(folder_id):
+    """タグフォルダ削除"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ存在確認
+        c.execute('SELECT id, name FROM tags WHERE id = ? AND parent_id IS NULL', (folder_id,))
+        folder = c.fetchone()
+        if not folder:
+            return jsonify({'success': False, 'message': 'フォルダが見つかりません'})
+        
+        # フォルダ内のタグ数を確認
+        c.execute('SELECT COUNT(*) as count FROM tags WHERE parent_id = ?', (folder_id,))
+        tag_count = c.fetchone()[0]
+        
+        if tag_count > 0:
+            return jsonify({'success': False, 'message': f'このフォルダには{tag_count}個のタグが含まれています。先にタグを削除または移動してください。'})
+        
+        # フォルダ削除
+        c.execute('DELETE FROM tags WHERE id = ?', (folder_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'フォルダが削除されました'})
+        
+    except Exception as e:
+        logger.error(f"タグフォルダ削除エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'フォルダの削除に失敗しました'})
+
+@app.route('/admin/tags/folders/edit/<int:folder_id>', methods=['POST'])
+@admin_required
+def edit_tag_folder(folder_id):
+    """タグフォルダ編集"""
+    try:
+        name = request.form.get('name', '').strip()
+        color = request.form.get('color', '#FFA500').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'フォルダ名は必須です'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ存在確認
+        c.execute('SELECT id FROM tags WHERE id = ? AND parent_id IS NULL', (folder_id,))
+        if not c.fetchone():
+            return jsonify({'success': False, 'message': 'フォルダが見つかりません'})
+        
+        # フォルダ名の重複確認
+        c.execute('SELECT id FROM tags WHERE name = ? AND parent_id IS NULL AND id != ?', (name, folder_id))
+        if c.fetchone():
+            return jsonify({'success': False, 'message': 'そのフォルダ名は既に使用されています'})
+        
+        # フォルダ更新
+        c.execute('UPDATE tags SET name = ? WHERE id = ?', (name, folder_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'フォルダが更新されました'})
+        
+    except Exception as e:
+        logger.error(f"タグフォルダ編集エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'フォルダの編集に失敗しました'})
 
 # チャット管理画面用のユーザータグ取得API
 @app.route('/admin/api/user-tags/<line_user_id>')

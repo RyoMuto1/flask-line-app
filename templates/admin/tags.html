@@ -436,7 +436,7 @@ function editFolderName(folderId, currentName, currentColor) {
   var newName = prompt('新しいフォルダ名を入力してください:', currentName);
   if (newName && newName !== currentName) {
     // フォルダ名を更新
-    $.post('/admin/templates/folders/edit/' + folderId, {
+    $.post('/admin/tags/folders/edit/' + folderId, {
       name: newName,
       color: currentColor
     })
@@ -462,7 +462,7 @@ function deleteFolder(folderId) {
     return;
   }
   
-  $.post('/admin/templates/folders/delete/' + folderId)
+  $.post('/admin/tags/folders/delete/' + folderId)
     .done(function(res) {
       if (res.success) {
         location.reload();
