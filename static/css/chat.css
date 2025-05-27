@@ -47,22 +47,26 @@
     font-size: 0.7rem;
 }
 
-.search-box {
+/* チャット管理画面の検索ボックス（admin-common.cssを上書き） */
+.users-pane .search-box {
     margin-bottom: 1rem;
     width: 100%;
+    border: none !important;
+    padding: 0;
+    background: transparent;
 }
 
-.search-box .form-control {
-    border: none;
-    box-shadow: none;
+.users-pane .search-box .form-control {
+    border: none !important;
+    box-shadow: none !important;
     background-color: #f8f9fa;
     width: 100%;
     box-sizing: border-box;
 }
 
-.search-box .form-control:focus {
-    border: none;
-    box-shadow: none;
+.users-pane .search-box .form-control:focus {
+    border: none !important;
+    box-shadow: none !important;
     background-color: #fff;
     width: 100%;
     box-sizing: border-box;
