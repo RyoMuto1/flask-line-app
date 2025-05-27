@@ -9,18 +9,98 @@
   font-weight: 500;
 }
 
-.folder-actions {
-  display: none;
-  gap: 4px;
-}
-
-.sidebar-item:hover .folder-actions {
+/* サイドバーフォルダスタイル（テンプレート管理と統一） */
+.sidebar-item {
   display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  position: relative;
 }
 
-.folder-actions .action-btn {
-  padding: 2px 4px;
-  font-size: 0.7rem;
+.sidebar-item:hover {
+  background-color: #f8f9fa;
+}
+
+.sidebar-item.active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.sidebar-icon {
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.sidebar-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sidebar-count {
+  font-size: 12px;
+  color: #666;
+  margin-left: 4px;
+}
+
+/* フォルダドロップダウン */
+.folder-dropdown {
+  position: relative;
+  margin-left: 8px;
+}
+
+.folder-edit-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebar-item:hover .folder-edit-btn {
+  opacity: 1;
+}
+
+.folder-edit-btn:hover {
+  background-color: #e9ecef;
+  color: #333;
+}
+
+.folder-dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: white;
+  min-width: 120px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  z-index: 1000;
+  border: 1px solid #ddd;
+}
+
+.folder-dropdown-content.show {
+  display: block;
+}
+
+.folder-dropdown-content a {
+  color: #333;
+  padding: 8px 12px;
+  text-decoration: none;
+  display: block;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.folder-dropdown-content a:hover {
+  background-color: #f8f9fa;
 }
 
 /* モーダル関連の修正 */

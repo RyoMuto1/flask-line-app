@@ -26,19 +26,18 @@
       <ul class="sidebar-list">
         <!-- フォルダ一覧 -->
         {% for folder in folders %}
-        <li class="sidebar-item {% if selected_folder_id == folder.id %}active{% endif %}">
-          <a href="{{ url_for('line_source_analytics', folder_id=folder.id) }}" class="sidebar-link">
-            <i class="fas fa-folder"></i>
-            <span>{{ folder.name }}</span>
-          </a>
+        <li class="sidebar-item {% if selected_folder_id == folder.id %}active{% endif %}" 
+            onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
+          <i class="fas fa-folder sidebar-icon" style="color: #FFA500"></i>
+          <span class="sidebar-name">{{ folder.name }}</span>
+          <span class="sidebar-count">({{ folder.link_count or 0 }})</span>
           {% if folder.name != '未分類' %}
-          <div class="folder-actions">
-            <button class="action-btn edit-folder-btn" data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}" title="編集">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="action-btn delete-folder-btn" data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}" title="削除">
-              <i class="fas fa-trash"></i>
-            </button>
+          <div class="folder-dropdown">
+            <button class="folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown({{ folder.id }})">編集</button>
+            <div class="folder-dropdown-content" id="dropdown-{{ folder.id }}">
+              <a onclick="editFolderName({{ folder.id }}, '{{ folder.name }}')">名前を変更</a>
+              <a onclick="deleteFolder({{ folder.id }})">削除</a>
+            </div>
           </div>
           {% endif %}
         </li>
@@ -269,40 +268,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // フォルダ編集
-    document.querySelectorAll('.edit-folder-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const folderId = this.dataset.folderId;
-            const folderName = this.dataset.folderName;
-            
-            document.getElementById('editFolderName').value = folderName;
-            document.getElementById('editFolderForm').action = `/admin/line-source-analytics/folders/edit/${folderId}`;
-            
-            const modal = new bootstrap.Modal(document.getElementById('editFolderModal'));
-            modal.show();
-        });
-    });
-
-    // フォルダ削除
-    document.querySelectorAll('.delete-folder-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const folderId = this.dataset.folderId;
-            const folderName = this.dataset.folderName;
-            
-            document.getElementById('deleteFolderName').textContent = folderName;
-            document.getElementById('deleteFolderForm').action = `/admin/line-source-analytics/folders/delete/${folderId}`;
-            
-            const modal = new bootstrap.Modal(document.getElementById('deleteFolderModal'));
-            modal.show();
-        });
-    });
-
     // モーダルが閉じられた時の処理
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('hidden.bs.modal', function() {
@@ -316,6 +281,60 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.style.paddingRight = '';
         });
     });
+});
+
+// フォルダ選択
+function selectFolder(folderId) {
+    window.location.href = `/admin/line-source-analytics?folder_id=${folderId}`;
+}
+
+// フォルダドロップダウン表示切り替え
+function toggleFolderDropdown(folderId) {
+    // 他のドロップダウンを閉じる
+    document.querySelectorAll('.folder-dropdown-content').forEach(dropdown => {
+        if (dropdown.id !== `dropdown-${folderId}`) {
+            dropdown.classList.remove('show');
+        }
+    });
+    
+    // 対象のドロップダウンを切り替え
+    const dropdown = document.getElementById(`dropdown-${folderId}`);
+    dropdown.classList.toggle('show');
+}
+
+// フォルダ名編集
+function editFolderName(folderId, currentName) {
+    document.getElementById('editFolderName').value = currentName;
+    document.getElementById('editFolderForm').action = `/admin/line-source-analytics/folders/edit/${folderId}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editFolderModal'));
+    modal.show();
+    
+    // ドロップダウンを閉じる
+    document.getElementById(`dropdown-${folderId}`).classList.remove('show');
+}
+
+// フォルダ削除
+function deleteFolder(folderId) {
+    const folderName = document.querySelector(`[data-folder-id="${folderId}"] .sidebar-name`).textContent;
+    
+    document.getElementById('deleteFolderName').textContent = folderName;
+    document.getElementById('deleteFolderForm').action = `/admin/line-source-analytics/folders/delete/${folderId}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteFolderModal'));
+    modal.show();
+    
+    // ドロップダウンを閉じる
+    document.getElementById(`dropdown-${folderId}`).classList.remove('show');
+}
+
+// 外部クリックでドロップダウンを閉じる
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.folder-dropdown')) {
+        document.querySelectorAll('.folder-dropdown-content').forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    }
 });
 </script>
 {% endblock %} 

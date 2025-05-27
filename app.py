@@ -1121,8 +1121,14 @@ def line_source_analytics():
     conn = get_db()
     cursor = conn.cursor()
     
-    # フォルダ一覧を取得
-    cursor.execute('SELECT * FROM source_analytics_folders ORDER BY sort_order, name')
+    # フォルダ一覧を取得（リンク数も含める）
+    cursor.execute('''
+        SELECT saf.*, COUNT(rl.id) as link_count
+        FROM source_analytics_folders saf
+        LEFT JOIN registration_links rl ON saf.id = rl.folder_id
+        GROUP BY saf.id
+        ORDER BY saf.sort_order, saf.name
+    ''')
     folders = cursor.fetchall()
     
     # フォルダが存在しない場合は「未分類」フォルダを作成
