@@ -1419,8 +1419,13 @@ function editTemplateRedirect(templateId) {
     window.location.href = `/admin/templates/edit/${templateId}`;
 }
 
+// 現在のテンプレートIDを保存する変数
+let currentTemplateId = null;
+
 // プレビュー・テスト送信モーダル表示
 function showPreviewTestModal(templateId) {
+    currentTemplateId = templateId; // テンプレートIDを保存
+    
     fetch(`/admin/templates/preview/${templateId}`)
     .then(response => response.json())
     .then(data => {
@@ -1720,7 +1725,7 @@ function updateTestUsersList() {
                 <span class="user-name">${user.name}</span>
             </div>
             <div class="test-user-actions">
-                <button class="test-send-btn" onclick="sendTestMessage(${user.id})">テスト送信</button>
+                <button class="test-send-btn" onclick="sendTestMessage(${user.id}, this)">テスト送信</button>
                 <button class="delete-user-btn" onclick="removeTestUser(${user.id})" title="削除">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -1731,12 +1736,51 @@ function updateTestUsersList() {
     container.innerHTML = usersHtml;
 }
 
-function sendTestMessage(userId) {
+function sendTestMessage(userId, buttonElement) {
     const user = selectedTestUsers.find(u => u.id === userId);
-    if (user) {
-        alert(`${user.name}にテストメッセージを送信しました`);
-        // 実際の送信処理をここに実装
+    if (!user) {
+        alert('ユーザーが見つかりません');
+        return;
     }
+    
+    if (!currentTemplateId) {
+        alert('テンプレートが選択されていません');
+        return;
+    }
+    
+    // テスト送信ボタンを無効化
+    const originalText = buttonElement.textContent;
+    buttonElement.disabled = true;
+    buttonElement.textContent = '送信中...';
+    
+    // テスト送信API呼び出し
+    fetch('/admin/templates/test-send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            template_id: currentTemplateId,
+            user_id: userId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`${user.name}にテストメッセージを送信しました！`);
+        } else {
+            alert(`送信に失敗しました: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('テスト送信エラー:', error);
+        alert('送信中にエラーが発生しました');
+    })
+    .finally(() => {
+        // ボタンを元に戻す
+        buttonElement.disabled = false;
+        buttonElement.textContent = originalText;
+    });
 }
 
 // デバッグ用関数

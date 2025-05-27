@@ -512,6 +512,28 @@ def send_line_message(user_id, message):
         json={"to": user_id, "messages":[{"type":"text","text":message}]}
     )
     logger.debug(f"LINE Push → {res.status_code} {res.text}")
+    return res.status_code == 200
+
+def send_line_image_message(user_id, image_url):
+    """LINE画像メッセージを送信する関数"""
+    token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+    res = requests.post(
+        "https://api.line.me/v2/bot/message/push",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "to": user_id, 
+            "messages": [{
+                "type": "image",
+                "originalContentUrl": image_url,
+                "previewImageUrl": image_url
+            }]
+        }
+    )
+    logger.debug(f"LINE Image Push → {res.status_code} {res.text}")
+    return res.status_code == 200
 
 # アプリケーションの初期化
 with app.app_context():
@@ -3116,6 +3138,67 @@ def search_friends():
     except Exception as e:
         logger.error(f"友だち検索エラー: {str(e)}")
         return jsonify({'success': False, 'message': '検索に失敗しました', 'users': []})
+
+@app.route('/admin/templates/test-send', methods=['POST'])
+@admin_required
+def test_send_template():
+    """テンプレートのテスト送信"""
+    try:
+        data = request.get_json()
+        template_id = data.get('template_id')
+        user_id = data.get('user_id')
+        
+        if not template_id or not user_id:
+            return jsonify({'success': False, 'message': 'テンプレートIDとユーザーIDは必須です'})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # テンプレート情報を取得
+        c.execute('SELECT * FROM message_templates WHERE id = ?', (template_id,))
+        template = c.fetchone()
+        
+        if not template:
+            return jsonify({'success': False, 'message': 'テンプレートが見つかりません'})
+        
+        # ユーザー情報を取得
+        c.execute('SELECT name FROM users WHERE line_user_id = ?', (user_id,))
+        user = c.fetchone()
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'ユーザーが見つかりません'})
+        
+        conn.close()
+        
+        # テンプレートの内容を取得
+        template_content = template['content']
+        template_type = template['type']
+        
+        # LINEメッセージを送信
+        try:
+            if template_type == 'text':
+                # テキストメッセージの送信
+                success = send_line_message(user_id, template_content)
+            elif template_type == 'image':
+                # 画像メッセージの送信（URLから）
+                success = send_line_image_message(user_id, template_content)
+            else:
+                # その他のタイプは現在未対応
+                return jsonify({'success': False, 'message': f'{template_type}タイプのメッセージは現在未対応です'})
+            
+            if success:
+                logger.info(f"テスト送信成功: テンプレート{template_id} → ユーザー{user_id}")
+                return jsonify({'success': True, 'message': 'テストメッセージを送信しました'})
+            else:
+                return jsonify({'success': False, 'message': 'メッセージの送信に失敗しました'})
+                
+        except Exception as send_error:
+            logger.error(f"LINE送信エラー: {str(send_error)}")
+            return jsonify({'success': False, 'message': 'LINE送信でエラーが発生しました'})
+        
+    except Exception as e:
+        logger.error(f"テスト送信エラー: {str(e)}")
+        return jsonify({'success': False, 'message': 'テスト送信中にエラーが発生しました'})
 
 if __name__ == '__main__':
     init_db()
