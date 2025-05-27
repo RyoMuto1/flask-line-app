@@ -53,6 +53,8 @@
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
             <i class="fas fa-plus"></i> 新しい登録リンクを作成
           </button>
+          <button class="btn-sm" onclick="reorderFolders()">フォルダ並び替え</button>
+          <button class="btn-sm" onclick="reorderLinks()">リンク並び替え</button>
         </div>
         <div class="toolbar-right">
           {% for folder in folders %}
@@ -254,6 +256,48 @@
   </div>
 </div>
 
+<!-- フォルダ並び替えモーダル -->
+<div class="modal fade" id="reorderFoldersModal" tabindex="-1" aria-labelledby="reorderFoldersModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reorderFoldersModalLabel">フォルダ並び替え</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="folderSortList">
+          <!-- フォルダリストはJavaScriptで生成 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-success" onclick="saveFolderOrder()">この順番で決定する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- リンク並び替えモーダル -->
+<div class="modal fade" id="reorderLinksModal" tabindex="-1" aria-labelledby="reorderLinksModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reorderLinksModalLabel">登録リンク並び替え</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="linkSortList">
+          <!-- リンクリストはJavaScriptで生成 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-success" onclick="saveLinkOrder()">この順番で決定する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 <script>
@@ -336,5 +380,139 @@ document.addEventListener('click', function(event) {
         });
     }
 });
+
+// フォルダ並び替え機能
+function reorderFolders() {
+    // フォルダ並び替えモーダルを表示
+    const modal = new bootstrap.Modal(document.getElementById('reorderFoldersModal'));
+    modal.show();
+    
+    // フォルダリストを取得して表示
+    loadFolderSortList();
+}
+
+// リンク並び替え機能
+function reorderLinks() {
+    // リンク並び替えモーダルを表示
+    const modal = new bootstrap.Modal(document.getElementById('reorderLinksModal'));
+    modal.show();
+    
+    // リンクリストを取得して表示
+    loadLinkSortList();
+}
+
+function loadFolderSortList() {
+    // 現在のフォルダリストを取得
+    const folders = document.querySelectorAll('.sidebar-item[data-folder-id]');
+    const sortList = document.getElementById('folderSortList');
+    
+    let html = '<div class="sortable-list" id="sortableFolders">';
+    folders.forEach(folder => {
+        const folderId = folder.dataset.folderId;
+        const folderName = folder.querySelector('.sidebar-name').textContent;
+        html += `
+            <div class="sortable-item" data-id="${folderId}">
+                <div class="drag-handle">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+                <div class="item-content">
+                    <i class="fas fa-folder"></i>
+                    <span>${folderName}</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    sortList.innerHTML = html;
+    
+    // ソート機能を初期化（SortableJSが必要）
+    // 簡易版として、上下移動ボタンで実装
+}
+
+function loadLinkSortList() {
+    // 現在のリンクリストを取得
+    const links = document.querySelectorAll('.data-table tbody tr');
+    const sortList = document.getElementById('linkSortList');
+    
+    let html = '<div class="sortable-list" id="sortableLinks">';
+    links.forEach((link, index) => {
+        const linkName = link.querySelector('.item-title').textContent;
+        html += `
+            <div class="sortable-item" data-index="${index}">
+                <div class="drag-handle">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+                <div class="item-content">
+                    <i class="fas fa-link"></i>
+                    <span>${linkName}</span>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    sortList.innerHTML = html;
+}
+
+// フォルダ順序保存
+function saveFolderOrder() {
+    const folderItems = document.querySelectorAll('#sortableFolders .sortable-item');
+    const folderOrder = Array.from(folderItems).map(item => item.dataset.id);
+    
+    fetch('/admin/line-source-analytics/folders/reorder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            folder_order: folderOrder
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('並び替えに失敗しました: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// リンク順序保存
+function saveLinkOrder() {
+    const linkItems = document.querySelectorAll('#sortableLinks .sortable-item');
+    const linkOrder = Array.from(linkItems).map(item => item.dataset.index);
+    
+    // 現在選択されているフォルダIDを取得
+    const currentFolderId = new URLSearchParams(window.location.search).get('folder_id');
+    
+    fetch('/admin/line-source-analytics/links/reorder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            link_order: linkOrder,
+            folder_id: currentFolderId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('並び替えに失敗しました: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
 </script>
 {% endblock %} 

@@ -1151,7 +1151,7 @@ def line_source_analytics():
         # デフォルトは最初のフォルダ（未分類）を選択
         selected_folder_id = folders[0]['id']
     
-    # 登録リンク一覧を取得（登録者数も含める）
+    # 登録リンク一覧を取得（登録者数も含める、ソート順適用）
     if selected_folder_id:
         cursor.execute('''
             SELECT rl.*, COUNT(ur.id) as registration_count, saf.name as folder_name
@@ -1160,7 +1160,7 @@ def line_source_analytics():
             LEFT JOIN source_analytics_folders saf ON rl.folder_id = saf.id
             WHERE rl.folder_id = ? OR (rl.folder_id IS NULL AND ? = (SELECT id FROM source_analytics_folders WHERE name = '未分類' LIMIT 1))
             GROUP BY rl.id
-            ORDER BY rl.created_at DESC
+            ORDER BY COALESCE(rl.sort_order, 999), rl.created_at DESC
         ''', (selected_folder_id, selected_folder_id))
     else:
         cursor.execute('''
@@ -1169,7 +1169,7 @@ def line_source_analytics():
             LEFT JOIN user_registrations ur ON rl.id = ur.registration_link_id
             LEFT JOIN source_analytics_folders saf ON rl.folder_id = saf.id
             GROUP BY rl.id
-            ORDER BY rl.created_at DESC
+            ORDER BY COALESCE(rl.sort_order, 999), rl.created_at DESC
         ''')
     links = cursor.fetchall()
     
@@ -1602,6 +1602,66 @@ def delete_source_analytics_folder(folder_id):
         flash('フォルダの削除に失敗しました', 'error')
     
     return redirect(url_for('line_source_analytics'))
+
+# フォルダ並び替え機能
+@app.route('/admin/line-source-analytics/folders/reorder', methods=['POST'])
+@admin_required
+def reorder_source_analytics_folders():
+    try:
+        data = request.json
+        folder_order = data.get('folder_order', [])
+        
+        if not folder_order:
+            return jsonify({'success': False, 'error': '並び替え情報が不正です'}), 400
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # 各フォルダに順序情報を保存
+        for i, folder_id in enumerate(folder_order):
+            cursor.execute('UPDATE source_analytics_folders SET sort_order = ? WHERE id = ?', (i, folder_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"フォルダ並び替えエラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 登録リンク並び替え機能
+@app.route('/admin/line-source-analytics/links/reorder', methods=['POST'])
+@admin_required
+def reorder_registration_links():
+    try:
+        data = request.json
+        link_order = data.get('link_order', [])
+        folder_id = data.get('folder_id')
+        
+        if not link_order:
+            return jsonify({'success': False, 'error': '並び替え情報が不正です'}), 400
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # 既存のテーブルにsort_orderカラムがなければ追加
+        cursor.execute("PRAGMA table_info(registration_links)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'sort_order' not in columns:
+            cursor.execute('ALTER TABLE registration_links ADD COLUMN sort_order INTEGER DEFAULT 0')
+            logger.info("registration_linksテーブルにsort_orderカラムを追加しました")
+        
+        # 各リンクに順序情報を保存
+        for i, link_id in enumerate(link_order):
+            cursor.execute('UPDATE registration_links SET sort_order = ? WHERE id = ?', (i, link_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"リンク並び替えエラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # 流入リンク削除機能
 @app.route('/admin/line-source-analytics/delete-link/<int:link_id>', methods=['POST'])
