@@ -3114,11 +3114,11 @@ def search_friends():
         conn = get_db()
         c = conn.cursor()
         
-        # ユーザーテーブルから名前で検索
+        # ユーザーテーブルから名前で検索（line_user_idがnullでないもののみ）
         c.execute('''
             SELECT line_user_id, name, profile_image_url
             FROM users 
-            WHERE name LIKE ? 
+            WHERE name LIKE ? AND line_user_id IS NOT NULL
             ORDER BY name
             LIMIT 10
         ''', (f'%{query}%',))

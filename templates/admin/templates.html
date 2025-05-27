@@ -1668,9 +1668,16 @@ function addTestUser(userId, userName, userAvatar) {
     console.log('2. userId型:', typeof userId);
     console.log('3. 追加前のselectedTestUsers:', selectedTestUsers);
     
+    // userIdがnullまたは空の場合はエラー
+    if (!userId || userId === 'null' || userId === null) {
+        console.error('4. 無効なuserId:', userId);
+        alert('このユーザーは追加できません（LINE IDが設定されていません）');
+        return;
+    }
+    
     // 既に追加済みかチェック（文字列として比較）
     if (selectedTestUsers.find(user => user.id === userId)) {
-        console.log('4. 既に追加済みのユーザー:', userId);
+        console.log('5. 既に追加済みのユーザー:', userId);
         return;
     }
     
@@ -1747,6 +1754,13 @@ function sendTestMessage(userId, buttonElement) {
     console.log('2. currentTemplateId:', currentTemplateId);
     console.log('3. selectedTestUsers配列:', selectedTestUsers);
     console.log('4. selectedTestUsers.length:', selectedTestUsers.length);
+    
+    // userIdがnullまたは空の場合はエラー
+    if (!userId || userId === 'null' || userId === null) {
+        alert('無効なユーザーIDです（LINE IDが設定されていません）');
+        console.error('無効なuserId:', userId);
+        return;
+    }
     
     // 各ユーザーのIDと型を詳細チェック
     selectedTestUsers.forEach((user, index) => {
