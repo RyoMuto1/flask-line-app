@@ -1084,7 +1084,8 @@
                     <div class="test-user-header">
                         <h3>テストユーザー登録</h3>
                         <p>検索してもアカウントが表示されない場合は <a href="#" style="color: #00c851;">こちら</a></p>
-                        <button onclick="debugTestUsers()" style="background: #6c757d; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8rem; margin-bottom: 0.5rem;">デバッグ: 保存状態確認</button>
+                        <button onclick="debugTestUsers()" style="background: #6c757d; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8rem; margin-bottom: 0.5rem; margin-right: 0.5rem;">デバッグ: 保存状態確認</button>
+                        <button onclick="clearTestUsers()" style="background: #dc3545; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8rem; margin-bottom: 0.5rem;">リセット</button>
                     </div>
                     
                     <div class="search-box-container">
@@ -1559,12 +1560,30 @@ function loadTestUsersFromSession() {
     try {
         const savedUsers = sessionStorage.getItem('selectedTestUsers');
         if (savedUsers) {
-            selectedTestUsers = JSON.parse(savedUsers);
+            const parsedUsers = JSON.parse(savedUsers);
+            
+            // 無効なユーザーデータをフィルタリング
+            selectedTestUsers = parsedUsers.filter(user => {
+                const isValid = user && user.id && user.id !== 'null' && user.id !== null && user.name;
+                if (!isValid) {
+                    console.warn('無効なユーザーデータを除外:', user);
+                }
+                return isValid;
+            });
+            
             console.log('テストユーザーを復元しました:', selectedTestUsers);
+            
+            // 無効なデータが除外された場合はセッションストレージを更新
+            if (selectedTestUsers.length !== parsedUsers.length) {
+                console.log('無効なデータを除外したため、セッションストレージを更新します');
+                saveTestUsersToSession();
+            }
         }
     } catch (error) {
         console.error('テストユーザーの復元に失敗:', error);
         selectedTestUsers = [];
+        // エラーの場合はセッションストレージをクリア
+        sessionStorage.removeItem('selectedTestUsers');
     }
 }
 
@@ -1878,6 +1897,26 @@ function debugTestUsers() {
 
 配列の長さ: ${selectedTestUsers.length}
     `);
+}
+
+// テストユーザーリセット機能
+function clearTestUsers() {
+    if (confirm('テスト送信対象のユーザーをすべてクリアしますか？\n※この操作は元に戻せません。')) {
+        console.log('=== テストユーザーリセット開始 ===');
+        console.log('リセット前のselectedTestUsers:', selectedTestUsers);
+        
+        // 配列をクリア
+        selectedTestUsers = [];
+        
+        // セッションストレージをクリア
+        sessionStorage.removeItem('selectedTestUsers');
+        
+        // 表示を更新
+        updateTestUsersList();
+        
+        console.log('テストユーザーリセット完了');
+        alert('テスト送信対象のユーザーをすべてクリアしました。');
+    }
 }
 
 // 未実装の関数
