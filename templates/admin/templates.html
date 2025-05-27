@@ -521,8 +521,8 @@
     
     /* プレビュー・テスト送信モーダル */
     .preview-test-modal-content {
-        max-width: 1200px;
-        width: 90%;
+        max-width: 1200px !important;
+        width: 90% !important;
         padding: 2rem;
     }
     
@@ -1208,6 +1208,7 @@ function showCreateTemplateModal() {
 // モーダル閉じる
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+    // テストユーザーリストは保持する（クリアしない）
 }
 
 // 全選択トグル
@@ -1422,6 +1423,10 @@ function showPreviewTestModal(templateId) {
         if (data.success) {
             const template = data.template;
             document.getElementById('previewTestContent').textContent = template.content;
+            
+            // 既存のテストユーザーリストを表示
+            updateTestUsersList();
+            
             document.getElementById('previewTestModal').style.display = 'block';
         } else {
             alert('プレビューの取得に失敗しました: ' + data.message);
@@ -1529,6 +1534,19 @@ function getTypeDisplayName(type) {
 let selectedTestUsers = [];
 let searchTimeout;
 
+// ページ読み込み時にセッションストレージからテストユーザーを復元
+document.addEventListener('DOMContentLoaded', function() {
+    const savedUsers = sessionStorage.getItem('selectedTestUsers');
+    if (savedUsers) {
+        selectedTestUsers = JSON.parse(savedUsers);
+    }
+});
+
+// テストユーザーリストをセッションストレージに保存
+function saveTestUsersToSession() {
+    sessionStorage.setItem('selectedTestUsers', JSON.stringify(selectedTestUsers));
+}
+
 function searchUsers(query) {
     clearTimeout(searchTimeout);
     
@@ -1609,6 +1627,9 @@ function addTestUser(userId, userName, userAvatar) {
     // テストユーザーリストに追加
     selectedTestUsers.push({ id: userId, name: userName, avatar: userAvatar });
     
+    // セッションストレージに保存
+    saveTestUsersToSession();
+    
     // 表示を更新
     updateTestUsersList();
     
@@ -1619,6 +1640,10 @@ function addTestUser(userId, userName, userAvatar) {
 
 function removeTestUser(userId) {
     selectedTestUsers = selectedTestUsers.filter(user => user.id !== userId);
+    
+    // セッションストレージに保存
+    saveTestUsersToSession();
+    
     updateTestUsersList();
 }
 
