@@ -227,18 +227,33 @@ function renderFolderList() {
   var topLevelFolders = tagData.filter(function(t) { return !t.parent_id; });
   
   // 未分類（フォルダに属さないタグ）を先頭に追加
-  html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center folder-item active" data-id="unclassified">';
-  html += '<span><i class="fas fa-folder text-warning"></i> 未分類</span>';
-  html += '<span class="text-secondary">(' + getUnclassifiedTagCount() + ')</span>';
-  html += '</a>';
+  html += '<li class="sidebar-item active folder-item" data-id="unclassified">';
+  html += '<i class="fas fa-folder sidebar-icon"></i>';
+  html += '<span class="sidebar-name">未分類</span>';
+  html += '<span class="sidebar-count">(' + getUnclassifiedTagCount() + ')</span>';
+  html += '<div class="folder-dropdown">';
+  html += '<button class="folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown(\'unclassified\')">編集</button>';
+  html += '<div class="folder-dropdown-content" id="dropdown-unclassified">';
+  html += '<a onclick="editFolderName(\'unclassified\', \'未分類\', \'#FFA500\')">名前を変更</a>';
+  html += '</div>';
+  html += '</div>';
+  html += '</li>';
   
-  // トップレベルフォルダーを表示（シンプルに一覧のみ）
+  // トップレベルフォルダーを表示（テンプレート管理画面と同じ構造）
   topLevelFolders.forEach(function(folder) {
     var childTags = getChildTags(folder.id);
-    html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center folder-item" data-id="' + folder.id + '">';
-    html += '<span><i class="fas fa-folder text-warning"></i> ' + folder.name + '</span>';
-    html += '<span class="text-secondary">(' + childTags.length + ')</span>';
-    html += '</a>';
+    html += '<li class="sidebar-item folder-item" data-id="' + folder.id + '">';
+    html += '<i class="fas fa-folder sidebar-icon" style="color: ' + (folder.color || '#FFA500') + '"></i>';
+    html += '<span class="sidebar-name">' + folder.name + '</span>';
+    html += '<span class="sidebar-count">(' + childTags.length + ')</span>';
+    html += '<div class="folder-dropdown">';
+    html += '<button class="folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown(' + folder.id + ')">編集</button>';
+    html += '<div class="folder-dropdown-content" id="dropdown-' + folder.id + '">';
+    html += '<a onclick="editFolderName(' + folder.id + ', \'' + folder.name + '\', \'' + (folder.color || '#FFA500') + '\')">名前を変更</a>';
+    html += '<a onclick="deleteFolder(' + folder.id + ')">削除</a>';
+    html += '</div>';
+    html += '</div>';
+    html += '</li>';
   });
   
   $('#tagFolderList').html(html);
@@ -283,27 +298,35 @@ function renderFolderContent(folderId) {
   var html = '';
   if (tagsToShow.length > 0) {
     tagsToShow.forEach(function(tag, index) {
-      // 最後の3行は上方向に開く
-      var isNearBottom = index >= tagsToShow.length - 3;
       html += '<tr>';
-      html += '<td>' + tag.name + '</td>';
-      html += '<td class="text-end"><a href="#" class="tag-users-link" data-id="' + tag.id + '">' + tag.user_count + '人</a></td>';
-      html += '<td class="text-end">' + formatDate(tag.created_at) + '</td>';
+      html += '<td><input type="checkbox" class="tag-checkbox" value="' + tag.id + '"></td>';
+      html += '<td>';
+      html += '<div class="tag-item">';
+      html += '<span class="tag-name">' + tag.name + '</span>';
+      html += '</div>';
+      html += '</td>';
       html += '<td class="text-end">';
-      html += '<div class="' + (isNearBottom ? 'dropup' : 'dropdown') + '">';
-      html += '<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="tag-action-' + tag.id + '" data-bs-toggle="dropdown" aria-expanded="false">操作</button>';
-      html += '<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="tag-action-' + tag.id + '" style="min-width: 240px; max-height: 200px; overflow-y: auto;">';
-      html += '<li><a class="dropdown-item edit-tag-btn" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-edit me-2"></i>名前を変更</a></li>';
-      html += '<li><a class="dropdown-item tag-copy-btn" href="#" data-name="' + tag.name + '"><i class="fas fa-copy me-2"></i>タグ名をクリップボードにコピー</a></li>';
-      html += '<li><hr class="dropdown-divider"></li>';
-      html += '<li><a class="dropdown-item delete-tag-btn text-danger" href="#" data-id="' + tag.id + '" data-name="' + tag.name + '"><i class="fas fa-trash-alt me-2"></i>削除</a></li>';
-      html += '</ul>';
+      html += '<a href="#" class="tag-users-link user-count" data-id="' + tag.id + '">' + tag.user_count + '人</a>';
+      html += '</td>';
+      html += '<td class="text-end">';
+      html += '<span class="tag-date">' + formatDate(tag.created_at) + '</span>';
+      html += '</td>';
+      html += '<td class="text-end">';
+      html += '<div class="dropdown">';
+      html += '<button class="action-btn menu-btn" onclick="toggleTagDropdown(' + tag.id + ')" title="操作">';
+      html += '<i class="fas fa-ellipsis-v"></i>';
+      html += '</button>';
+      html += '<div class="dropdown-content" id="tag-dropdown-' + tag.id + '">';
+      html += '<a onclick="editTag(' + tag.id + ', \'' + tag.name + '\')"><i class="fas fa-edit"></i> 名前を変更</a>';
+      html += '<a onclick="copyTagName(\'' + tag.name + '\')"><i class="fas fa-copy"></i> タグ名をコピー</a>';
+      html += '<a onclick="deleteTag(' + tag.id + ', \'' + tag.name + '\')" class="text-danger"><i class="fas fa-trash"></i> 削除</a>';
+      html += '</div>';
       html += '</div>';
       html += '</td>';
       html += '</tr>';
     });
   } else {
-    html = '<tr><td colspan="4" class="text-center py-3">このフォルダにはタグがありません</td></tr>';
+    html = '<tr><td colspan="5" class="text-center py-3">このフォルダにはタグがありません</td></tr>';
   }
   
   $('#tagListContainer').html(html);
@@ -387,6 +410,163 @@ function formatDate(dateStr) {
          date.getDate().toString().padStart(2, '0');
 }
 
+// フォルダドロップダウンの表示切り替え
+function toggleFolderDropdown(folderId) {
+  var dropdown = document.getElementById('dropdown-' + folderId);
+  var isVisible = dropdown.style.display === 'block';
+  
+  // 他のドロップダウンを閉じる
+  document.querySelectorAll('.folder-dropdown-content').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  
+  // 対象のドロップダウンを切り替え
+  if (!isVisible) {
+    dropdown.style.display = 'block';
+  }
+}
+
+// フォルダ名編集
+function editFolderName(folderId, currentName, currentColor) {
+  if (folderId === 'unclassified') {
+    alert('未分類フォルダの名前は変更できません');
+    return;
+  }
+  
+  var newName = prompt('新しいフォルダ名を入力してください:', currentName);
+  if (newName && newName !== currentName) {
+    // フォルダ名を更新
+    $.post('/admin/templates/folders/edit/' + folderId, {
+      name: newName,
+      color: currentColor
+    })
+    .done(function(res) {
+      if (res.success) {
+        location.reload();
+      } else {
+        alert(res.message || 'フォルダ名の変更に失敗しました');
+      }
+    })
+    .fail(function() {
+      alert('エラーが発生しました');
+    });
+  }
+}
+
+// フォルダ削除
+function deleteFolder(folderId) {
+  var folder = tagData.find(function(t) { return t.id == folderId; });
+  if (!folder) return;
+  
+  if (!confirm('フォルダ「' + folder.name + '」を削除しますか？\n※フォルダ内のタグも削除されます。')) {
+    return;
+  }
+  
+  $.post('/admin/templates/folders/delete/' + folderId)
+    .done(function(res) {
+      if (res.success) {
+        location.reload();
+      } else {
+        alert(res.message || 'フォルダの削除に失敗しました');
+      }
+    })
+    .fail(function() {
+      alert('エラーが発生しました');
+    });
+}
+
+// タグドロップダウンの表示切り替え
+function toggleTagDropdown(tagId) {
+  var dropdown = document.getElementById('tag-dropdown-' + tagId);
+  var isVisible = dropdown.style.display === 'block';
+  
+  // 他のドロップダウンを閉じる
+  document.querySelectorAll('.dropdown-content').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  
+  // 対象のドロップダウンを切り替え
+  if (!isVisible) {
+    dropdown.style.display = 'block';
+  }
+}
+
+// タグ編集
+function editTag(tagId, currentName) {
+  $('#editTagId').val(tagId);
+  $('#editTagName').val(currentName);
+  $('#editTagError').text('');
+  $('#editTagModal').modal('show');
+}
+
+// タグ名をクリップボードにコピー
+function copyTagName(tagName) {
+  navigator.clipboard.writeText(tagName)
+    .then(function() {
+      alert('タグ名「' + tagName + '」をクリップボードにコピーしました');
+    })
+    .catch(function() {
+      alert('クリップボードへのコピーに失敗しました');
+    });
+}
+
+// タグ削除
+function deleteTag(tagId, tagName) {
+  if (!confirm('タグ「' + tagName + '」を削除します。よろしいですか？')) return;
+  
+  $.post('/admin/tags/delete/' + tagId)
+    .done(function(res) {
+      if (res.success) {
+        location.reload();
+      } else {
+        alert(res.error || '削除に失敗しました');
+      }
+    })
+    .fail(function(xhr) {
+      alert(xhr.responseJSON?.error || '削除に失敗しました');
+    });
+}
+
+// 選択されたタグを削除
+function deleteSelectedTags() {
+  var selectedTags = [];
+  $('.tag-checkbox:checked').each(function() {
+    selectedTags.push($(this).val());
+  });
+  
+  if (selectedTags.length === 0) {
+    alert('削除するタグを選択してください');
+    return;
+  }
+  
+  if (!confirm(selectedTags.length + '個のタグを削除します。よろしいですか？')) {
+    return;
+  }
+  
+  $.post('/admin/tags/delete-multiple', {
+    tag_ids: selectedTags
+  })
+  .done(function(res) {
+    if (res.success) {
+      location.reload();
+    } else {
+      alert(res.error || '削除に失敗しました');
+    }
+  })
+  .fail(function(xhr) {
+    alert(xhr.responseJSON?.error || '削除に失敗しました');
+  });
+}
+
+// ドキュメントクリックでドロップダウンを閉じる
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.folder-dropdown') && !e.target.closest('.dropdown')) {
+    document.querySelectorAll('.folder-dropdown-content, .dropdown-content').forEach(function(el) {
+      el.style.display = 'none';
+    });
+  }
+});
+
 $(function() {
   // 初期表示
   renderFolderList();
@@ -406,7 +586,7 @@ $(function() {
   });
   
   // 全選択チェックボックス
-  $('#selectAllTags').on('change', function() {
+  $('#selectAll').on('change', function() {
     $('.tag-checkbox').prop('checked', $(this).prop('checked'));
   });
   
@@ -466,17 +646,6 @@ $(function() {
     $(this).find('.text-danger').text('');
   });
 
-  // タグ編集モーダル表示
-  $(document).on('click', '.edit-tag-btn', function(e) {
-    e.preventDefault();
-    var tagId = $(this).data('id');
-    var tagName = $(this).data('name');
-    $('#editTagId').val(tagId);
-    $('#editTagName').val(tagName);
-    $('#editTagError').text('');
-    $('#editTagModal').modal('show');
-  });
-  
   // タグ編集保存
   $('#editTagForm').on('submit', function(e) {
     e.preventDefault();
@@ -499,50 +668,6 @@ $(function() {
       })
       .always(function() {
         $btn.prop('disabled', false);
-      });
-  });
-  
-  // タグ削除
-  $(document).on('click', '.delete-tag-btn', function(e) {
-    e.preventDefault();
-    var tagId = $(this).data('id');
-    var tagName = $(this).data('name');
-    
-    if (!confirm('タグ「' + tagName + '」を削除します。よろしいですか？')) return;
-    
-    $.post('/admin/tags/delete/' + tagId)
-      .done(function(res) {
-        if (res.success) {
-          location.reload();
-        } else {
-          alert(res.error || '削除に失敗しました');
-        }
-      })
-      .fail(function(xhr) {
-        alert(xhr.responseJSON?.error || '削除に失敗しました');
-      });
-  });
-  
-  // タグ名をクリップボードにコピー
-  $(document).on('click', '.tag-copy-btn', function(e) {
-    e.preventDefault();
-    var tagName = $(this).data('name');
-    
-    // クリップボードにコピー
-    navigator.clipboard.writeText(tagName)
-      .then(function() {
-        // コピー成功時のフィードバック
-        var $btn = $(e.currentTarget);
-        var originalHtml = $btn.html();
-        $btn.html('<i class="fas fa-check me-2"></i>コピーしました');
-        
-        // 少し時間をおいて元に戻す
-        setTimeout(function() {
-          $btn.html(originalHtml);
-        }, 2000);
-      })
-      .catch(function() {
-        alert('クリップボードへのコピーに失敗しました');
       });
   });
   
