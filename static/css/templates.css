@@ -73,12 +73,15 @@
     background: #2196f3;
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.85rem;
+    height: 32px;
+    box-sizing: border-box;
 }
 
 .template-dropdown-content {
@@ -114,12 +117,15 @@
     background: #00bcd4;
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.85rem;
+    height: 32px;
+    box-sizing: border-box;
 }
 
 /* テンプレートテーブル */
