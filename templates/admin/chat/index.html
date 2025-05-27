@@ -8,14 +8,15 @@
     /* チャット管理画面専用スタイル */
     .chat-container {
         display: flex;
-        height: calc(100vh - 200px);
+        height: calc(100vh - 120px);
         border: 1px solid #ddd;
         border-radius: 4px;
         overflow: hidden;
         min-height: 0;
+        margin: 1rem;
     }
     
-    /* 左ペイン：ユーザーリスト（統一されたサイドバースタイルを使用） */
+    /* 左ペイン：ユーザーリスト */
     .users-pane {
         width: 300px;
         border-right: 1px solid #e9ecef;
@@ -54,8 +55,6 @@
     }
     
     .search-box {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
         margin-bottom: 1rem;
     }
     
@@ -75,14 +74,7 @@
         background-color: white;
         display: flex;
         align-items: center;
-        gap: 1rem;
-    }
-    
-    .chat-header-user-info {
-        display: flex;
-        align-items: center;
         gap: 0.75rem;
-        flex: 1;
     }
     
     .chat-header-avatar {
@@ -105,25 +97,21 @@
         object-fit: cover;
     }
     
-    .chat-header-details {
-        flex: 1;
-    }
-    
     .chat-header-name {
         font-size: 1.1rem;
         font-weight: 600;
         margin: 0;
         color: #333;
+        flex: 1;
     }
     
     .chat-header-status {
         display: inline-block;
-        padding: 2px 8px;
+        padding: 4px 12px;
         border-radius: 4px;
         font-size: 0.75rem;
         font-weight: bold;
         color: white;
-        margin-left: 0.5rem;
     }
     
     .messages-container {
@@ -386,14 +374,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="admin-container">
-    <div class="admin-header">
-        <div>
-            <h1>チャット管理</h1>
-            <div class="admin-description">ユーザーとのチャット履歴を確認し、メッセージを送信できます</div>
-        </div>
-    </div>
-    
+<div class="container-fluid" style="margin-top:0; padding-top:0;">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -419,18 +400,11 @@
         <!-- 中央ペイン：チャット内容 -->
         <div class="chat-pane">
             <div class="chat-header" id="chatHeader">
-                <div class="chat-header-user-info" id="chatHeaderUserInfo" style="display: none;">
-                    <div class="chat-header-avatar" id="chatHeaderAvatar">
-                        <span class="default-avatar">👤</span>
-                    </div>
-                    <div class="chat-header-details">
-                        <h5 class="chat-header-name" id="chatHeaderName">ユーザー名</h5>
-                        <span class="chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
-                    </div>
+                <div class="chat-header-avatar" id="chatHeaderAvatar" style="display: none;">
+                    <span class="default-avatar">👤</span>
                 </div>
-                <div id="chatHeaderDefault">
-                    <h5 class="mb-0">ユーザーを選択してください</h5>
-                </div>
+                <h5 class="chat-header-name" id="chatHeaderName">ユーザーを選択してください</h5>
+                <span class="chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
                 <div class="user-status" id="userStatus"></div>
             </div>
             
@@ -766,17 +740,9 @@
     function updateChatHeader(user) {
         if (!user) return;
         
-        const chatHeaderUserInfo = document.getElementById('chatHeaderUserInfo');
-        const chatHeaderDefault = document.getElementById('chatHeaderDefault');
         const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
         const chatHeaderName = document.getElementById('chatHeaderName');
         const chatHeaderStatus = document.getElementById('chatHeaderStatus');
-        
-        // デフォルト表示を隠す
-        chatHeaderDefault.style.display = 'none';
-        
-        // ユーザー情報を表示
-        chatHeaderUserInfo.style.display = 'flex';
         
         // アイコンを設定
         if (user.profile_image_url) {
@@ -784,6 +750,7 @@
         } else {
             chatHeaderAvatar.innerHTML = '<span class="default-avatar">👤</span>';
         }
+        chatHeaderAvatar.style.display = 'flex';
         
         // ユーザー名を設定
         chatHeaderName.textContent = user.name;
