@@ -1151,6 +1151,14 @@ def line_source_analytics():
         # デフォルトは最初のフォルダ（未分類）を選択
         selected_folder_id = folders[0]['id']
     
+    # sort_orderカラムの存在確認と追加
+    cursor.execute("PRAGMA table_info(registration_links)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if 'sort_order' not in columns:
+        cursor.execute('ALTER TABLE registration_links ADD COLUMN sort_order INTEGER DEFAULT 0')
+        conn.commit()
+        logger.info("registration_linksテーブルにsort_orderカラムを追加しました")
+
     # 登録リンク一覧を取得（登録者数も含める、ソート順適用）
     if selected_folder_id:
         cursor.execute('''
