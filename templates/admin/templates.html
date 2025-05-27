@@ -546,6 +546,9 @@
         border-radius: 8px;
         min-height: 200px;
         border: 1px solid #dee2e6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.5;
     }
     
     .test-user-section {
@@ -1073,6 +1076,7 @@
                     <div class="test-user-header">
                         <h3>テストユーザー登録</h3>
                         <p>検索してもアカウントが表示されない場合は <a href="#" style="color: #00c851;">こちら</a></p>
+                        <button onclick="debugTestUsers()" style="background: #6c757d; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8rem; margin-bottom: 0.5rem;">デバッグ: 保存状態確認</button>
                     </div>
                     
                     <div class="search-box-container">
@@ -1424,7 +1428,10 @@ function showPreviewTestModal(templateId) {
             const template = data.template;
             document.getElementById('previewTestContent').textContent = template.content;
             
-            // 既存のテストユーザーリストを表示
+            // セッションストレージからテストユーザーを再読み込み
+            loadTestUsersFromSession();
+            
+            // テストユーザーリストを表示
             updateTestUsersList();
             
             document.getElementById('previewTestModal').style.display = 'block';
@@ -1534,17 +1541,31 @@ function getTypeDisplayName(type) {
 let selectedTestUsers = [];
 let searchTimeout;
 
-// ページ読み込み時にセッションストレージからテストユーザーを復元
-document.addEventListener('DOMContentLoaded', function() {
-    const savedUsers = sessionStorage.getItem('selectedTestUsers');
-    if (savedUsers) {
-        selectedTestUsers = JSON.parse(savedUsers);
+// セッションストレージからテストユーザーを復元（即座に実行）
+function loadTestUsersFromSession() {
+    try {
+        const savedUsers = sessionStorage.getItem('selectedTestUsers');
+        if (savedUsers) {
+            selectedTestUsers = JSON.parse(savedUsers);
+            console.log('テストユーザーを復元しました:', selectedTestUsers);
+        }
+    } catch (error) {
+        console.error('テストユーザーの復元に失敗:', error);
+        selectedTestUsers = [];
     }
-});
+}
+
+// ページ読み込み時に即座に実行
+loadTestUsersFromSession();
 
 // テストユーザーリストをセッションストレージに保存
 function saveTestUsersToSession() {
-    sessionStorage.setItem('selectedTestUsers', JSON.stringify(selectedTestUsers));
+    try {
+        sessionStorage.setItem('selectedTestUsers', JSON.stringify(selectedTestUsers));
+        console.log('テストユーザーを保存しました:', selectedTestUsers);
+    } catch (error) {
+        console.error('テストユーザーの保存に失敗:', error);
+    }
 }
 
 function searchUsers(query) {
@@ -1687,6 +1708,18 @@ function sendTestMessage(userId) {
         alert(`${user.name}にテストメッセージを送信しました`);
         // 実際の送信処理をここに実装
     }
+}
+
+// デバッグ用関数
+function debugTestUsers() {
+    const sessionData = sessionStorage.getItem('selectedTestUsers');
+    alert(`
+現在のテストユーザー配列: ${JSON.stringify(selectedTestUsers, null, 2)}
+
+セッションストレージの内容: ${sessionData}
+
+配列の長さ: ${selectedTestUsers.length}
+    `);
 }
 
 // 未実装の関数
