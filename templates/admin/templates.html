@@ -675,14 +675,21 @@
         border-radius: 4px;
         font-size: 0.8rem;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
+        min-width: 32px;
+        height: 32px;
     }
     
     .delete-user-btn:hover {
         background: #c82333;
+        transform: scale(1.05);
+    }
+    
+    .delete-user-btn:active {
+        transform: scale(0.95);
     }
     
     /* 検索候補リスト */
@@ -1706,13 +1713,37 @@ function addTestUser(userId, userName, userAvatar) {
 }
 
 function removeTestUser(userId) {
-    console.log('removeTestUser呼び出し:', { userId, userIdType: typeof userId });
+    console.log('=== removeTestUser デバッグ開始 ===');
+    console.log('1. 削除対象userId:', userId, '(型:', typeof userId, ')');
+    console.log('2. 削除前のselectedTestUsers:', selectedTestUsers);
+    
+    // 削除対象のユーザーを見つける
+    const targetUser = selectedTestUsers.find(user => user.id === userId);
+    if (!targetUser) {
+        console.error('削除対象のユーザーが見つかりません:', userId);
+        alert('削除対象のユーザーが見つかりません');
+        return;
+    }
+    
+    console.log('3. 削除対象ユーザー:', targetUser);
+    
+    // 確認ダイアログを表示
+    if (!confirm(`「${targetUser.name}」をテスト送信対象から削除しますか？`)) {
+        console.log('4. ユーザーがキャンセルしました');
+        return;
+    }
+    
+    // ユーザーを配列から削除
     selectedTestUsers = selectedTestUsers.filter(user => user.id !== userId);
+    console.log('5. 削除後のselectedTestUsers:', selectedTestUsers);
     
     // セッションストレージに保存
     saveTestUsersToSession();
     
+    // 表示を更新
     updateTestUsersList();
+    
+    console.log('6. ユーザー削除完了');
 }
 
 function updateTestUsersList() {
