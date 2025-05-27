@@ -482,10 +482,12 @@
         background: #2196f3;
         color: white;
         border: none;
-        padding: 0.5rem 1rem;
+        padding: 0.5rem 0.75rem;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        min-width: 70px;
     }
     
     .bottom-toolbar {
@@ -648,9 +650,9 @@
                         <tr>
                             <th width="40"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
                             <th>テンプレート名</th>
-                            <th width="120">登録日</th>
-                            <th width="200">アクション</th>
-                            <th width="100">操作</th>
+                            <th width="100">登録日</th>
+                            <th width="160">アクション</th>
+                            <th width="80">操作</th>
                         </tr>
                     </thead>
                     <tbody id="templateTableBody">
@@ -684,7 +686,7 @@
                             </td>
                             <td>
                                 <div class="template-dropdown">
-                                    <button class="operation-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})">操作 <i class="fas fa-chevron-down"></i></button>
+                                    <button class="operation-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})">操作 ></button>
                                     <div class="template-dropdown-content" id="operationDropdown-{{ template.id }}">
                                         <a onclick="editTemplateName({{ template.id }}, '{{ template.name }}')">名前を変更</a>
                                         <a onclick="deleteTemplate({{ template.id }})">削除</a>
