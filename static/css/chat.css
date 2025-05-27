@@ -2,7 +2,7 @@
 .chat-page-container {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 80px; /* サイドバーの幅分を空ける */
     right: 0;
     bottom: 0;
     background-color: #f8f9fa;
@@ -425,6 +425,10 @@
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
+    .chat-page-container {
+        left: 0; /* 小さい画面ではサイドバーが隠れるので全幅使用 */
+    }
+    
     .users-pane {
         width: 250px;
     }
@@ -443,6 +447,10 @@
 }
 
 @media (max-width: 576px) {
+    .chat-page-container {
+        left: 0; /* スマートフォンでは全幅使用 */
+    }
+    
     .chat-container {
         flex-direction: column;
     }
