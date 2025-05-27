@@ -114,48 +114,62 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-4">対応マーク管理</h1>
-
-<!-- フラッシュメッセージ -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
-<div class="card">
-    <div class="card-header">
-        <h5 class="card-title mb-0">対応マーク一覧</h5>
-    </div>
-    <div class="card-body">
-        <p class="card-text">顧客や注文の状態を表す対応マークを管理できます。</p>
-        <p class="card-text">対応マークはドラッグ＆ドロップで並び替えることができます。</p>
-        
-        <!-- 対応マーク一覧 -->
+<div class="admin-container">
+  <!-- ヘッダー -->
+  <div class="admin-header">
+    <h1>対応マーク</h1>
+    <div class="admin-description">顧客や注文の状態を表す対応マークを管理できます。</div>
+  </div>
+  
+  <!-- メインコンテンツ -->
+  <div class="admin-main">
+    <!-- メインコンテンツエリア（サイドバーなし） -->
+    <div class="admin-content" style="margin-left: 0;">
+      <!-- ツールバー -->
+      <div class="admin-toolbar">
+        <div class="toolbar-left">
+          <button class="btn btn-primary" id="addStatusMarkerButton">
+            <i class="fas fa-plus"></i> 新しい対応マークを追加
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <span class="text-muted">ドラッグ＆ドロップで並び替えができます</span>
+        </div>
+      </div>
+      
+      <!-- フラッシュメッセージ -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+              {% for category, message in messages %}
+                  <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+                  </div>
+              {% endfor %}
+          {% endif %}
+      {% endwith %}
+      
+      <!-- 対応マーク一覧 -->
+      <div class="admin-table">
         <div class="status-marker-list" id="statusMarkerList">
-            {% for marker in markers %}
-            <div class="status-marker-item" data-id="{{ marker.id }}">
-                <div class="status-marker-drag-handle">
-                    <i class="fas fa-grip-vertical"></i>
-                </div>
-                <div class="status-marker-index">
-                    {{ loop.index }}
-                </div>
-                <input type="text" class="status-marker-name" value="{{ marker.name }}" data-id="{{ marker.id }}">
-                <div class="status-marker-color" style="background-color: {{ marker.color }}" data-id="{{ marker.id }}"></div>
-                <div class="status-marker-actions">
-                    <button class="btn btn-sm btn-primary set-button" data-id="{{ marker.id }}">設定</button>
-                    <button class="btn btn-sm btn-danger delete-button" data-id="{{ marker.id }}">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            {% endfor %}
+          {% for marker in markers %}
+          <div class="status-marker-item" data-id="{{ marker.id }}">
+              <div class="status-marker-drag-handle">
+                  <i class="fas fa-grip-vertical"></i>
+              </div>
+              <div class="status-marker-index">
+                  {{ loop.index }}
+              </div>
+              <input type="text" class="status-marker-name" value="{{ marker.name }}" data-id="{{ marker.id }}">
+              <div class="status-marker-color" style="background-color: {{ marker.color }}" data-id="{{ marker.id }}"></div>
+              <div class="status-marker-actions">
+                  <button class="btn btn-sm btn-primary set-button" data-id="{{ marker.id }}">設定</button>
+                  <button class="btn btn-sm btn-danger delete-button" data-id="{{ marker.id }}">
+                      <i class="fas fa-times"></i>
+                  </button>
+              </div>
+          </div>
+          {% endfor %}
         </div>
         
         <!-- 色選択のポップオーバー -->
@@ -187,17 +201,11 @@
                 <div class="color-option" style="background-color: #444444" data-color="#444444"></div>
             </div>
         </div>
-        
-        <!-- 新規追加ボタン -->
-        <button class="btn btn-primary add-button" id="addStatusMarkerButton">
-            <i class="fas fa-plus"></i> 新しい対応マークを追加
-        </button>
+      </div>
     </div>
+  </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-{{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

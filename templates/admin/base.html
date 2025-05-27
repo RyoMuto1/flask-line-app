@@ -9,86 +9,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        /* サイドバーのスタイル */
-        .admin-sidebar {
-            min-height: 100vh;
-            background-color: #343a40;
-            color: white;
-            padding-top: 2rem;
-            width: 80px;  /* 横幅を100pxから80pxに戻す */
-        }
-        
-        .admin-sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            padding: 0.75rem 0.25rem; /* 左右のpaddingを0.5remから0.25remに縮小 */
-            margin-bottom: 1rem;
-            border-radius: 0.25rem;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .admin-sidebar .nav-link i {
-            font-size: 30px;
-            margin-bottom: 0.5rem;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .admin-sidebar .nav-link span {
-            font-size: 8px; /* フォントサイズを9pxから8pxにさらに縮小 */
-            white-space: nowrap; /* テキストを折り返さないようにする */
-            letter-spacing: -0.3px; /* 文字間隔を狭くする */
-        }
-        
-        .admin-sidebar .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .admin-sidebar .nav-link.active {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        
-        .admin-sidebar .sidebar-heading {
-            padding: 0.5rem;
-            font-size: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
-        /* コンテンツ領域 */
-        .admin-content {
-            padding: 0;
-        }
-        
-        /* データテーブル */
-        .data-table th {
-            white-space: nowrap;
-        }
-        
-        /* アラート */
-        .flash-message {
-            margin-bottom: 1rem;
-        }
-    </style>
+    <!-- 管理画面共通CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-common.css') }}">
     {% endblock %}
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
             <!-- サイドバー -->
-            <nav class="col-auto d-none d-md-block admin-sidebar">
-                <div class="sidebar-heading">
-                    <i class="fas fa-cogs"></i><br>管理画面
-                </div>
+            <nav class="col-auto d-none d-md-block admin-nav-sidebar">
                 <div class="nav flex-column">
                     <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}">
                         <i class="fas fa-home"></i>

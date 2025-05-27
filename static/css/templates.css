@@ -1,0 +1,487 @@
+/* テンプレート管理画面専用スタイル */
+
+/* フォルダ管理 */
+.new-folder-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.folder-edit-btn {
+    opacity: 0;
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    margin-left: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.sidebar-item:hover .folder-edit-btn {
+    opacity: 1;
+}
+
+/* テンプレート作成ドロップダウン */
+.create-template-btn {
+    background: #2196f3;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.create-pack-btn {
+    background: #00bcd4;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* テンプレートテーブル */
+.template-list {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.template-list th {
+    background: #f8f9fa;
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.template-list td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: top;
+}
+
+.template-list tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* テンプレートアイテム */
+.template-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.template-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+}
+
+.template-title:hover {
+    color: #2196f3;
+    text-decoration: underline;
+}
+
+.template-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.template-type {
+    display: inline-block;
+    background: #6c757d;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+}
+
+.template-type.text { background: #28a745; }
+.template-type.image { background: #fd7e14; }
+.template-type.video { background: #6f42c1; }
+.template-type.carousel { background: #e83e8c; }
+.template-type.flex { background: #20c997; }
+
+.template-preview {
+    color: #6c757d;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-height: 2.8rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.template-date {
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+.template-actions-new {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* プレビューモーダル */
+.preview-modal-content {
+    max-width: 500px;
+    padding: 2rem;
+}
+
+.preview-container {
+    text-align: center;
+}
+
+.preview-header {
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.preview-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.phone-frame {
+    background: #333;
+    border-radius: 25px;
+    padding: 20px 10px;
+    display: inline-block;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.phone-screen {
+    background: white;
+    border-radius: 15px;
+    width: 280px;
+    height: 500px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    background: #00c851;
+    color: white;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.chat-avatar {
+    font-size: 2rem;
+}
+
+.chat-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.chat-status {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    background: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.message-bubble {
+    max-width: 90%;
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    margin-bottom: 0.5rem;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.admin-message {
+    background: #00c851;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+/* プレビュー・テスト送信モーダル */
+.preview-test-modal-content {
+    max-width: 1200px !important;
+    width: 90% !important;
+    padding: 2rem;
+}
+
+.preview-test-layout {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.preview-section {
+    flex: 1;
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.preview-message-area {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    min-height: 200px;
+    border: 1px solid #dee2e6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.5;
+}
+
+.test-user-section {
+    flex: 1;
+}
+
+.test-user-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.test-user-header p {
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.test-user-search {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.test-user-list {
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.test-user-header-row {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.test-user-item {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #f1f3f4;
+    gap: 1rem;
+}
+
+.test-user-item:last-child {
+    border-bottom: none;
+}
+
+.test-user-checkbox {
+    margin: 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.2rem;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.test-user-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.test-send-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.test-send-btn:hover {
+    background: #218838;
+}
+
+.delete-user-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+}
+
+.delete-user-btn:hover {
+    background: #c82333;
+    transform: scale(1.05);
+}
+
+.delete-user-btn:active {
+    transform: scale(0.95);
+}
+
+/* 検索候補リスト */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f3f4;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.2rem;
+    overflow: hidden;
+}
+
+.suggestion-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.suggestion-name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.suggestion-add-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-add-btn:hover {
+    background: #218838;
+}
+
+/* メッセージ表示 */
+.no-users-message {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.delete-selected-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+} 

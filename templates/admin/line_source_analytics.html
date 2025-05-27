@@ -1,118 +1,131 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>LINE流入経路分析</h2>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
-        新しい登録リンクを作成
-    </button>
-</div>
-
-<!-- フラッシュメッセージ表示 -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
-<!-- 登録リンク一覧 -->
-<div class="card mb-4">
-    <div class="card-header">
-        <h3 class="card-title h5 mb-0">登録リンク一覧</h3>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>リンク名</th>
-                        <th>登録者数</th>
-                        <th>作成日</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for link in registration_links %}
-                    <tr>
-                        <td>{{ link.name }}</td>
-                        <td>
-                            <a href="{{ url_for('line_source_analytics_users', link_id=link.id) }}" class="text-decoration-none">
-                                {{ link.registration_count }}人
-                            </a>
-                        </td>
-                        <td>{{ link.created_at }}</td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary copy-link" 
-                                        data-link="{{ link.full_url }}">
-                                    <i class="bi bi-clipboard"></i> コピー
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#deleteLinkModal{{ link.id }}">
-                                    <i class="bi bi-trash"></i> 削除
-                                </button>
-                            </div>
-                            
-                            <!-- 削除確認モーダル -->
-                            <div class="modal fade" id="deleteLinkModal{{ link.id }}" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">リンク削除の確認</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>リンク「{{ link.name }}」を削除してもよろしいですか？</p>
-                                            <p class="text-danger">この操作は取り消せません。このリンクから登録したユーザーの流入元情報も削除されます。</p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                                            <form method="POST" action="{{ url_for('delete_registration_link', link_id=link.id) }}">
-                                                <button type="submit" class="btn btn-danger">削除する</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="admin-container">
+  <!-- ヘッダー -->
+  <div class="admin-header">
+    <h1>LINE流入経路分析</h1>
+    <div class="admin-description">友だち登録の流入経路を分析し、効果的なマーケティング戦略を立てることができます。</div>
+  </div>
+  
+  <!-- メインコンテンツ -->
+  <div class="admin-main">
+    <!-- メインコンテンツエリア（サイドバーなし） -->
+    <div class="admin-content" style="margin-left: 0;">
+      <!-- ツールバー -->
+      <div class="admin-toolbar">
+        <div class="toolbar-left">
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
+            <i class="fas fa-plus"></i> 新しい登録リンクを作成
+          </button>
         </div>
+        <div class="toolbar-right">
+          <span class="text-muted">登録リンクを作成して流入経路を追跡できます</span>
+        </div>
+      </div>
+      
+      <!-- フラッシュメッセージ表示 -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+              {% for category, message in messages %}
+                  <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                      {{ message }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+              {% endfor %}
+          {% endif %}
+      {% endwith %}
+      
+      <!-- 登録リンク一覧 -->
+      <div class="admin-table">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 30%;">リンク名</th>
+              <th style="width: 20%;">登録者数</th>
+              <th style="width: 25%;">作成日</th>
+              <th style="width: 25%;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for link in registration_links %}
+            <tr>
+              <td>
+                <div class="data-item">
+                  <div class="item-title">{{ link.name }}</div>
+                </div>
+              </td>
+              <td>
+                <a href="{{ url_for('line_source_analytics_users', link_id=link.id) }}" class="text-decoration-none">
+                  <span class="status-badge active">{{ link.registration_count }}人</span>
+                </a>
+              </td>
+              <td class="item-date">{{ link.created_at }}</td>
+              <td>
+                <div class="item-actions">
+                  <button class="action-btn copy-link" data-link="{{ link.full_url }}" title="リンクをコピー">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button class="action-btn delete-btn" data-bs-toggle="modal" data-bs-target="#deleteLinkModal{{ link.id }}" title="削除">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                
+                <!-- 削除確認モーダル -->
+                <div class="modal fade" id="deleteLinkModal{{ link.id }}" tabindex="-1">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title">リンク削除の確認</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>リンク「{{ link.name }}」を削除してもよろしいですか？</p>
+                        <p class="text-danger">この操作は取り消せません。このリンクから登録したユーザーの流入元情報も削除されます。</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                        <form method="POST" action="{{ url_for('delete_registration_link', link_id=link.id) }}">
+                          <button type="submit" class="btn btn-danger">削除する</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- 新しい登録リンク作成モーダル -->
 <div class="modal fade" id="newLinkModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">新しい登録リンクを作成</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ url_for('create_registration_link') }}">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="linkName" class="form-label">リンク名</label>
-                        <input type="text" class="form-control" id="linkName" name="name" required>
-                        <div class="form-text">例：Instagram用、Twitter用など</div>
-                    </div>
-                    <input type="hidden" name="source" value="line">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">作成</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">新しい登録リンクを作成</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('create_registration_link') }}">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="linkName" class="form-label">リンク名</label>
+            <input type="text" class="form-control" id="linkName" name="name" required>
+            <div class="form-text">例：Instagram用、Twitter用など</div>
+          </div>
+          <input type="hidden" name="source" value="line">
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary">作成</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>

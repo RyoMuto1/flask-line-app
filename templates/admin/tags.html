@@ -3,73 +3,67 @@
 {% block title %}タグ管理{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">タグ</h2>
-    <button class="btn btn-outline-secondary" id="showManualBtn">
-      <i class="fas fa-book"></i> マニュアル
-    </button>
+<div class="admin-container">
+  <!-- ヘッダー -->
+  <div class="admin-header">
+    <h1>タグ</h1>
+    <div class="admin-description">友だちを分類するタグを管理できます。</div>
   </div>
   
-  <p class="text-muted">友だちを分類するタグを管理できます。</p>
-  
-  <div class="row mb-3">
-    <div class="col-12">
-      <div class="d-flex gap-2">
+  <!-- メインコンテンツ -->
+  <div class="admin-main">
+    <!-- 左サイドバー（フォルダ一覧） -->
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">
           <i class="fas fa-plus"></i> 新しいフォルダ
         </button>
-        <button class="btn btn-outline-secondary" id="reorderBtn">
-          <i class="fas fa-sort"></i> 並び替え
-        </button>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
-          <i class="fas fa-plus"></i> 新しいタグ
-        </button>
-        <button class="btn btn-outline-secondary" id="reorderTagsBtn">
-          <i class="fas fa-sort"></i> 並び替え
-        </button>
-        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importTagsModal">
-          <i class="fas fa-file-upload"></i> CSVアップロード
-        </button>
+        <button class="btn-sm" id="reorderBtn">並び替え</button>
       </div>
-    </div>
-  </div>
-  
-  <div class="row">
-    <!-- 左カラム：フォルダツリー -->
-    <div class="col-md-3">
-      <div class="card mb-3" style="min-height: calc(100vh - 230px);">
-        <div class="list-group list-group-flush" id="tagFolderList">
-          <!-- フォルダリストはJavaScriptで生成 -->
-        </div>
-      </div>
+      
+      <ul class="sidebar-list" id="tagFolderList">
+        <!-- フォルダリストはJavaScriptで生成 -->
+      </ul>
     </div>
     
-    <!-- 右カラム：タグ詳細とユーザーリスト -->
-    <div class="col-md-9">
-      <div id="tagContent">
-        <div class="card" style="min-height: calc(100vh - 230px);">
-          <div class="card-body p-0">
-            <div class="table-responsive" style="height: calc(100vh - 230px); max-height: none; overflow-y: auto;">
-              <table class="table table-hover mb-0">
-                <thead class="bg-light position-sticky top-0">
-                  <tr>
-                    <th>タグ名</th>
-                    <th class="text-end">友だち数</th>
-                    <th class="text-end">登録日</th>
-                    <th class="text-end">操作</th>
-                  </tr>
-                </thead>
-                <tbody id="tagListContainer">
-                  <!-- 選択したフォルダのタグ一覧はJavaScriptで生成 -->
-                  <tr>
-                    <td colspan="4" class="text-center py-3">フォルダを選択するとタグ一覧が表示されます</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+    <!-- メインコンテンツエリア -->
+    <div class="admin-content">
+      <!-- ツールバー -->
+      <div class="admin-toolbar">
+        <div class="toolbar-left">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
+            <i class="fas fa-plus"></i> 新しいタグ
+          </button>
+          <button class="btn-sm" id="reorderTagsBtn">並び替え</button>
+          <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importTagsModal">
+            <i class="fas fa-file-upload"></i> CSVアップロード
+          </button>
         </div>
+        <div class="toolbar-right">
+          <button class="btn-sm" id="showManualBtn">
+            <i class="fas fa-book"></i> マニュアル
+          </button>
+        </div>
+      </div>
+      
+      <!-- タグ一覧 -->
+      <div class="admin-table">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40%;">タグ名</th>
+              <th style="width: 20%;">友だち数</th>
+              <th style="width: 20%;">登録日</th>
+              <th style="width: 20%;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tagListContainer">
+            <!-- 選択したフォルダのタグ一覧はJavaScriptで生成 -->
+            <tr>
+              <td colspan="4" class="text-center py-3">フォルダを選択するとタグ一覧が表示されます</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
