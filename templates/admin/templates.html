@@ -1612,15 +1612,17 @@ function displaySearchSuggestions(users) {
         return;
     }
     
-    const suggestionsHtml = users.map(user => `
-        <div class="suggestion-item" onclick="addTestUser(${user.id}, '${user.name}', '${user.avatar || ''}')">
+    const suggestionsHtml = users.map((user, index) => {
+        return `
+        <div class="suggestion-item" data-user-id="${user.id}" data-user-name="${user.name}" data-user-avatar="${user.avatar || ''}" onclick="addTestUserFromSuggestion(this)">
             <div class="suggestion-avatar">
                 ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}">` : '<i class="fas fa-user-circle"></i>'}
             </div>
             <span class="suggestion-name">${user.name}</span>
-            <button class="suggestion-add-btn" onclick="event.stopPropagation(); addTestUser(${user.id}, '${user.name}', '${user.avatar || ''}')">追加</button>
+            <button class="suggestion-add-btn" data-user-id="${user.id}" data-user-name="${user.name}" data-user-avatar="${user.avatar || ''}" onclick="event.stopPropagation(); addTestUserFromButton(this);">追加</button>
         </div>
-    `).join('');
+        `;
+    }).join('');
     
     suggestionsContainer.innerHTML = suggestionsHtml;
     suggestionsContainer.style.display = 'block';
@@ -1639,14 +1641,36 @@ function showSearchSuggestions() {
     }
 }
 
+// データ属性から安全にユーザーを追加する関数
+function addTestUserFromSuggestion(element) {
+    const userId = parseInt(element.dataset.userId);
+    const userName = element.dataset.userName;
+    const userAvatar = element.dataset.userAvatar;
+    addTestUser(userId, userName, userAvatar);
+}
+
+function addTestUserFromButton(button) {
+    const userId = parseInt(button.dataset.userId);
+    const userName = button.dataset.userName;
+    const userAvatar = button.dataset.userAvatar;
+    console.log('追加ボタンクリック:', { userId, userName, userAvatar });
+    addTestUser(userId, userName, userAvatar);
+}
+
 function addTestUser(userId, userName, userAvatar) {
+    console.log('addTestUser呼び出し:', { userId, userName, userAvatar });
+    
     // 既に追加済みかチェック
     if (selectedTestUsers.find(user => user.id === userId)) {
+        console.log('既に追加済みのユーザー:', userId);
         return;
     }
     
     // テストユーザーリストに追加
-    selectedTestUsers.push({ id: userId, name: userName, avatar: userAvatar });
+    const newUser = { id: userId, name: userName, avatar: userAvatar };
+    selectedTestUsers.push(newUser);
+    console.log('ユーザーを追加しました:', newUser);
+    console.log('現在のselectedTestUsers:', selectedTestUsers);
     
     // セッションストレージに保存
     saveTestUsersToSession();
@@ -1655,8 +1679,13 @@ function addTestUser(userId, userName, userAvatar) {
     updateTestUsersList();
     
     // 検索ボックスをクリア
-    document.querySelector('.test-user-search').value = '';
+    const searchBox = document.querySelector('.test-user-search');
+    if (searchBox) {
+        searchBox.value = '';
+    }
     hideSearchSuggestions();
+    
+    console.log('addTestUser完了');
 }
 
 function removeTestUser(userId) {
