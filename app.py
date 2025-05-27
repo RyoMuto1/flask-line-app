@@ -3145,10 +3145,15 @@ def test_send_template():
     """テンプレートのテスト送信"""
     try:
         data = request.get_json()
+        logger.info(f"テスト送信リクエスト受信: {data}")
+        
         template_id = data.get('template_id')
         user_id = data.get('user_id')
         
+        logger.info(f"受信データ: template_id={template_id} (type: {type(template_id)}), user_id={user_id} (type: {type(user_id)})")
+        
         if not template_id or not user_id:
+            logger.error(f"必須パラメータ不足: template_id={template_id}, user_id={user_id}")
             return jsonify({'success': False, 'message': 'テンプレートIDとユーザーIDは必須です'})
         
         conn = get_db()
@@ -3159,20 +3164,28 @@ def test_send_template():
         template = c.fetchone()
         
         if not template:
+            logger.error(f"テンプレートが見つかりません: template_id={template_id}")
             return jsonify({'success': False, 'message': 'テンプレートが見つかりません'})
+        
+        logger.info(f"テンプレート取得成功: {template['name']}")
         
         # ユーザー情報を取得
         c.execute('SELECT name FROM users WHERE line_user_id = ?', (user_id,))
         user = c.fetchone()
         
         if not user:
+            logger.error(f"ユーザーが見つかりません: user_id={user_id}")
             return jsonify({'success': False, 'message': 'ユーザーが見つかりません'})
+        
+        logger.info(f"ユーザー取得成功: {user['name']}")
         
         conn.close()
         
         # テンプレートの内容を取得
         template_content = template['content']
         template_type = template['type']
+        
+        logger.info(f"送信準備: type={template_type}, content={template_content[:50]}...")
         
         # LINEメッセージを送信
         try:
@@ -3190,6 +3203,7 @@ def test_send_template():
                 logger.info(f"テスト送信成功: テンプレート{template_id} → ユーザー{user_id}")
                 return jsonify({'success': True, 'message': 'テストメッセージを送信しました'})
             else:
+                logger.error(f"LINE送信失敗: テンプレート{template_id} → ユーザー{user_id}")
                 return jsonify({'success': False, 'message': 'メッセージの送信に失敗しました'})
                 
         except Exception as send_error:

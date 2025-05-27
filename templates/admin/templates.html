@@ -1737,16 +1737,27 @@ function updateTestUsersList() {
 }
 
 function sendTestMessage(userId, buttonElement) {
+    console.log('sendTestMessage呼び出し:', { userId, currentTemplateId });
+    
     const user = selectedTestUsers.find(u => u.id === userId);
     if (!user) {
         alert('ユーザーが見つかりません');
+        console.error('ユーザーが見つかりません:', userId, selectedTestUsers);
         return;
     }
     
     if (!currentTemplateId) {
         alert('テンプレートが選択されていません');
+        console.error('currentTemplateIdが設定されていません:', currentTemplateId);
         return;
     }
+    
+    // 送信データをログ出力
+    const sendData = {
+        template_id: currentTemplateId,
+        user_id: userId
+    };
+    console.log('送信データ:', sendData);
     
     // テスト送信ボタンを無効化
     const originalText = buttonElement.textContent;
@@ -1759,13 +1770,14 @@ function sendTestMessage(userId, buttonElement) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            template_id: currentTemplateId,
-            user_id: userId
-        })
+        body: JSON.stringify(sendData)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('レスポンス:', response);
+        return response.json();
+    })
     .then(data => {
+        console.log('レスポンスデータ:', data);
         if (data.success) {
             alert(`${user.name}にテストメッセージを送信しました！`);
         } else {
