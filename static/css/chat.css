@@ -123,6 +123,14 @@
     font-weight: 600;
     margin: 0;
     color: #333;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.chat-header-name:hover {
+    color: #2196f3;
+    text-decoration: underline;
 }
 
 .chat-header-status {
