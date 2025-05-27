@@ -1663,19 +1663,23 @@ function addTestUserFromButton(button) {
 }
 
 function addTestUser(userId, userName, userAvatar) {
-    console.log('addTestUser呼び出し:', { userId, userName, userAvatar });
+    console.log('=== addTestUser デバッグ開始 ===');
+    console.log('1. 受信データ:', { userId, userName, userAvatar });
+    console.log('2. userId型:', typeof userId);
+    console.log('3. 追加前のselectedTestUsers:', selectedTestUsers);
     
     // 既に追加済みかチェック（文字列として比較）
     if (selectedTestUsers.find(user => user.id === userId)) {
-        console.log('既に追加済みのユーザー:', userId);
+        console.log('4. 既に追加済みのユーザー:', userId);
         return;
     }
     
     // テストユーザーリストに追加（userIdを文字列として保存）
     const newUser = { id: userId, name: userName, avatar: userAvatar };
     selectedTestUsers.push(newUser);
-    console.log('ユーザーを追加しました:', newUser);
-    console.log('現在のselectedTestUsers:', selectedTestUsers);
+    console.log('5. ユーザーを追加しました:', newUser);
+    console.log('6. 追加後のselectedTestUsers:', selectedTestUsers);
+    console.log('7. 新しいユーザーのID型:', typeof newUser.id);
     
     // セッションストレージに保存
     saveTestUsersToSession();
@@ -1738,19 +1742,36 @@ function updateTestUsersList() {
 }
 
 function sendTestMessage(userId, buttonElement) {
-    console.log('sendTestMessage呼び出し:', { userId, currentTemplateId, userIdType: typeof userId });
+    console.log('=== sendTestMessage デバッグ開始 ===');
+    console.log('1. 受信したuserId:', userId, '(型:', typeof userId, ')');
+    console.log('2. currentTemplateId:', currentTemplateId);
+    console.log('3. selectedTestUsers配列:', selectedTestUsers);
+    console.log('4. selectedTestUsers.length:', selectedTestUsers.length);
+    
+    // 各ユーザーのIDと型を詳細チェック
+    selectedTestUsers.forEach((user, index) => {
+        console.log(`5-${index}. ユーザー${index}:`, {
+            id: user.id,
+            idType: typeof user.id,
+            name: user.name,
+            strictEqual: user.id === userId,
+            looseEqual: user.id == userId
+        });
+    });
     
     // userIdを文字列として比較
     const user = selectedTestUsers.find(u => u.id === userId);
+    console.log('6. 検索結果:', user);
+    
     if (!user) {
         alert('ユーザーが見つかりません');
-        console.error('ユーザーが見つかりません:', { 
-            searchUserId: userId, 
-            searchUserIdType: typeof userId,
-            selectedTestUsers: selectedTestUsers 
-        });
+        console.error('=== ユーザー検索失敗 ===');
+        console.error('検索対象userId:', userId, '(型:', typeof userId, ')');
+        console.error('selectedTestUsers:', selectedTestUsers);
         return;
     }
+    
+    console.log('7. ユーザー検索成功:', user);
     
     if (!currentTemplateId) {
         alert('テンプレートが選択されていません');
