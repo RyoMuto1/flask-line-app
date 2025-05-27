@@ -19,14 +19,6 @@
       </div>
       
       <ul class="sidebar-list">
-        <!-- 全体表示 -->
-        <li class="sidebar-item {% if not selected_folder_id %}active{% endif %}">
-          <a href="{{ url_for('line_source_analytics') }}" class="sidebar-link">
-            <i class="fas fa-list"></i>
-            <span>すべて</span>
-          </a>
-        </li>
-        
         <!-- フォルダ一覧 -->
         {% for folder in folders %}
         <li class="sidebar-item {% if selected_folder_id == folder.id %}active{% endif %}">
@@ -34,6 +26,7 @@
             <i class="fas fa-folder"></i>
             <span>{{ folder.name }}</span>
           </a>
+          {% if folder.name != '未分類' %}
           <div class="folder-actions">
             <button class="action-btn edit-folder-btn" data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}" title="編集">
               <i class="fas fa-edit"></i>
@@ -42,6 +35,7 @@
               <i class="fas fa-trash"></i>
             </button>
           </div>
+          {% endif %}
         </li>
         {% endfor %}
       </ul>
@@ -57,15 +51,11 @@
           </button>
         </div>
         <div class="toolbar-right">
-          {% if selected_folder_id %}
-            {% for folder in folders %}
-              {% if folder.id == selected_folder_id %}
-                <span class="text-muted">フォルダ: {{ folder.name }}</span>
-              {% endif %}
-            {% endfor %}
-          {% else %}
-            <span class="text-muted">すべての登録リンク</span>
-          {% endif %}
+          {% for folder in folders %}
+            {% if folder.id == selected_folder_id %}
+              <span class="text-muted">フォルダ: {{ folder.name }}</span>
+            {% endif %}
+          {% endfor %}
         </div>
       </div>
       
@@ -173,7 +163,6 @@
           <div class="form-group mb-3">
             <label for="folderSelect" class="form-label">フォルダ</label>
             <select class="form-select" id="folderSelect" name="folder_id">
-              <option value="">フォルダなし</option>
               {% for folder in folders %}
                 <option value="{{ folder.id }}" {% if selected_folder_id == folder.id %}selected{% endif %}>{{ folder.name }}</option>
               {% endfor %}
@@ -249,7 +238,7 @@
       </div>
       <div class="modal-body">
         <p>フォルダ「<span id="deleteFolderName"></span>」を削除してもよろしいですか？</p>
-        <p class="text-warning">フォルダ内の登録リンクは「フォルダなし」に移動されます。</p>
+        <p class="text-warning">フォルダ内の登録リンクは「未分類」フォルダに移動されます。</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>

@@ -87,8 +87,15 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # デフォルトの「未分類」フォルダを作成
+        c.execute('''
+            INSERT INTO source_analytics_folders (name, sort_order, created_at)
+            VALUES ('未分類', 0, datetime('now'))
+        ''')
+        
         conn.commit()
-        logger.info("source_analytics_foldersテーブルを作成しました")
+        logger.info("source_analytics_foldersテーブルを作成し、デフォルトフォルダを追加しました")
 
     # 登録リンク管理テーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='registration_links'")
@@ -1067,8 +1074,11 @@ def line_source_analytics():
     cursor.execute('SELECT * FROM source_analytics_folders ORDER BY sort_order, name')
     folders = cursor.fetchall()
     
-    # 選択されたフォルダIDを取得
+    # 選択されたフォルダIDを取得（デフォルトは「未分類」フォルダ）
     selected_folder_id = request.args.get('folder_id', type=int)
+    if not selected_folder_id and folders:
+        # デフォルトは最初のフォルダ（未分類）を選択
+        selected_folder_id = folders[0]['id']
     
     # 登録リンク一覧を取得（登録者数も含める）
     if selected_folder_id:
@@ -1077,10 +1087,10 @@ def line_source_analytics():
             FROM registration_links rl
             LEFT JOIN user_registrations ur ON rl.id = ur.registration_link_id
             LEFT JOIN source_analytics_folders saf ON rl.folder_id = saf.id
-            WHERE rl.folder_id = ?
+            WHERE rl.folder_id = ? OR (rl.folder_id IS NULL AND ? = (SELECT id FROM source_analytics_folders WHERE name = '未分類' LIMIT 1))
             GROUP BY rl.id
             ORDER BY rl.created_at DESC
-        ''', (selected_folder_id,))
+        ''', (selected_folder_id, selected_folder_id))
     else:
         cursor.execute('''
             SELECT rl.*, COUNT(ur.id) as registration_count, saf.name as folder_name
@@ -1131,9 +1141,15 @@ def create_registration_link():
             flash('リンク名と流入元は必須です', 'error')
             return redirect(url_for('line_source_analytics'))
         
-        # フォルダIDが空文字列の場合はNoneに変換
+        # フォルダIDが空文字列の場合は「未分類」フォルダのIDを取得
         if folder_id == '':
-            folder_id = None
+            # 「未分類」フォルダのIDを取得
+            conn_temp = get_db()
+            cursor_temp = conn_temp.cursor()
+            cursor_temp.execute("SELECT id FROM source_analytics_folders WHERE name = '未分類' LIMIT 1")
+            uncategorized_folder = cursor_temp.fetchone()
+            folder_id = uncategorized_folder['id'] if uncategorized_folder else None
+            conn_temp.close()
         elif folder_id:
             folder_id = int(folder_id)
         
@@ -1481,8 +1497,24 @@ def delete_source_analytics_folder(folder_id):
         conn = get_db()
         cursor = conn.cursor()
         
-        # フォルダ内のリンクのfolder_idをNULLに設定
-        cursor.execute('UPDATE registration_links SET folder_id = NULL WHERE folder_id = ?', (folder_id,))
+        # 「未分類」フォルダは削除できないようにする
+        cursor.execute('SELECT name FROM source_analytics_folders WHERE id = ?', (folder_id,))
+        folder = cursor.fetchone()
+        if folder and folder['name'] == '未分類':
+            flash('「未分類」フォルダは削除できません', 'error')
+            conn.close()
+            return redirect(url_for('line_source_analytics'))
+        
+        # 「未分類」フォルダのIDを取得
+        cursor.execute("SELECT id FROM source_analytics_folders WHERE name = '未分類' LIMIT 1")
+        uncategorized_folder = cursor.fetchone()
+        uncategorized_id = uncategorized_folder['id'] if uncategorized_folder else None
+        
+        # フォルダ内のリンクを「未分類」フォルダに移動
+        if uncategorized_id:
+            cursor.execute('UPDATE registration_links SET folder_id = ? WHERE folder_id = ?', (uncategorized_id, folder_id))
+        else:
+            cursor.execute('UPDATE registration_links SET folder_id = NULL WHERE folder_id = ?', (folder_id,))
         
         # フォルダを削除
         cursor.execute('DELETE FROM source_analytics_folders WHERE id = ?', (folder_id,))
