@@ -28,7 +28,47 @@
     opacity: 1;
 }
 
+/* フォルダドロップダウン */
+.folder-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.folder-dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 120px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    z-index: 1000;
+    border: 1px solid #ddd;
+}
+
+.folder-dropdown-content a {
+    color: #333;
+    padding: 8px 12px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.folder-dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.folder-dropdown.show .folder-dropdown-content {
+    display: block;
+}
+
 /* テンプレート作成ドロップダウン */
+.template-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
 .create-template-btn {
     background: #2196f3;
     color: white;
@@ -39,6 +79,35 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.template-dropdown-content {
+    display: none;
+    position: absolute;
+    left: 0;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    z-index: 1000;
+    border: 1px solid #ddd;
+}
+
+.template-dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.template-dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.template-dropdown.show .template-dropdown-content {
+    display: block;
 }
 
 .create-pack-btn {
