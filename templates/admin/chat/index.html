@@ -5,33 +5,44 @@
 {% block styles %}
 {{ super() }}
 <style>
-    /* 全体のレイアウト */
+    /* チャット管理画面専用スタイル */
     .chat-container {
         display: flex;
-        height: calc(100vh - 120px);
+        height: calc(100vh - 200px);
         border: 1px solid #ddd;
         border-radius: 4px;
         overflow: hidden;
         min-height: 0;
     }
     
-    /* 左ペイン：ユーザーリスト */
+    /* 左ペイン：ユーザーリスト（統一されたサイドバースタイルを使用） */
     .users-pane {
         width: 300px;
-        border-right: 1px solid #ddd;
+        border-right: 1px solid #e9ecef;
         overflow-y: auto;
-        background-color: #f8f9fa;
+        background-color: white;
+        padding: 1rem;
     }
     
     .user-list-item {
-        padding: 10px 15px;
-        border-bottom: 1px solid #eee;
+        padding: 0.75rem;
+        border-radius: 4px;
         cursor: pointer;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         transition: background-color 0.2s;
+        border-bottom: 1px solid #eee;
     }
     
-    .user-list-item:hover, .user-list-item.active {
-        background-color: #e9ecef;
+    .user-list-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .user-list-item.active {
+        background-color: #e3f2fd;
+        border-left: 3px solid #2196f3;
     }
     
     .user-list-item .unread-badge {
@@ -45,6 +56,7 @@
     .search-box {
         padding: 10px;
         border-bottom: 1px solid #ddd;
+        margin-bottom: 1rem;
     }
     
     /* 中央ペイン：チャット内容 */
@@ -58,9 +70,60 @@
     }
     
     .chat-header {
-        padding: 10px 15px;
-        border-bottom: 1px solid #ddd;
-        background-color: #f8f9fa;
+        padding: 1rem 2rem;
+        border-bottom: 1px solid #e9ecef;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .chat-header-user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+    
+    .chat-header-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        overflow: hidden;
+        background-color: #cccccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+    
+    .chat-header-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .chat-header-details {
+        flex: 1;
+    }
+    
+    .chat-header-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: #333;
+    }
+    
+    .chat-header-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: white;
+        margin-left: 0.5rem;
     }
     
     .messages-container {
@@ -323,12 +386,13 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="margin-top:0; padding-top:0;">
-    <!-- <div class="row mb-3" style="margin-top:0; padding-top:0;">
-        <div class="col">
-            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">ダッシュボードに戻る</a>
+<div class="admin-container">
+    <div class="admin-header">
+        <div>
+            <h1>チャット管理</h1>
+            <div class="admin-description">ユーザーとのチャット履歴を確認し、メッセージを送信できます</div>
         </div>
-    </div> -->
+    </div>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -355,10 +419,19 @@
         <!-- 中央ペイン：チャット内容 -->
         <div class="chat-pane">
             <div class="chat-header" id="chatHeader">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0" id="selectedUserName">ユーザーを選択してください</h5>
-                    <div class="user-status" id="userStatus"></div>
+                <div class="chat-header-user-info" id="chatHeaderUserInfo" style="display: none;">
+                    <div class="chat-header-avatar" id="chatHeaderAvatar">
+                        <span class="default-avatar">👤</span>
+                    </div>
+                    <div class="chat-header-details">
+                        <h5 class="chat-header-name" id="chatHeaderName">ユーザー名</h5>
+                        <span class="chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
+                    </div>
                 </div>
+                <div id="chatHeaderDefault">
+                    <h5 class="mb-0">ユーザーを選択してください</h5>
+                </div>
+                <div class="user-status" id="userStatus"></div>
             </div>
             
             <div class="messages-container" id="messagesContainer">
@@ -681,11 +754,48 @@
             .then(response => response.json())
             .then(data => {
                 renderUserInfo(data.user);
+                updateChatHeader(data.user);
             })
             .catch(error => {
                 console.error('Error loading user info:', error);
                 document.getElementById('userInfo').innerHTML = '<div class="empty-state">ユーザー情報の読み込みに失敗しました</div>';
             });
+    }
+    
+    // チャットヘッダーの更新
+    function updateChatHeader(user) {
+        if (!user) return;
+        
+        const chatHeaderUserInfo = document.getElementById('chatHeaderUserInfo');
+        const chatHeaderDefault = document.getElementById('chatHeaderDefault');
+        const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
+        const chatHeaderName = document.getElementById('chatHeaderName');
+        const chatHeaderStatus = document.getElementById('chatHeaderStatus');
+        
+        // デフォルト表示を隠す
+        chatHeaderDefault.style.display = 'none';
+        
+        // ユーザー情報を表示
+        chatHeaderUserInfo.style.display = 'flex';
+        
+        // アイコンを設定
+        if (user.profile_image_url) {
+            chatHeaderAvatar.innerHTML = `<img src="${user.profile_image_url}" alt="${user.name}">`;
+        } else {
+            chatHeaderAvatar.innerHTML = '<span class="default-avatar">👤</span>';
+        }
+        
+        // ユーザー名を設定
+        chatHeaderName.textContent = user.name;
+        
+        // 対応マークを設定
+        if (user.status_marker_name && user.status_marker_color) {
+            chatHeaderStatus.textContent = user.status_marker_name;
+            chatHeaderStatus.style.backgroundColor = user.status_marker_color;
+            chatHeaderStatus.style.display = 'inline-block';
+        } else {
+            chatHeaderStatus.style.display = 'none';
+        }
     }
     
     // ユーザー情報のレンダリング
