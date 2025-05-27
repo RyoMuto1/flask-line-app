@@ -478,16 +478,259 @@
         border-color: #dc3545;
     }
     
-    .operation-btn {
-        background: #2196f3;
+    .template-actions-new {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .action-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 0.5rem;
+        cursor: pointer;
+        color: #6c757d;
+        font-size: 0.9rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+    
+    .preview-btn:hover {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-color: #bbdefb;
+    }
+    
+    .menu-btn:hover {
+        background: #f3e5f5;
+        color: #7b1fa2;
+        border-color: #ce93d8;
+    }
+    
+    /* プレビュー・テスト送信モーダル */
+    .preview-test-modal-content {
+        max-width: 1000px;
+        width: 90%;
+        padding: 2rem;
+    }
+    
+    .preview-test-layout {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+    
+    .preview-section {
+        flex: 1;
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .preview-message-area {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        min-height: 200px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .test-user-section {
+        flex: 1;
+    }
+    
+    .test-user-header h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+    
+    .test-user-header p {
+        margin: 0 0 1rem 0;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .search-box-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .test-user-search {
+        width: 100%;
+        padding: 0.75rem 2.5rem 0.75rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .search-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .test-user-list {
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .test-user-header-row {
+        background: #f8f9fa;
+        padding: 0.75rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #495057;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .test-user-item {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .test-user-item:last-child {
+        border-bottom: none;
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 1.2rem;
+    }
+    
+    .user-name {
+        font-size: 0.9rem;
+        color: #333;
+    }
+    
+    .test-send-btn {
+        background: #28a745;
         color: white;
         border: none;
-        padding: 0.5rem 0.75rem;
+        padding: 0.5rem 1rem;
         border-radius: 4px;
+        font-size: 0.85rem;
         cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .test-send-btn:hover {
+        background: #218838;
+    }
+    
+    /* 検索候補リスト */
+    .search-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-item {
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f3f4;
+        transition: background-color 0.2s;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .suggestion-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 1.2rem;
+        overflow: hidden;
+    }
+    
+    .suggestion-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .suggestion-name {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    
+    .suggestion-add-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
         font-size: 0.8rem;
-        white-space: nowrap;
-        min-width: 70px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .suggestion-add-btn:hover {
+        background: #218838;
+    }
+    
+    /* メッセージ表示 */
+    .no-users-message {
+        padding: 2rem 1rem;
+        text-align: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.5;
     }
     
     .bottom-toolbar {
@@ -583,9 +826,6 @@
     <!-- ヘッダー -->
     <div class="template-header">
         <h1>テンプレート</h1>
-        <p class="template-description">
-            個別トーク・シナリオ配信・一斉配信・自動応答・リマインドなどで配信できるテンプレートを登録できます。
-        </p>
     </div>
     
     <!-- メインコンテンツ -->
@@ -651,7 +891,6 @@
                             <th width="40"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
                             <th>テンプレート名</th>
                             <th width="100">登録日</th>
-                            <th width="160">アクション</th>
                             <th width="80">操作</th>
                         </tr>
                     </thead>
@@ -680,16 +919,19 @@
                                 </div>
                             </td>
                             <td class="template-date">{{ template.created_at or '-' }}</td>
-                            <td class="template-actions">
-                                <button class="btn-sm btn-primary" onclick="previewTemplate({{ template.id }})">プレビュー</button>
-                                <button class="btn-sm btn-danger" onclick="deleteTemplate({{ template.id }})">削除</button>
-                            </td>
                             <td>
-                                <div class="template-dropdown">
-                                    <button class="operation-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})">操作 ></button>
-                                    <div class="template-dropdown-content" id="operationDropdown-{{ template.id }}">
-                                        <a onclick="editTemplateName({{ template.id }}, '{{ template.name }}')">名前を変更</a>
-                                        <a onclick="deleteTemplate({{ template.id }})">削除</a>
+                                <div class="template-actions-new">
+                                    <button class="action-btn preview-btn" onclick="showPreviewTestModal({{ template.id }})" title="プレビュー・テスト送信">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="template-dropdown">
+                                        <button class="action-btn menu-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})" title="メニュー">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="template-dropdown-content" id="operationDropdown-{{ template.id }}">
+                                            <a onclick="editTemplateName({{ template.id }}, '{{ template.name }}')">名前を変更</a>
+                                            <a onclick="deleteTemplate({{ template.id }})">削除</a>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -781,6 +1023,58 @@
     </div>
 </div>
 
+<!-- プレビュー・テスト送信モーダル -->
+<div id="previewTestModal" class="modal">
+    <div class="modal-content preview-test-modal-content">
+        <span class="close" onclick="closeModal('previewTestModal')">&times;</span>
+        <div class="preview-test-container">
+            <h2>プレビュー・テスト送信</h2>
+            <div class="preview-test-layout">
+                <!-- 左側：プレビュー -->
+                <div class="preview-section">
+                    <div class="preview-message-area">
+                        <div id="previewTestContent">プレビュー内容がここに表示されます</div>
+                    </div>
+                </div>
+                
+                <!-- 右側：テストユーザー登録 -->
+                <div class="test-user-section">
+                    <div class="test-user-header">
+                        <h3>テストユーザー登録</h3>
+                        <p>検索してもアカウントが表示されない場合は <a href="#" style="color: #00c851;">こちら</a></p>
+                    </div>
+                    
+                    <div class="search-box-container">
+                        <input type="text" class="test-user-search" placeholder="LINE名/システム表示名で検索" 
+                               oninput="searchUsers(this.value)" onblur="hideSearchSuggestions()" onfocus="showSearchSuggestions()">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    
+                    <!-- 検索候補リスト -->
+                    <div class="search-suggestions" id="searchSuggestions" style="display: none;">
+                        <!-- 検索結果がここに動的に表示される -->
+                    </div>
+                    
+                    <div class="test-user-list">
+                        <div class="test-user-header-row">
+                            <span>テストユーザー名</span>
+                            <span>操作</span>
+                        </div>
+                        
+                        <div id="selectedTestUsers">
+                            <!-- 選択されたテストユーザーがここに表示される -->
+                            <div class="no-users-message">
+                                テストユーザーが登録されていません。<br>
+                                上の検索欄から友だちを検索して追加してください。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- テンプレート名編集モーダル -->
 <div id="editTemplateNameModal" class="modal">
     <div class="modal-content">
@@ -857,7 +1151,7 @@ function showStandardMessageModal() {
     
     // テンプレート作成ページに遷移
     let url = '{{ url_for("create_template") }}';
-    if (selectedFolderId) {
+    if (selectedFolderId && selectedFolderId !== null) {
         url += '?folder_id=' + selectedFolderId;
     }
     window.location.href = url;
@@ -1089,7 +1383,26 @@ function editTemplateRedirect(templateId) {
     window.location.href = `/admin/templates/edit/${templateId}`;
 }
 
-// プレビュー
+// プレビュー・テスト送信モーダル表示
+function showPreviewTestModal(templateId) {
+    fetch(`/admin/templates/preview/${templateId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const template = data.template;
+            document.getElementById('previewTestContent').textContent = template.content;
+            document.getElementById('previewTestModal').style.display = 'block';
+        } else {
+            alert('プレビューの取得に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
+}
+
+// プレビュー（旧）
 function previewTemplate(templateId) {
     fetch(`/admin/templates/preview/${templateId}`)
     .then(response => response.json())
@@ -1179,6 +1492,142 @@ function getTypeDisplayName(type) {
         'flex': 'フレックス'
     };
     return typeMap[type] || type;
+}
+
+// テストユーザー検索機能
+let selectedTestUsers = [];
+let searchTimeout;
+
+function searchUsers(query) {
+    clearTimeout(searchTimeout);
+    
+    if (query.length === 0) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    // 検索のデバウンス（300ms後に実行）
+    searchTimeout = setTimeout(() => {
+        // 実際のAPIで友だちデータを検索
+        fetch('/api/search-friends', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const filteredUsers = data.users.filter(user => 
+                    !selectedTestUsers.find(selected => selected.id === user.id)
+                );
+                displaySearchSuggestions(filteredUsers);
+            } else {
+                displaySearchSuggestions([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error searching users:', error);
+            displaySearchSuggestions([]);
+        });
+    }, 300);
+}
+
+function displaySearchSuggestions(users) {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    
+    if (users.length === 0) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    const suggestionsHtml = users.map(user => `
+        <div class="suggestion-item" onclick="addTestUser(${user.id}, '${user.name}', '${user.avatar || ''}')">
+            <div class="suggestion-avatar">
+                ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}">` : '<i class="fas fa-user-circle"></i>'}
+            </div>
+            <span class="suggestion-name">${user.name}</span>
+            <button class="suggestion-add-btn" onclick="event.stopPropagation(); addTestUser(${user.id}, '${user.name}', '${user.avatar || ''}')">追加</button>
+        </div>
+    `).join('');
+    
+    suggestionsContainer.innerHTML = suggestionsHtml;
+    suggestionsContainer.style.display = 'block';
+}
+
+function hideSearchSuggestions() {
+    setTimeout(() => {
+        document.getElementById('searchSuggestions').style.display = 'none';
+    }, 200);
+}
+
+function showSearchSuggestions() {
+    const query = document.querySelector('.test-user-search').value;
+    if (query.length > 0) {
+        searchUsers(query);
+    }
+}
+
+function addTestUser(userId, userName, userAvatar) {
+    // 既に追加済みかチェック
+    if (selectedTestUsers.find(user => user.id === userId)) {
+        return;
+    }
+    
+    // テストユーザーリストに追加
+    selectedTestUsers.push({ id: userId, name: userName, avatar: userAvatar });
+    
+    // 表示を更新
+    updateTestUsersList();
+    
+    // 検索ボックスをクリア
+    document.querySelector('.test-user-search').value = '';
+    hideSearchSuggestions();
+}
+
+function removeTestUser(userId) {
+    selectedTestUsers = selectedTestUsers.filter(user => user.id !== userId);
+    updateTestUsersList();
+}
+
+function updateTestUsersList() {
+    const container = document.getElementById('selectedTestUsers');
+    
+    if (selectedTestUsers.length === 0) {
+        container.innerHTML = `
+            <div class="no-users-message">
+                テストユーザーが登録されていません。<br>
+                上の検索欄から友だちを検索して追加してください。
+            </div>
+        `;
+        return;
+    }
+    
+    const usersHtml = selectedTestUsers.map(user => `
+        <div class="test-user-item">
+            <div class="user-info">
+                <div class="user-avatar">
+                    ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}" style="width: 32px; height: 32px; border-radius: 50%;">` : '<i class="fas fa-user-circle"></i>'}
+                </div>
+                <span class="user-name">${user.name}</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="test-send-btn" onclick="sendTestMessage(${user.id})">テスト送信</button>
+                <button class="btn-sm btn-danger" onclick="removeTestUser(${user.id})" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">削除</button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = usersHtml;
+}
+
+function sendTestMessage(userId) {
+    const user = selectedTestUsers.find(u => u.id === userId);
+    if (user) {
+        alert(`${user.name}にテストメッセージを送信しました`);
+        // 実際の送信処理をここに実装
+    }
 }
 
 // 未実装の関数

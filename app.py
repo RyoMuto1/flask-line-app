@@ -3072,6 +3072,45 @@ def edit_template_name():
         logger.error(f"テンプレート名更新エラー: {str(e)}")
         return jsonify({'success': False, 'message': 'テンプレート名の更新に失敗しました'})
 
+@app.route('/api/search-friends', methods=['POST'])
+@admin_required
+def search_friends():
+    """友だち検索API"""
+    try:
+        data = request.get_json()
+        query = data.get('query', '').strip()
+        
+        if not query:
+            return jsonify({'success': True, 'users': []})
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # ユーザーテーブルから名前で検索
+        c.execute('''
+            SELECT line_user_id, name, profile_image_url
+            FROM users 
+            WHERE name LIKE ? 
+            ORDER BY name
+            LIMIT 10
+        ''', (f'%{query}%',))
+        
+        users = []
+        for row in c.fetchall():
+            users.append({
+                'id': row[0],  # line_user_idを使用
+                'name': row[1],
+                'avatar': row[2]  # profile_image_url
+            })
+        
+        conn.close()
+        
+        return jsonify({'success': True, 'users': users})
+        
+    except Exception as e:
+        logger.error(f"友だち検索エラー: {str(e)}")
+        return jsonify({'success': False, 'message': '検索に失敗しました', 'users': []})
+
 if __name__ == '__main__':
     init_db()
     logger.info("アプリケーションを開始しています...")
