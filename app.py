@@ -2674,11 +2674,17 @@ def admin_templates():
             # created_atが文字列の場合の処理
             if template_dict['created_at']:
                 if isinstance(template_dict['created_at'], str):
-                    # 文字列から日付部分を抽出 (YYYY-MM-DD形式)
-                    template_dict['created_at'] = template_dict['created_at'][:10]
+                    # 文字列から日付部分を抽出して先頭の0を削除
+                    date_str = template_dict['created_at'][:10]  # YYYY-MM-DD
+                    try:
+                        from datetime import datetime
+                        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+                        template_dict['created_at'] = f"{date_obj.year}-{date_obj.month}-{date_obj.day}"
+                    except:
+                        template_dict['created_at'] = date_str
                 else:
                     # datetimeオブジェクトの場合
-                    template_dict['created_at'] = template_dict['created_at'].strftime('%Y.%m.%d')
+                    template_dict['created_at'] = f"{template_dict['created_at'].year}-{template_dict['created_at'].month}-{template_dict['created_at'].day}"
             templates.append(template_dict)
     
     conn.close()
