@@ -385,6 +385,7 @@
     .template-list {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed; /* 列幅を固定 */
     }
     
     .template-list th {
@@ -922,10 +923,10 @@
                 <table class="template-list">
                     <thead>
                         <tr>
-                            <th width="40"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
-                            <th width="300">テンプレート名</th>
-                            <th width="120">登録日</th>
-                            <th width="80">操作</th>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th style="width: 300px;">テンプレート名</th>
+                            <th style="width: 120px;">登録日</th>
+                            <th style="width: 80px;">操作</th>
                         </tr>
                     </thead>
                     <tbody id="templateTableBody">

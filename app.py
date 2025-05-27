@@ -3108,11 +3108,23 @@ def search_friends():
         data = request.get_json()
         query = data.get('query', '').strip()
         
+        logger.info(f"友だち検索リクエスト: query='{query}'")
+        
         if not query:
             return jsonify({'success': True, 'users': []})
         
         conn = get_db()
         c = conn.cursor()
+        
+        # まず全ユーザー数を確認
+        c.execute('SELECT COUNT(*) FROM users')
+        total_users = c.fetchone()[0]
+        logger.info(f"総ユーザー数: {total_users}")
+        
+        # line_user_idがnullでないユーザー数を確認
+        c.execute('SELECT COUNT(*) FROM users WHERE line_user_id IS NOT NULL')
+        valid_users = c.fetchone()[0]
+        logger.info(f"有効なline_user_idを持つユーザー数: {valid_users}")
         
         # ユーザーテーブルから名前で検索（line_user_idがnullでないもののみ）
         c.execute('''
@@ -3123,16 +3135,22 @@ def search_friends():
             LIMIT 10
         ''', (f'%{query}%',))
         
+        rows = c.fetchall()
+        logger.info(f"検索結果件数: {len(rows)}")
+        
         users = []
-        for row in c.fetchall():
-            users.append({
+        for row in rows:
+            user_data = {
                 'id': row[0],  # line_user_idを使用
                 'name': row[1],
                 'avatar': row[2]  # profile_image_url
-            })
+            }
+            users.append(user_data)
+            logger.info(f"検索結果ユーザー: {user_data}")
         
         conn.close()
         
+        logger.info(f"最終返却データ: {users}")
         return jsonify({'success': True, 'users': users})
         
     except Exception as e:
