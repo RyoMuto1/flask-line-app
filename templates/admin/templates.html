@@ -1648,14 +1648,14 @@ function showSearchSuggestions() {
 
 // データ属性から安全にユーザーを追加する関数
 function addTestUserFromSuggestion(element) {
-    const userId = parseInt(element.dataset.userId);
+    const userId = element.dataset.userId; // 文字列のまま保持
     const userName = element.dataset.userName;
     const userAvatar = element.dataset.userAvatar;
     addTestUser(userId, userName, userAvatar);
 }
 
 function addTestUserFromButton(button) {
-    const userId = parseInt(button.dataset.userId);
+    const userId = button.dataset.userId; // 文字列のまま保持
     const userName = button.dataset.userName;
     const userAvatar = button.dataset.userAvatar;
     console.log('追加ボタンクリック:', { userId, userName, userAvatar });
@@ -1665,13 +1665,13 @@ function addTestUserFromButton(button) {
 function addTestUser(userId, userName, userAvatar) {
     console.log('addTestUser呼び出し:', { userId, userName, userAvatar });
     
-    // 既に追加済みかチェック
+    // 既に追加済みかチェック（文字列として比較）
     if (selectedTestUsers.find(user => user.id === userId)) {
         console.log('既に追加済みのユーザー:', userId);
         return;
     }
     
-    // テストユーザーリストに追加
+    // テストユーザーリストに追加（userIdを文字列として保存）
     const newUser = { id: userId, name: userName, avatar: userAvatar };
     selectedTestUsers.push(newUser);
     console.log('ユーザーを追加しました:', newUser);
@@ -1694,6 +1694,7 @@ function addTestUser(userId, userName, userAvatar) {
 }
 
 function removeTestUser(userId) {
+    console.log('removeTestUser呼び出し:', { userId, userIdType: typeof userId });
     selectedTestUsers = selectedTestUsers.filter(user => user.id !== userId);
     
     // セッションストレージに保存
@@ -1725,8 +1726,8 @@ function updateTestUsersList() {
                 <span class="user-name">${user.name}</span>
             </div>
             <div class="test-user-actions">
-                <button class="test-send-btn" onclick="sendTestMessage(${user.id}, this)">テスト送信</button>
-                <button class="delete-user-btn" onclick="removeTestUser(${user.id})" title="削除">
+                <button class="test-send-btn" onclick="sendTestMessage('${user.id}', this)">テスト送信</button>
+                <button class="delete-user-btn" onclick="removeTestUser('${user.id}')" title="削除">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -1737,12 +1738,17 @@ function updateTestUsersList() {
 }
 
 function sendTestMessage(userId, buttonElement) {
-    console.log('sendTestMessage呼び出し:', { userId, currentTemplateId });
+    console.log('sendTestMessage呼び出し:', { userId, currentTemplateId, userIdType: typeof userId });
     
+    // userIdを文字列として比較
     const user = selectedTestUsers.find(u => u.id === userId);
     if (!user) {
         alert('ユーザーが見つかりません');
-        console.error('ユーザーが見つかりません:', userId, selectedTestUsers);
+        console.error('ユーザーが見つかりません:', { 
+            searchUserId: userId, 
+            searchUserIdType: typeof userId,
+            selectedTestUsers: selectedTestUsers 
+        });
         return;
     }
     
@@ -1752,10 +1758,10 @@ function sendTestMessage(userId, buttonElement) {
         return;
     }
     
-    // 送信データをログ出力
+    // 送信データをログ出力（userIdを文字列として送信）
     const sendData = {
         template_id: currentTemplateId,
-        user_id: userId
+        user_id: userId  // 既に文字列なのでそのまま送信
     };
     console.log('送信データ:', sendData);
     
