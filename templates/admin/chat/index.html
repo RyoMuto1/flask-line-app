@@ -4,391 +4,7 @@
 
 {% block styles %}
 {{ super() }}
-<style>
-    /* チャット管理画面専用スタイル */
-    .chat-container {
-        display: flex;
-        height: calc(100vh - 120px);
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        overflow: hidden;
-        min-height: 0;
-        margin: 1rem;
-    }
-    
-    /* 左ペイン：ユーザーリスト */
-    .users-pane {
-        width: 300px;
-        border-right: 1px solid #e9ecef;
-        overflow-y: auto;
-        background-color: white;
-        padding: 1rem;
-    }
-    
-    .user-list-item {
-        padding: 0.75rem;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: background-color 0.2s;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .user-list-item:hover {
-        background-color: #f8f9fa;
-    }
-    
-    .user-list-item.active {
-        background-color: #e3f2fd;
-        border-left: 3px solid #2196f3;
-    }
-    
-    .user-list-item .unread-badge {
-        background-color: #ff5a5f;
-        color: white;
-        border-radius: 50%;
-        padding: 3px 6px;
-        font-size: 0.7rem;
-    }
-    
-    .search-box {
-        margin-bottom: 1rem;
-    }
-    
-    .search-box .form-control {
-        border: none;
-        box-shadow: none;
-        background-color: #f8f9fa;
-    }
-    
-    .search-box .form-control:focus {
-        border: none;
-        box-shadow: none;
-        background-color: #fff;
-    }
-    
-    /* 中央ペイン：チャット内容 */
-    .chat-pane {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-        background-color: #fff;
-    }
-    
-    .chat-header {
-        padding: 1rem 2rem;
-        border-bottom: 1px solid #e9ecef;
-        background-color: white;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .chat-header-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        overflow: hidden;
-        background-color: #cccccc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        flex-shrink: 0;
-    }
-    
-    .chat-header-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .chat-header-name-container {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex: 1;
-    }
-    
-    .chat-header-name {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0;
-        color: #333;
-    }
-    
-    .chat-header-status {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        color: white;
-    }
-    
-    .messages-container {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 15px;
-        background-color: #E6F3FF;
-        min-height: 0;
-    }
-    
-    /* メッセージバブルスタイル */
-    .message {
-        margin-bottom: 15px;
-        max-width: 85%;
-        clear: both;
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-    }
-    
-    .message-admin {
-        float: right;
-        margin-left: auto;
-    }
-    
-    .message-user {
-        float: left;
-    }
-    
-    .message-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        overflow: hidden;
-        margin-right: 8px;
-        background-color: #cccccc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        flex-shrink: 0;
-    }
-    
-    .message-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .message-avatar .default-avatar {
-        font-size: 18px;
-    }
-    
-    .message-admin .message-avatar {
-        display: none;
-    }
-    
-    .message-bubble {
-        padding: 10px 15px;
-        border-radius: 15px;
-        position: relative;
-    }
-    
-    .message-admin .message-bubble {
-        background-color: #94e832;  /* LINE送信メッセージ色 */
-        border-top-right-radius: 0;
-    }
-    
-    .message-user .message-bubble {
-        background-color: #ffffff;  /* LINE受信メッセージ色 */
-        border-top-left-radius: 0;
-    }
-    
-    .message-content {
-        word-break: break-word;
-    }
-    
-    .message-info {
-        font-size: 0.7rem;
-        color: #6c757d;
-        margin-top: 4px;
-        text-align: right;
-    }
-    
-    .message-admin .message-info {
-        text-align: right;
-    }
-    
-    .message-user .message-info {
-        text-align: left;
-    }
-    
-    .message-time {
-        font-size: 0.7rem;
-        color: #6c757d;
-        align-self: flex-end;
-        margin: 0 4px;
-    }
-    
-    .message-input {
-        flex-shrink: 0;
-        padding: 15px;
-        border-top: 1px solid #ddd;
-        background-color: #f8f9fa;
-    }
-    
-    /* 右ペイン：ユーザー情報とメモ */
-    .info-pane {
-        width: 300px;
-        border-left: 1px solid #ddd;
-        background-color: #f8f9fa;
-        overflow-y: auto;
-    }
-    
-    .user-info {
-        padding: 15px;
-        border-bottom: 1px solid #ddd;
-    }
-    
-    .user-notes {
-        padding: 15px;
-    }
-    
-    .note-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    
-    /* ローディングとエラー表示 */
-    .loading-spinner {
-        text-align: center;
-        padding: 20px;
-        color: #6c757d;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 50px 20px;
-        color: #6c757d;
-    }
-    
-    /* 日付区切り */
-    .date-separator {
-        text-align: center;
-        margin: 20px 0;
-        position: relative;
-        clear: both;
-        overflow: hidden;
-    }
-    
-    .date-separator::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        width: 100%;
-        height: 1px;
-        background-color: rgba(0,0,0,0.2);
-        z-index: 1;
-    }
-    
-    .date-text {
-        background-color: rgba(255,255,255,0.9);
-        padding: 5px 15px;
-        border-radius: 15px;
-        font-size: 0.9rem;
-        position: relative;
-        z-index: 2;
-        display: inline-block;
-        color: #333;
-        font-weight: bold;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    /* 対応マーク用スタイル */
-    .status-marker-inline {
-        display: inline-block;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: bold;
-        color: white;
-        margin-left: 5px;
-        vertical-align: middle;
-    }
-    
-    .status-marker-large {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: bold;
-        color: white;
-        margin-bottom: 10px;
-        cursor: pointer;
-        text-align: center;
-        width: 100%;
-        transition: opacity 0.2s;
-    }
-    
-    .status-marker-large:hover {
-        opacity: 0.8;
-    }
-    
-    .status-marker-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        z-index: 1000;
-        max-height: 200px;
-        overflow-y: auto;
-        display: none;
-    }
-    
-    .status-marker-dropdown.show {
-        display: block;
-    }
-    
-    .status-marker-option {
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-        font-size: 12px;
-        font-weight: bold;
-        transition: background-color 0.2s;
-    }
-    
-    .status-marker-option:last-child {
-        border-bottom: none;
-    }
-    
-    .status-marker-option:hover {
-        background-color: #f8f9fa;
-    }
-    
-    .status-marker-option.none {
-        color: #6c757d;
-        font-weight: normal;
-    }
-    
-    .status-marker-container {
-        position: relative;
-        margin-bottom: 15px;
-    }
-    
-    /* ボタン幅統一 */
-    .user-action-button {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -688,6 +304,14 @@
                 unreadBadge = `<span class="unread-badge float-right">${user.unread_count}</span>`;
             }
             
+            // ユーザーアイコンの表示処理
+            let userAvatarHtml = '';
+            if (user.profile_image_url) {
+                userAvatarHtml = `<img src="${user.profile_image_url}" alt="${user.name}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">`;
+            } else {
+                userAvatarHtml = `<div class="rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: #cccccc; color: white; font-weight: bold; font-size: 14px;">👤</div>`;
+            }
+            
             // 対応マークの表示処理を追加
             let statusMarkerHtml = '';
             if (user.status_marker_name && user.status_marker_color) {
@@ -695,10 +319,13 @@
             }
             
             userItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${user.name}${statusMarkerHtml}</strong>
-                        <div class="small text-muted">${user.last_message || '新規ユーザー'}</div>
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="d-flex align-items-center">
+                        ${userAvatarHtml}
+                        <div>
+                            <strong>${user.name}${statusMarkerHtml}</strong>
+                            <div class="small text-muted">${user.last_message || '新規ユーザー'}</div>
+                        </div>
                     </div>
                     ${unreadBadge}
                 </div>
@@ -820,10 +447,6 @@
         }
         
         userInfoElement.innerHTML = `
-            <div class="text-center mb-3">
-                <img src="${profileImg}" alt="${user.name}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
-                <h5 class="mt-2">${user.name}</h5>
-            </div>
             <table class="table table-sm">
                 <tr>
                     <th scope="row">登録日</th>
