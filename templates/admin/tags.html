@@ -305,13 +305,13 @@ function renderFolderContent(folderId) {
       html += '<span class="tag-name">' + tag.name + '</span>';
       html += '</div>';
       html += '</td>';
-      html += '<td class="text-end">';
+      html += '<td>';
       html += '<a href="#" class="tag-users-link user-count" data-id="' + tag.id + '">' + tag.user_count + '人</a>';
       html += '</td>';
-      html += '<td class="text-end">';
+      html += '<td>';
       html += '<span class="tag-date">' + formatDate(tag.created_at) + '</span>';
       html += '</td>';
-      html += '<td class="text-end">';
+      html += '<td>';
       html += '<div class="dropdown">';
       html += '<button class="action-btn menu-btn" onclick="toggleTagDropdown(' + tag.id + ')" title="操作">';
       html += '<i class="fas fa-ellipsis-v"></i>';
