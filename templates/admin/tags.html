@@ -15,7 +15,7 @@
     <!-- 左サイドバー（フォルダ一覧） -->
     <div class="admin-sidebar">
       <div class="sidebar-header">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+        <button class="new-folder-btn" data-bs-toggle="modal" data-bs-target="#createFolderModal">
           <i class="fas fa-plus"></i> 新しいフォルダ
         </button>
         <button class="btn-sm" id="reorderBtn">並び替え</button>
@@ -40,6 +40,7 @@
           </button>
         </div>
         <div class="toolbar-right">
+          <input type="text" class="search-box" placeholder="タグを検索" id="searchBox">
           <button class="btn-sm" id="showManualBtn">
             <i class="fas fa-book"></i> マニュアル
           </button>
@@ -51,19 +52,25 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 40%;">タグ名</th>
-              <th style="width: 20%;">友だち数</th>
-              <th style="width: 20%;">登録日</th>
-              <th style="width: 20%;">操作</th>
+              <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
+              <th style="width: 300px;">タグ名</th>
+              <th style="width: 120px;">友だち数</th>
+              <th style="width: 120px;">登録日</th>
+              <th style="width: 80px;">操作</th>
             </tr>
           </thead>
           <tbody id="tagListContainer">
             <!-- 選択したフォルダのタグ一覧はJavaScriptで生成 -->
             <tr>
-              <td colspan="4" class="text-center py-3">フォルダを選択するとタグ一覧が表示されます</td>
+              <td colspan="5" class="text-center py-3">フォルダを選択するとタグ一覧が表示されます</td>
             </tr>
           </tbody>
         </table>
+      </div>
+      
+      <!-- 下部ツールバー -->
+      <div class="bottom-toolbar">
+        <button class="delete-selected-btn" onclick="deleteSelectedTags()">削除</button>
       </div>
     </div>
   </div>
