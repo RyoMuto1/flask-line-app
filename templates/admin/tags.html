@@ -413,17 +413,17 @@ function formatDate(dateStr) {
 // フォルダドロップダウンの表示切り替え
 function toggleFolderDropdown(folderId) {
   var dropdown = document.getElementById('dropdown-' + folderId);
-  var isVisible = dropdown.style.display === 'block';
+  var folderDropdown = dropdown.closest('.folder-dropdown');
   
   // 他のドロップダウンを閉じる
-  document.querySelectorAll('.folder-dropdown-content').forEach(function(el) {
-    el.style.display = 'none';
+  document.querySelectorAll('.folder-dropdown.show').forEach(function(el) {
+    if (el !== folderDropdown) {
+      el.classList.remove('show');
+    }
   });
   
   // 対象のドロップダウンを切り替え
-  if (!isVisible) {
-    dropdown.style.display = 'block';
-  }
+  folderDropdown.classList.toggle('show');
 }
 
 // フォルダ名編集
@@ -478,17 +478,17 @@ function deleteFolder(folderId) {
 // タグドロップダウンの表示切り替え
 function toggleTagDropdown(tagId) {
   var dropdown = document.getElementById('tag-dropdown-' + tagId);
-  var isVisible = dropdown.style.display === 'block';
+  var tagDropdown = dropdown.closest('.dropdown');
   
   // 他のドロップダウンを閉じる
-  document.querySelectorAll('.dropdown-content').forEach(function(el) {
-    el.style.display = 'none';
+  document.querySelectorAll('.dropdown.show').forEach(function(el) {
+    if (el !== tagDropdown) {
+      el.classList.remove('show');
+    }
   });
   
   // 対象のドロップダウンを切り替え
-  if (!isVisible) {
-    dropdown.style.display = 'block';
-  }
+  tagDropdown.classList.toggle('show');
 }
 
 // タグ編集
@@ -561,8 +561,8 @@ function deleteSelectedTags() {
 // ドキュメントクリックでドロップダウンを閉じる
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.folder-dropdown') && !e.target.closest('.dropdown')) {
-    document.querySelectorAll('.folder-dropdown-content, .dropdown-content').forEach(function(el) {
-      el.style.display = 'none';
+    document.querySelectorAll('.folder-dropdown.show, .dropdown.show').forEach(function(el) {
+      el.classList.remove('show');
     });
   }
 });

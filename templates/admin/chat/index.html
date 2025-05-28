@@ -158,25 +158,6 @@
                 clearInterval(pollingInterval);
             }
         });
-        
-        // 既存のDOMContentLoadedイベントハンドラに追加する形で記述
-        const editTagsBtn = document.getElementById('editTagsBtn');
-        if (editTagsBtn) {
-            editTagsBtn.addEventListener('click', function() {
-                if (!selectedUserId) return;
-                
-                // タグ編集モーダルを表示する前に、現在のタグ情報を取得
-                fetch(`/admin/api/user-tags/${selectedUserId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        showTagEditModal(data.tags || []);
-                    })
-                    .catch(error => {
-                        console.error('Error loading tags for editing:', error);
-                        alert('タグ情報の読み込みに失敗しました');
-                    });
-            });
-        }
     });
     
     // Socket.IO接続
@@ -435,9 +416,31 @@
         document.getElementById('userNotes').style.display = 'block';
         document.getElementById('userTags').style.display = 'block';
         
-        // メモ編集ボタンにイベントリスナーを追加
+        // メモ編集ボタンにイベントリスナーを追加（既存のリスナーを削除してから追加）
+        const editNoteBtn = document.getElementById('editNoteBtn');
+        // 既存のイベントリスナーをクリア
+        editNoteBtn.replaceWith(editNoteBtn.cloneNode(true));
+        // 新しいイベントリスナーを追加
         document.getElementById('editNoteBtn').addEventListener('click', function() {
             showNoteEditModal(user.line_user_id);
+        });
+        
+        // タグ編集ボタンにイベントリスナーを追加（既存のリスナーを削除してから追加）
+        const editTagsBtn = document.getElementById('editTagsBtn');
+        // 既存のイベントリスナーをクリア
+        editTagsBtn.replaceWith(editTagsBtn.cloneNode(true));
+        // 新しいイベントリスナーを追加
+        document.getElementById('editTagsBtn').addEventListener('click', function() {
+            // タグ編集モーダルを表示する前に、現在のタグ情報を取得
+            fetch(`/admin/api/user-tags/${user.line_user_id}`)
+                .then(response => response.json())
+                .then(data => {
+                    showTagEditModal(data.tags || []);
+                })
+                .catch(error => {
+                    console.error('Error loading tags for editing:', error);
+                    alert('タグ情報の読み込みに失敗しました');
+                });
         });
     }
     
@@ -629,8 +632,6 @@
         renderUserList(filteredUsers);
     }
     
-
-
     // ユーザーのタグ読み込み
     function loadUserTags(userId) {
         fetch(`/admin/api/user-tags/${userId}`)
