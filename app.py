@@ -494,7 +494,7 @@ def init_db():
         conn.commit()
         logger.info("template_foldersテーブルを作成しました")
 
-    # テンプレートテーブルの作成
+    # message_templatesテーブルの存在確認と作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='message_templates'")
     if not c.fetchone():
         logger.info("message_templatesテーブルが存在しないため、新規作成します")
@@ -506,6 +506,7 @@ def init_db():
                 type TEXT NOT NULL DEFAULT 'text',  -- 'text', 'image', 'video', 'carousel', 'flex'
                 content TEXT NOT NULL,              -- メッセージ内容またはJSON
                 preview_text TEXT,                  -- プレビュー用テキスト
+                image_url TEXT,                     -- 画像URL（画像タイプの場合）
                 sort_order INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -514,6 +515,15 @@ def init_db():
         ''')
         conn.commit()
         logger.info("message_templatesテーブルを作成しました")
+    else:
+        # 既存テーブルにimage_urlカラムが存在するかチェック
+        c.execute("PRAGMA table_info(message_templates)")
+        columns = [column[1] for column in c.fetchall()]
+        if 'image_url' not in columns:
+            logger.info("message_templatesテーブルにimage_urlカラムを追加します")
+            c.execute('ALTER TABLE message_templates ADD COLUMN image_url TEXT')
+            conn.commit()
+            logger.info("image_urlカラムを追加しました")
 
     conn.row_factory = sqlite3.Row
     return conn
@@ -3264,20 +3274,71 @@ def create_template():
         content = request.form.get('content', '').strip()
         folder_id = request.form.get('folder_id', type=int)
         
-        if not name or not content:
-            return jsonify({'success': False, 'message': 'テンプレート名と内容は必須です'})
+        if not name:
+            return jsonify({'success': False, 'message': 'テンプレート名は必須です'})
         
         if not folder_id:
             return jsonify({'success': False, 'message': 'フォルダの選択は必須です'})
         
-        # プレビューテキストを生成（改行を保持）
+        # 画像タイプの場合の処理
+        image_url = None
+        if template_type == 'image':
+            # 画像ファイルがアップロードされているかチェック
+            if 'image_file' not in request.files:
+                return jsonify({'success': False, 'message': '画像ファイルが選択されていません'})
+            
+            image_file = request.files['image_file']
+            if image_file.filename == '':
+                return jsonify({'success': False, 'message': '画像ファイルが選択されていません'})
+            
+            # ファイルサイズチェック（1MB）
+            if len(image_file.read()) > 1024 * 1024:
+                return jsonify({'success': False, 'message': 'ファイルサイズが1MBを超えています'})
+            
+            # ファイルポインタを先頭に戻す
+            image_file.seek(0)
+            
+            # ファイル拡張子チェック
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            file_extension = image_file.filename.rsplit('.', 1)[1].lower() if '.' in image_file.filename else ''
+            if file_extension not in allowed_extensions:
+                return jsonify({'success': False, 'message': '対応していないファイル形式です。PNG、JPG、JPEG、GIF、WEBPファイルを選択してください'})
+            
+            # 画像を保存
+            import os
+            import uuid
+            from datetime import datetime
+            
+            # アップロードディレクトリを作成
+            upload_dir = os.path.join('static', 'uploads', 'templates')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # ユニークなファイル名を生成
+            unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+            file_path = os.path.join(upload_dir, unique_filename)
+            
+            # ファイルを保存
+            image_file.save(file_path)
+            
+            # URLを生成（Renderの場合は絶対URLが必要）
+            image_url = f"{request.url_root}static/uploads/templates/{unique_filename}"
+            
+            # contentが空の場合は画像URLをcontentに設定
+            if not content:
+                content = image_url
+        else:
+            # テキストタイプの場合はcontentが必須
+            if not content:
+                return jsonify({'success': False, 'message': 'テンプレート内容は必須です'})
+        
+        # プレビューテキストを生成
         preview_text = content
         if template_type == 'text':
             # 改行を保持したプレビューテキスト
             preview_text = content.replace('\n', ' ').strip()
             preview_text = preview_text[:100] + ('...' if len(preview_text) > 100 else '')
         elif template_type == 'image':
-            preview_text = f"画像: {content}"
+            preview_text = f"画像: {content}" if content != image_url else "画像メッセージ"
         elif template_type == 'video':
             preview_text = f"動画: {content}"
         elif template_type in ['carousel', 'flex']:
@@ -3295,11 +3356,11 @@ def create_template():
         c.execute('SELECT MAX(sort_order) FROM message_templates WHERE folder_id = ?', (folder_id,))
         max_order = c.fetchone()[0] or 0
         
-        # テンプレート作成
+        # テンプレート作成（image_urlカラムも追加）
         c.execute('''
-            INSERT INTO message_templates (folder_id, name, type, content, preview_text, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (folder_id, name, template_type, content, preview_text, max_order + 1))
+            INSERT INTO message_templates (folder_id, name, type, content, preview_text, image_url, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (folder_id, name, template_type, content, preview_text, image_url, max_order + 1))
         
         conn.commit()
         conn.close()
@@ -3617,8 +3678,9 @@ def test_send_template():
         # テンプレートの内容を取得
         template_content = template['content']
         template_type = template['type']
+        template_image_url = template.get('image_url')
         
-        logger.info(f"送信準備: type={template_type}, content={template_content[:50]}...")
+        logger.info(f"送信準備: type={template_type}, content={template_content[:50] if template_content else 'None'}..., image_url={template_image_url}")
         
         # LINEメッセージを送信
         try:
@@ -3626,8 +3688,11 @@ def test_send_template():
                 # テキストメッセージの送信
                 success = send_line_message(user_id, template_content)
             elif template_type == 'image':
-                # 画像メッセージの送信（URLから）
-                success = send_line_image_message(user_id, template_content)
+                # 画像メッセージの送信（image_urlを優先、なければcontentを使用）
+                image_url = template_image_url or template_content
+                if not image_url:
+                    return jsonify({'success': False, 'message': '画像URLが設定されていません'})
+                success = send_line_image_message(user_id, image_url)
             else:
                 # その他のタイプは現在未対応
                 return jsonify({'success': False, 'message': f'{template_type}タイプのメッセージは現在未対応です'})

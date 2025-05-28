@@ -325,6 +325,63 @@
         opacity: 0.9;
     }
     
+    /* 画像アップロード用スタイル */
+    .image-upload-container {
+        margin-top: 0.5rem;
+    }
+    
+    .image-upload-box {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.3s;
+        position: relative;
+        background: #fafafa;
+    }
+    
+    .image-upload-box:hover {
+        border-color: #2196f3;
+        background: #f0f8ff;
+    }
+    
+    .upload-placeholder p {
+        margin: 0.25rem 0;
+        color: #666;
+    }
+    
+    .upload-note {
+        font-size: 0.8rem;
+        color: #999;
+    }
+    
+    .image-preview {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .remove-image-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    
+    .remove-image-btn:hover {
+        background: #c82333;
+    }
+    
     @media (max-width: 768px) {
         .template-form-left {
             padding: 1rem;
@@ -354,7 +411,7 @@
     </div>
     
     <!-- メインコンテンツ -->
-    <form id="templateCreateForm" method="POST" action="{{ url_for('create_template') }}">
+    <form id="templateCreateForm" method="POST" action="{{ url_for('create_template') }}" enctype="multipart/form-data">
         <div class="template-create-main">
             <!-- 左側：設定エリア -->
             <div class="template-form-left">
@@ -377,7 +434,6 @@
                     <label>メッセージタイプ</label>
                     <div class="message-type-tabs">
                         <button type="button" class="tab-btn active" data-type="text">テキスト</button>
-                        <button type="button" class="tab-btn" data-type="sticker">スタンプ</button>
                         <button type="button" class="tab-btn" data-type="image">画像</button>
                         <button type="button" class="tab-btn" data-type="question">質問</button>
                         <button type="button" class="tab-btn" data-type="button">ボタン・カルーセル</button>
@@ -385,6 +441,28 @@
                         <button type="button" class="tab-btn" data-type="intro">紹介</button>
                         <button type="button" class="tab-btn" data-type="audio">音声</button>
                         <button type="button" class="tab-btn" data-type="video">動画</button>
+                    </div>
+                </div>
+                
+                <!-- 画像アップロードエリア（画像タイプ選択時のみ表示） -->
+                <div class="form-group" id="imageUploadArea" style="display: none;">
+                    <label for="imageFile">画像ファイル <span class="required">必須</span></label>
+                    <div class="image-upload-container">
+                        <input type="file" id="imageFile" name="image_file" accept="image/*" class="form-control" style="display: none;">
+                        <div class="image-upload-box" onclick="document.getElementById('imageFile').click();">
+                            <div class="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #ccc; margin-bottom: 0.5rem;"></i>
+                                <p>クリックして画像を選択</p>
+                                <p class="upload-note">ファイルサイズ: 1MB未満</p>
+                            </div>
+                            <div class="image-preview" id="imagePreview" style="display: none;">
+                                <img id="previewImg" src="" alt="プレビュー" style="max-width: 100%; max-height: 200px; border-radius: 4px;">
+                                <button type="button" class="remove-image-btn" onclick="removeImage(event)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="upload-error" id="uploadError" style="display: none; color: #dc3545; font-size: 0.8rem; margin-top: 0.5rem;"></div>
                     </div>
                 </div>
                 
@@ -471,20 +549,27 @@ function switchMessageType(type) {
     // 隠しフィールドを更新
     document.getElementById('messageType').value = type;
     
-    // コンテンツエリアの表示を切り替え
+    // 画像アップロードエリアの表示切り替え
+    const imageUploadArea = document.getElementById('imageUploadArea');
     const contentArea = document.getElementById('templateContent');
-    switch(type) {
-        case 'text':
-            contentArea.placeholder = '※4,500文字まで入力した場合は複数のメッセージに分割されます。';
-            break;
-        case 'sticker':
-            contentArea.placeholder = 'スタンプ機能は実装予定です';
-            break;
-        case 'image':
-            contentArea.placeholder = '画像URL を入力してください';
-            break;
-        default:
-            contentArea.placeholder = `${type} 機能は実装予定です`;
+    
+    if (type === 'image') {
+        imageUploadArea.style.display = 'block';
+        contentArea.placeholder = '画像の説明文を入力してください（任意）';
+        // 画像タイプの場合、本文は必須ではない
+        contentArea.removeAttribute('required');
+    } else {
+        imageUploadArea.style.display = 'none';
+        contentArea.setAttribute('required', 'required');
+        
+        // コンテンツエリアの表示を切り替え
+        switch(type) {
+            case 'text':
+                contentArea.placeholder = '※4,500文字まで入力した場合は複数のメッセージに分割されます。';
+                break;
+            default:
+                contentArea.placeholder = `${type} 機能は実装予定です`;
+        }
     }
 }
 
@@ -499,7 +584,19 @@ function updateCharCounter() {
 document.getElementById('templateCreateForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
+    const messageType = document.getElementById('messageType').value;
     const formData = new FormData(this);
+    
+    // 画像タイプの場合、画像ファイルが選択されているかチェック
+    if (messageType === 'image') {
+        const imageFile = document.getElementById('imageFile').files[0];
+        if (!imageFile) {
+            alert('画像ファイルを選択してください。');
+            return;
+        }
+        // 画像ファイルをFormDataに追加
+        formData.append('image_file', imageFile);
+    }
     
     fetch(this.action, {
         method: 'POST',
@@ -529,6 +626,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // 画像ファイル選択のイベントリスナー
+    const imageFileInput = document.getElementById('imageFile');
+    if (imageFileInput) {
+        imageFileInput.addEventListener('change', handleImageSelect);
+    }
+    
     // 文字数カウンターのイベントリスナー
     const contentTextarea = document.getElementById('templateContent');
     if (contentTextarea) {
@@ -537,5 +640,67 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCharCounter();
     }
 });
+
+// 画像ファイル選択時の処理
+function handleImageSelect(event) {
+    const file = event.target.files[0];
+    const errorDiv = document.getElementById('uploadError');
+    const placeholder = document.querySelector('.upload-placeholder');
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    // エラーメッセージをクリア
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    
+    if (!file) {
+        return;
+    }
+    
+    // ファイルサイズチェック（1MB = 1024 * 1024 bytes）
+    if (file.size > 1024 * 1024) {
+        errorDiv.textContent = 'ファイルサイズが1MBを超えています。1MB未満のファイルを選択してください。';
+        errorDiv.style.display = 'block';
+        event.target.value = ''; // ファイル選択をクリア
+        return;
+    }
+    
+    // ファイルタイプチェック
+    if (!file.type.startsWith('image/')) {
+        errorDiv.textContent = '画像ファイルを選択してください。';
+        errorDiv.style.display = 'block';
+        event.target.value = '';
+        return;
+    }
+    
+    // プレビュー表示
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        placeholder.style.display = 'none';
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+// 画像削除
+function removeImage(event) {
+    event.stopPropagation();
+    
+    const fileInput = document.getElementById('imageFile');
+    const placeholder = document.querySelector('.upload-placeholder');
+    const preview = document.getElementById('imagePreview');
+    const errorDiv = document.getElementById('uploadError');
+    
+    // ファイル選択をクリア
+    fileInput.value = '';
+    
+    // プレビューを隠してプレースホルダーを表示
+    preview.style.display = 'none';
+    placeholder.style.display = 'block';
+    
+    // エラーメッセージをクリア
+    errorDiv.style.display = 'none';
+}
 </script>
 {% endblock %} 
