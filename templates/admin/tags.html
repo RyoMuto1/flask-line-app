@@ -15,7 +15,8 @@
     <!-- 左サイドバー（フォルダ一覧） -->
     <div class="admin-sidebar">
       <div class="sidebar-header">
-        <button class="new-folder-btn" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+        <button class="new-folder-btn" data-bs-toggle="modal" data-bs-target="#createFolderModal" 
+                onclick="console.log('新しいフォルダボタンがクリックされました（onclick）');">
           <i class="fas fa-plus"></i> 新しいフォルダ
         </button>
         <button class="btn-sm" id="reorderBtn">並び替え</button>
@@ -31,7 +32,8 @@
       <!-- ツールバー -->
       <div class="admin-toolbar">
         <div class="toolbar-left">
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal"
+                  onclick="console.log('新しいタグボタンがクリックされました（onclick）');">
             <i class="fas fa-plus"></i> 新しいタグ
           </button>
           <button class="btn-sm" id="reorderTagsBtn">並び替え</button>
@@ -568,8 +570,42 @@ document.addEventListener('click', function(e) {
 });
 
 $(function() {
+  // Bootstrap 5の動作確認
+  console.log('Bootstrap version:', bootstrap.Modal ? 'Bootstrap 5 loaded' : 'Bootstrap not loaded');
+  
+  // モーダルイベントのテスト
+  $('#createFolderModal').on('show.bs.modal', function() {
+    console.log('フォルダ作成モーダルが表示されようとしています');
+  });
+  
+  $('#createFolderModal').on('shown.bs.modal', function() {
+    console.log('フォルダ作成モーダルが表示されました');
+    // フォーカスを設定
+    $('#folderName').focus();
+  });
+  
+  $('#createTagModal').on('show.bs.modal', function() {
+    console.log('タグ作成モーダルが表示されようとしています');
+  });
+  
+  $('#createTagModal').on('shown.bs.modal', function() {
+    console.log('タグ作成モーダルが表示されました');
+    // フォーカスを設定
+    $('#tagName').focus();
+  });
+  
   // 初期表示
   renderFolderList();
+  
+  // 新しいフォルダボタンのクリックイベントをテスト
+  $('.new-folder-btn').on('click', function() {
+    console.log('新しいフォルダボタンがクリックされました');
+  });
+  
+  // 新しいタグボタンのクリックイベントをテスト
+  $('button[data-bs-target="#createTagModal"]').on('click', function() {
+    console.log('新しいタグボタンがクリックされました');
+  });
   
   // フォルダクリックイベント
   $(document).on('click', '.folder-item', function(e) {

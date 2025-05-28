@@ -121,6 +121,10 @@
     
     // ページ読み込み時の処理
     document.addEventListener('DOMContentLoaded', function() {
+        // Bootstrap 5の動作確認
+        console.log('Bootstrap version:', typeof bootstrap !== 'undefined' && bootstrap.Modal ? 'Bootstrap 5 loaded' : 'Bootstrap not loaded');
+        console.log('jQuery version:', typeof $ !== 'undefined' ? $.fn.jquery : 'jQuery not loaded');
+        
         loadUsers();
         
         // Socket.IO接続
