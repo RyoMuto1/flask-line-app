@@ -741,7 +741,9 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <textarea id="noteModalInput" class="form-control" rows="8" placeholder="このユーザーに関するメモを入力...">${currentNote}</textarea>
+                                <textarea id="noteModalInput" class="form-control" rows="8" 
+                                    placeholder="このユーザーに関するメモを入力..." 
+                                    style="resize: vertical; background-color: white; color: black;">${currentNote}</textarea>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
@@ -758,9 +760,36 @@
                 const modalInstance = new bootstrap.Modal(modal);
                 modalInstance.show();
                 
+                // モーダルが完全に表示された後にテキストエリアにフォーカスを設定
+                modal.addEventListener('shown.bs.modal', function() {
+                    const textarea = document.getElementById('noteModalInput');
+                    const saveBtn = document.getElementById('saveNoteBtn');
+                    
+                    if (textarea) {
+                        // disabled属性を明示的に削除
+                        textarea.removeAttribute('disabled');
+                        textarea.removeAttribute('readonly');
+                        // フォーカスを設定
+                        textarea.focus();
+                        // カーソルを末尾に移動
+                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                        console.log('テキストエリアにフォーカスを設定しました');
+                    }
+                    
+                    if (saveBtn) {
+                        // 保存ボタンを明示的に有効化
+                        saveBtn.removeAttribute('disabled');
+                        saveBtn.style.pointerEvents = 'auto';
+                        saveBtn.style.opacity = '1';
+                        console.log('保存ボタンを有効化しました');
+                    }
+                });
+                
                 // 保存ボタンのイベントリスナーを追加
                 document.getElementById('saveNoteBtn').addEventListener('click', function() {
+                    console.log('保存ボタンがクリックされました');
                     const noteText = document.getElementById('noteModalInput').value.trim();
+                    console.log('入力されたメモ:', noteText);
                     saveUserNote(userId, noteText, modalInstance);
                 });
             })
@@ -878,13 +907,36 @@
                 const modalInstance = new bootstrap.Modal(modal);
                 modalInstance.show();
                 
+                // モーダルが完全に表示された後にチェックボックスと保存ボタンを有効化
+                modal.addEventListener('shown.bs.modal', function() {
+                    const saveBtn = document.getElementById('saveTagsBtn');
+                    const checkboxes = document.querySelectorAll('.tag-checkbox');
+                    
+                    // 保存ボタンを明示的に有効化
+                    if (saveBtn) {
+                        saveBtn.removeAttribute('disabled');
+                        saveBtn.style.pointerEvents = 'auto';
+                        saveBtn.style.opacity = '1';
+                        console.log('タグ保存ボタンを有効化しました');
+                    }
+                    
+                    // チェックボックスを明示的に有効化
+                    checkboxes.forEach(checkbox => {
+                        checkbox.removeAttribute('disabled');
+                        checkbox.style.pointerEvents = 'auto';
+                    });
+                    console.log('タグチェックボックスを有効化しました:', checkboxes.length, '個');
+                });
+                
                 // 保存ボタンのイベントリスナー
                 document.getElementById('saveTagsBtn').addEventListener('click', function() {
+                    console.log('タグ保存ボタンがクリックされました');
                     // 選択されたタグIDを取得
                     const selectedTagIds = [];
                     document.querySelectorAll('.tag-checkbox:checked').forEach(checkbox => {
                         selectedTagIds.push(parseInt(checkbox.value));
                     });
+                    console.log('選択されたタグID:', selectedTagIds);
                     
                     // タグを保存
                     saveUserTags(userId, selectedTagIds, modalInstance);
