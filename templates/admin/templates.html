@@ -585,7 +585,26 @@ function showPreviewTestModal(templateId) {
     .then(data => {
         if (data.success) {
             const template = data.template;
-            document.getElementById('previewTestContent').textContent = template.content;
+            const previewContent = document.getElementById('previewTestContent');
+            
+            // テンプレートタイプに応じてプレビュー内容を変更
+            if (template.type === 'image') {
+                // 画像タイプの場合
+                const imageUrl = template.image_url || template.content;
+                if (imageUrl) {
+                    previewContent.innerHTML = `
+                        <div class="image-message">
+                            <img src="${imageUrl}" alt="テンプレート画像" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: contain;">
+                            ${template.content && template.content !== imageUrl ? `<div class="image-caption" style="margin-top: 8px; color: #666; font-size: 0.9rem;">${template.content}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    previewContent.innerHTML = '<div class="error-message" style="color: #dc3545;">画像が設定されていません</div>';
+                }
+            } else {
+                // テキストタイプなど他のタイプの場合
+                previewContent.textContent = template.content;
+            }
             
             // セッションストレージからテストユーザーを再読み込み
             loadTestUsersFromSession();
@@ -613,7 +632,28 @@ function previewTemplate(templateId) {
             const template = data.template;
             document.getElementById('previewTemplateName').textContent = template.name;
             document.getElementById('previewTemplateType').textContent = getTypeDisplayName(template.type);
-            document.getElementById('previewContent').textContent = template.content;
+            
+            const previewContent = document.getElementById('previewContent');
+            
+            // テンプレートタイプに応じてプレビュー内容を変更
+            if (template.type === 'image') {
+                // 画像タイプの場合
+                const imageUrl = template.image_url || template.content;
+                if (imageUrl) {
+                    previewContent.innerHTML = `
+                        <div class="image-message">
+                            <img src="${imageUrl}" alt="テンプレート画像" style="max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain;">
+                            ${template.content && template.content !== imageUrl ? `<div class="image-caption" style="margin-top: 8px; color: #fff; font-size: 0.9rem;">${template.content}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    previewContent.innerHTML = '<div class="error-message" style="color: #dc3545;">画像が設定されていません</div>';
+                }
+            } else {
+                // テキストタイプなど他のタイプの場合
+                previewContent.textContent = template.content;
+            }
+            
             document.getElementById('previewModal').style.display = 'block';
         } else {
             alert('プレビューの取得に失敗しました: ' + data.message);

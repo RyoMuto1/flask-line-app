@@ -3531,7 +3531,8 @@ def preview_template(template_id):
             'name': template['name'],
             'type': template['type'],
             'content': template['content'],
-            'preview_text': template['preview_text']
+            'preview_text': template['preview_text'],
+            'image_url': template.get('image_url')  # 画像URLも追加
         }
         
         return jsonify({'success': True, 'template': preview_data})
