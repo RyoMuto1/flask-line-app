@@ -19,7 +19,7 @@
                 onclick="console.log('新しいフォルダボタンがクリックされました（onclick）');">
           <i class="fas fa-plus"></i> 新しいフォルダ
         </button>
-        <button class="btn-sm" id="reorderBtn">並び替え</button>
+        <button class="btn-sm" id="reorderBtn">並べ替え</button>
       </div>
       
       <ul class="sidebar-list" id="tagFolderList">
@@ -36,7 +36,7 @@
                   onclick="console.log('新しいタグボタンがクリックされました（onclick）');">
             <i class="fas fa-plus"></i> 新しいタグ
           </button>
-          <button class="btn-sm" id="reorderTagsBtn">並び替え</button>
+          <button class="btn-sm" id="reorderTagsBtn">並べ替え</button>
           <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importTagsModal">
             <i class="fas fa-file-upload"></i> CSVアップロード
           </button>
@@ -261,9 +261,8 @@ function renderFolderList() {
   $('#tagFolderList').html(html);
 }
 
-// 未分類のタグを取得（親IDを持たないトップレベルタグ）
+// 未分類のタグを取得（親IDを持たず、かつ自身が親でないもの（＝純粋なタグ）だけをカウント
 function getUnclassifiedTagCount() {
-  // 親IDを持たず、かつ自身が親でないもの（＝純粋なタグ）だけをカウント
   return tagData.filter(function(t) { 
     return !t.parent_id && !isFolder(t.id); 
   }).length;

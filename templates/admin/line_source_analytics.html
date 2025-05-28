@@ -21,6 +21,7 @@
         <button class="new-folder-btn" data-bs-toggle="modal" data-bs-target="#createFolderModal">
           <i class="fas fa-plus"></i> 新しいフォルダ
         </button>
+        <button class="btn-sm" onclick="reorderFolders()">並べ替え</button>
       </div>
       
       <ul class="sidebar-list">
@@ -53,8 +54,7 @@
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
             <i class="fas fa-plus"></i> 新しい登録リンクを作成
           </button>
-          <button class="btn-sm" onclick="reorderFolders()">フォルダ並び替え</button>
-          <button class="btn-sm" onclick="reorderLinks()">リンク並び替え</button>
+          <button class="btn-sm" onclick="reorderLinks()">リンク並べ替え</button>
         </div>
         <div class="toolbar-right">
           {% for folder in folders %}
