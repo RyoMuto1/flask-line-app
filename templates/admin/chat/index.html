@@ -400,6 +400,8 @@
     function renderUserInfo(user) {
         if (!user) return;
         
+        console.log('renderUserInfo called with user:', user); // デバッグログ追加
+        
         // ユーザー情報エリアを更新
         const userInfoElement = document.getElementById('userInfo');
         
@@ -418,30 +420,48 @@
         
         // メモ編集ボタンにイベントリスナーを追加（既存のリスナーを削除してから追加）
         const editNoteBtn = document.getElementById('editNoteBtn');
-        // 既存のイベントリスナーをクリア
-        editNoteBtn.replaceWith(editNoteBtn.cloneNode(true));
-        // 新しいイベントリスナーを追加
-        document.getElementById('editNoteBtn').addEventListener('click', function() {
-            showNoteEditModal(user.line_user_id);
-        });
+        console.log('editNoteBtn element:', editNoteBtn); // デバッグログ追加
+        
+        if (editNoteBtn) {
+            // 既存のイベントリスナーをクリア
+            editNoteBtn.replaceWith(editNoteBtn.cloneNode(true));
+            // 新しいイベントリスナーを追加
+            const newEditNoteBtn = document.getElementById('editNoteBtn');
+            newEditNoteBtn.addEventListener('click', function() {
+                console.log('メモ編集ボタンがクリックされました'); // デバッグログ追加
+                showNoteEditModal(user.line_user_id);
+            });
+            console.log('メモ編集ボタンのイベントリスナーを設定しました'); // デバッグログ追加
+        } else {
+            console.error('editNoteBtnが見つかりません'); // エラーログ追加
+        }
         
         // タグ編集ボタンにイベントリスナーを追加（既存のリスナーを削除してから追加）
         const editTagsBtn = document.getElementById('editTagsBtn');
-        // 既存のイベントリスナーをクリア
-        editTagsBtn.replaceWith(editTagsBtn.cloneNode(true));
-        // 新しいイベントリスナーを追加
-        document.getElementById('editTagsBtn').addEventListener('click', function() {
-            // タグ編集モーダルを表示する前に、現在のタグ情報を取得
-            fetch(`/admin/api/user-tags/${user.line_user_id}`)
-                .then(response => response.json())
-                .then(data => {
-                    showTagEditModal(data.tags || []);
-                })
-                .catch(error => {
-                    console.error('Error loading tags for editing:', error);
-                    alert('タグ情報の読み込みに失敗しました');
-                });
-        });
+        console.log('editTagsBtn element:', editTagsBtn); // デバッグログ追加
+        
+        if (editTagsBtn) {
+            // 既存のイベントリスナーをクリア
+            editTagsBtn.replaceWith(editTagsBtn.cloneNode(true));
+            // 新しいイベントリスナーを追加
+            const newEditTagsBtn = document.getElementById('editTagsBtn');
+            newEditTagsBtn.addEventListener('click', function() {
+                console.log('タグ編集ボタンがクリックされました'); // デバッグログ追加
+                // タグ編集モーダルを表示する前に、現在のタグ情報を取得
+                fetch(`/admin/api/user-tags/${user.line_user_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        showTagEditModal(data.tags || [], user.line_user_id);
+                    })
+                    .catch(error => {
+                        console.error('Error loading tags for editing:', error);
+                        alert('タグ情報の読み込みに失敗しました');
+                    });
+            });
+            console.log('タグ編集ボタンのイベントリスナーを設定しました'); // デバッグログ追加
+        } else {
+            console.error('editTagsBtnが見つかりません'); // エラーログ追加
+        }
     }
     
     // チャット履歴の読み込み
@@ -751,7 +771,7 @@
     }
     
     // タグ編集モーダルを表示
-    function showTagEditModal(currentTags) {
+    function showTagEditModal(currentTags, userId) {
         // すでにモーダルが存在する場合は削除
         const existingModal = document.getElementById('tagEditModal');
         if (existingModal) {
@@ -867,7 +887,7 @@
                     });
                     
                     // タグを保存
-                    saveUserTags(selectedUserId, selectedTagIds, modalInstance);
+                    saveUserTags(userId, selectedTagIds, modalInstance);
                 });
             })
             .catch(error => {
