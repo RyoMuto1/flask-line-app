@@ -586,6 +586,21 @@ def send_line_image_message(user_id, image_url):
     try:
         logger.info(f"画像メッセージ送信開始: user_id={user_id}, image_url={image_url}")
         
+        # 画像URLの検証
+        if not image_url:
+            logger.error("画像URLが空です")
+            return False
+            
+        # HTTPSに変換
+        if image_url.startswith('http://'):
+            image_url = image_url.replace('http://', 'https://')
+            logger.info(f"HTTPSに変換: {image_url}")
+        
+        # URLの形式チェック
+        if not (image_url.startswith('https://') or image_url.startswith('http://')):
+            logger.error(f"無効なURL形式: {image_url}")
+            return False
+        
         token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
         
         # リクエストペイロードをログ出力
