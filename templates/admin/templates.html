@@ -590,12 +590,10 @@ function showPreviewTestModal(templateId) {
             // テンプレートタイプに応じてプレビュー内容を変更
             if (template.type === 'image') {
                 // 画像タイプの場合
-                const imageUrl = template.image_url || template.content;
-                if (imageUrl) {
+                if (template.image_url) {
                     previewContent.innerHTML = `
                         <div class="image-message">
-                            <img src="${imageUrl}" alt="テンプレート画像" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: contain;">
-                            ${template.content && template.content !== imageUrl ? `<div class="image-caption" style="margin-top: 8px; color: #666; font-size: 0.9rem;">${template.content}</div>` : ''}
+                            <img src="${template.image_url}" alt="テンプレート画像" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: contain;">
                         </div>
                     `;
                 } else {
@@ -638,12 +636,10 @@ function previewTemplate(templateId) {
             // テンプレートタイプに応じてプレビュー内容を変更
             if (template.type === 'image') {
                 // 画像タイプの場合
-                const imageUrl = template.image_url || template.content;
-                if (imageUrl) {
+                if (template.image_url) {
                     previewContent.innerHTML = `
                         <div class="image-message">
-                            <img src="${imageUrl}" alt="テンプレート画像" style="max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain;">
-                            ${template.content && template.content !== imageUrl ? `<div class="image-caption" style="margin-top: 8px; color: #fff; font-size: 0.9rem;">${template.content}</div>` : ''}
+                            <img src="${template.image_url}" alt="テンプレート画像" style="max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain;">
                         </div>
                     `;
                 } else {
