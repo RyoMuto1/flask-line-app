@@ -219,52 +219,7 @@
     align-items: center;
 }
 
-/* プレビューモーダル */
-.preview-modal-content {
-    max-width: 500px;
-    padding: 2rem;
-    position: fixed !important;
-    top: 20% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 1050 !important;
-}
-
-.preview-container {
-    text-align: center;
-}
-
-.preview-header {
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.preview-header h3 {
-    margin: 0;
-    color: #333;
-}
-
-.phone-frame {
-    background: #333;
-    border-radius: 25px;
-    padding: 20px 10px;
-    display: inline-block;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-}
-
-.phone-screen {
-    background: white;
-    border-radius: 15px;
-    width: 280px;
-    height: 500px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
+/* チャット関連スタイル（他画面で使用） */
 .chat-header {
     background: #00c851;
     color: white;
@@ -315,37 +270,13 @@
     border-bottom-right-radius: 5px;
 }
 
-/* 画像メッセージ専用スタイル */
-.image-message {
-    padding: 0.5rem;
-    background: white;
-    border-radius: 12px;
-    max-width: 100%;
-}
-
-.image-message img {
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: 8px;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-}
-
-.image-caption {
-    margin-top: 0.5rem;
-    color: #333;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
 /* プレビュー・テスト送信モーダル */
 .preview-test-modal-content {
     max-width: 1200px !important;
     width: 90% !important;
     padding: 2rem;
     position: fixed !important;
-    top: 20% !important;
+    top: 30% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     z-index: 1050 !important;
