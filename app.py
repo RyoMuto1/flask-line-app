@@ -3679,7 +3679,8 @@ def test_send_template():
         # テンプレートの内容を取得
         template_content = template['content']
         template_type = template['type']
-        template_image_url = template.get('image_url')
+        # SQLite3のRowオブジェクトには.get()が使えないため、安全にアクセス
+        template_image_url = template['image_url'] if 'image_url' in template.keys() else None
         
         logger.info(f"送信準備: type={template_type}, content={template_content[:50] if template_content else 'None'}..., image_url={template_image_url}")
         
