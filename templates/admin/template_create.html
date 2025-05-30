@@ -551,15 +551,17 @@ function switchMessageType(type) {
     
     // 画像アップロードエリアの表示切り替え
     const imageUploadArea = document.getElementById('imageUploadArea');
+    const contentGroup = document.querySelector('.form-group.content-group');
     const contentArea = document.getElementById('templateContent');
     
     if (type === 'image') {
         imageUploadArea.style.display = 'block';
-        contentArea.placeholder = '画像の説明文を入力してください（任意）';
+        contentGroup.style.display = 'none';  // メッセージエディターブロック全体を非表示
         // 画像タイプの場合、本文は必須ではない
         contentArea.removeAttribute('required');
     } else {
         imageUploadArea.style.display = 'none';
+        contentGroup.style.display = 'block';  // メッセージエディターブロックを表示
         contentArea.setAttribute('required', 'required');
         
         // コンテンツエリアの表示を切り替え

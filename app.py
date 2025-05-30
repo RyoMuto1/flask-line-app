@@ -3468,8 +3468,8 @@ def edit_template(template_id):
         template_type = request.form.get('type', 'text')
         content = request.form.get('content', '').strip()
         folder_id = request.form.get('folder_id', type=int)
-        
-        if not name or not content:
+        if not name:
+            return jsonify({'success': False, 'message': 'テンプレート名は必須です'})
             return jsonify({'success': False, 'message': 'テンプレート名と内容は必須です'})
         
         if not folder_id:
