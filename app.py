@@ -37,6 +37,11 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}     # 許可する拡張子
 
 app.config['UPLOAD_FOLDER_TEMPLATES'] = UPLOAD_FOLDER_TEMPLATES
 
+# --- ユーティリティ関数 ---
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # 新しいメッセージが届いたときに全クライアントに通知
 def notify_new_message(user_id, message, is_from_admin=False):
     socketio.emit('new_message', {
