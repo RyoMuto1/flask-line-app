@@ -224,7 +224,7 @@
     max-width: 500px;
     padding: 2rem;
     position: fixed !important;
-    top: 50% !important;
+    top: 20% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     z-index: 1050 !important;
@@ -345,7 +345,7 @@
     width: 90% !important;
     padding: 2rem;
     position: fixed !important;
-    top: 50% !important;
+    top: 20% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     z-index: 1050 !important;
