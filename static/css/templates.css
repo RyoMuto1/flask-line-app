@@ -223,6 +223,10 @@
 .preview-modal-content {
     max-width: 500px;
     padding: 2rem;
+    margin: 5vh auto !important;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .preview-container {
@@ -310,11 +314,39 @@
     border-bottom-right-radius: 5px;
 }
 
+/* 画像メッセージ専用スタイル */
+.image-message {
+    padding: 0.5rem;
+    background: white;
+    border-radius: 12px;
+    max-width: 100%;
+}
+
+.image-message img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.image-caption {
+    margin-top: 0.5rem;
+    color: #333;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
 /* プレビュー・テスト送信モーダル */
 .preview-test-modal-content {
     max-width: 1200px !important;
     width: 90% !important;
     padding: 2rem;
+    margin: 2vh auto !important;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .preview-test-layout {
@@ -340,6 +372,23 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     line-height: 1.5;
+}
+
+/* プレビューエリア内の画像スタイル */
+.preview-message-area .image-message {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    max-width: 100%;
+}
+
+.preview-message-area .image-message img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
 }
 
 .test-user-section {
