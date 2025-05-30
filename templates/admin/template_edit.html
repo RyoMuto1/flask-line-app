@@ -535,18 +535,25 @@ document.getElementById('templateEditForm').addEventListener('submit', function(
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`サーバーエラー: ${response.status} ${response.statusText}\n${text}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('テンプレートが更新されました');
             window.location.href = '{{ url_for("admin_templates") }}';
         } else {
-            alert('テンプレートの更新に失敗しました: ' + data.message);
+            alert('テンプレートの更新に失敗しました: ' + (data.message || '理由不明'));
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('エラーが発生しました');
+        console.error('Fetch Error:', error);
+        alert('エラーが発生しました:\n' + error.message);
     });
 });
 
@@ -556,18 +563,25 @@ function deleteTemplate() {
         fetch(`{{ url_for('delete_template', template_id=template.id) }}`, {
             method: 'DELETE'
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`サーバーエラー: ${response.status} ${response.statusText}\n${text}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 alert('テンプレートが削除されました');
                 window.location.href = '{{ url_for("admin_templates") }}';
             } else {
-                alert('削除に失敗しました: ' + data.message);
+                alert('削除に失敗しました: ' + (data.message || '理由不明'));
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('エラーが発生しました');
+            console.error('Fetch Error:', error);
+            alert('エラーが発生しました:\n' + error.message);
         });
     }
 }
