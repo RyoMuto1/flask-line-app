@@ -223,10 +223,11 @@
 .preview-modal-content {
     max-width: 500px;
     padding: 2rem;
-    margin: 5vh auto !important;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1050 !important;
 }
 
 .preview-container {
@@ -343,10 +344,11 @@
     max-width: 1200px !important;
     width: 90% !important;
     padding: 2rem;
-    margin: 2vh auto !important;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1050 !important;
 }
 
 .preview-test-layout {
