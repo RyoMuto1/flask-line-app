@@ -282,6 +282,29 @@
     z-index: 1050 !important;
 }
 
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.preview-header h2 {
+    margin: 0;
+}
+
+.preview-header .close {
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+}
+
+.preview-header .close:hover,
+.preview-header .close:focus {
+    color: #333;
+}
+
 .preview-test-layout {
     display: flex;
     gap: 2rem;
