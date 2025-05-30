@@ -583,14 +583,13 @@ def send_line_message(user_id, message):
 
 def send_line_image_message(user_id, image_url):
     """LINE画像メッセージを送信する関数"""
-    token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
-    res = requests.post(
-        "https://api.line.me/v2/bot/message/push",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        },
-        json={
+    try:
+        logger.info(f"画像メッセージ送信開始: user_id={user_id}, image_url={image_url}")
+        
+        token = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+        
+        # リクエストペイロードをログ出力
+        payload = {
             "to": user_id, 
             "messages": [{
                 "type": "image",
@@ -598,9 +597,30 @@ def send_line_image_message(user_id, image_url):
                 "previewImageUrl": image_url
             }]
         }
-    )
-    logger.debug(f"LINE Image Push → {res.status_code} {res.text}")
-    return res.status_code == 200
+        logger.info(f"送信ペイロード: {payload}")
+        
+        res = requests.post(
+            "https://api.line.me/v2/bot/message/push",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            },
+            json=payload
+        )
+        
+        logger.info(f"LINE Image Push Response → Status: {res.status_code}")
+        logger.info(f"LINE Image Push Response → Body: {res.text}")
+        
+        if res.status_code != 200:
+            logger.error(f"LINE API Error: {res.status_code} - {res.text}")
+            return False
+            
+        logger.info("画像メッセージ送信成功")
+        return True
+        
+    except Exception as e:
+        logger.error(f"画像メッセージ送信例外: {str(e)}")
+        return False
 
 # アプリケーションの初期化
 with app.app_context():

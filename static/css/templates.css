@@ -274,12 +274,17 @@
 .preview-test-modal-content {
     max-width: 1200px !important;
     width: 90% !important;
+    max-height: 80vh !important;
+    height: 80vh !important;
     padding: 2rem;
     position: fixed !important;
-    top: 30% !important;
+    top: 10% !important;
     left: 50% !important;
-    transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, 0) !important;
     z-index: 1050 !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .preview-header {
@@ -287,6 +292,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    flex-shrink: 0;
 }
 
 .preview-header h2 {
@@ -309,6 +315,8 @@
     display: flex;
     gap: 2rem;
     margin-top: 1rem;
+    flex: 1;
+    overflow: hidden;
 }
 
 .preview-section {
@@ -317,17 +325,26 @@
     padding: 1.5rem;
     border-radius: 8px;
     border: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 450px;
+    max-height: 450px;
 }
 
 .preview-message-area {
     background: white;
     padding: 1rem;
     border-radius: 8px;
-    min-height: 200px;
     border: 1px solid #dee2e6;
     white-space: pre-wrap;
     word-wrap: break-word;
     line-height: 1.5;
+    height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 /* プレビューエリア内の画像スタイル */
@@ -335,20 +352,27 @@
     background: transparent;
     padding: 0;
     border-radius: 0;
-    max-width: 100%;
+    width: 100%;
+    text-align: center;
 }
 
 .preview-message-area .image-message img {
     max-width: 100%;
-    max-height: 300px;
+    height: auto;
     border-radius: 8px;
     object-fit: contain;
     display: block;
     margin: 0 auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .test-user-section {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 450px;
+    max-height: 450px;
 }
 
 .test-user-header h3 {
@@ -369,12 +393,16 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 0.9rem;
+    margin-bottom: 1rem;
 }
 
 .test-user-list {
     border: 1px solid #e9ecef;
     border-radius: 4px;
     overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .test-user-header-row {
@@ -386,6 +414,13 @@
     font-size: 0.9rem;
     color: #495057;
     border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+
+.test-user-list #selectedTestUsers {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .test-user-item {
