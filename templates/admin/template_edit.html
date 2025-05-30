@@ -423,26 +423,6 @@
                     </div>
                 </div>
                 
-                <!-- 画像キャプション -->
-                <div class="form-group content-group">
-                    <label for="templateContent">画像キャプション（任意）</label>
-                    <div class="message-editor">
-                        <div class="editor-toolbar">
-                            <button type="button" class="editor-btn">↶</button>
-                            <button type="button" class="editor-btn">↷</button>
-                            <button type="button" class="editor-btn">名前</button>
-                            <button type="button" class="editor-btn">友だち情報</button>
-                            <button type="button" class="editor-btn">共通情報</button>
-                            <button type="button" class="editor-btn">回答フォーム</button>
-                            <button type="button" class="editor-btn">配信日</button>
-                            <button type="button" class="editor-btn">その他</button>
-                            <button type="button" class="editor-btn">❓</button>
-                        </div>
-                        <textarea id="templateContent" name="content" class="form-control message-textarea" placeholder="画像と一緒に送信するテキストを入力してください（任意）">{{ template.content if template.content != template.image_url else '' }}</textarea>
-                        <div class="char-counter">{{ (template.content|length if template.content != template.image_url else 0) }}/22500</div>
-                    </div>
-                </div>
-                
                 {% else %}
                 <!-- テキストタイプの場合 -->
                 <div class="form-group content-group">
@@ -520,10 +500,10 @@
 <script>
 // 文字数カウンター更新
 function updateCharCounter() {
-    const content = document.getElementById('templateContent').value;
+    const contentElement = document.getElementById('templateContent');
     const counter = document.querySelector('.char-counter');
-    if (counter) {
-        counter.textContent = `${content.length}/22500`;
+    if (contentElement && counter) {
+        counter.textContent = `${contentElement.value.length}/22500`;
     }
 }
 
@@ -538,6 +518,9 @@ document.getElementById('templateEditForm').addEventListener('submit', function(
     if (messageType === 'image') {
         const imageFile = document.getElementById('imageFile').files[0];
         const hasCurrentImage = document.getElementById('hasCurrentImage').value === 'true';
+        
+        // 画像タイプの場合、contentフィールドを空文字に設定
+        formData.set('content', '');
         
         // 新しい画像が選択された場合はFormDataに追加
         if (imageFile) {
