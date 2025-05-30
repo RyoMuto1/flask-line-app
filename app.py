@@ -3493,20 +3493,20 @@ def edit_template(template_id):
     template = c.fetchone()
     
     if not template:
-        flash('テンプレートが見つかりません', 'error')
-        return redirect(url_for('admin_templates'))
-    
+        # GETリクエストでテンプレートが見つからない場合はエラーページへ
+        if request.method == 'GET':
+            flash('テンプレートが見つかりません', 'error')
+            return redirect(url_for('admin_templates'))
+        # POSTリクエストでテンプレートが見つからない場合はJSONエラー
+        conn.close() # DB接続を閉じる
+        return jsonify({'success': False, 'message': 'テンプレートが見つかりません'}), 404
+
     if request.method == 'GET':
-        # GET リクエストの場合は編集ページを表示
         # フォルダ一覧を取得
         c.execute('SELECT * FROM template_folders ORDER BY sort_order, name')
         folders = [dict(folder) for folder in c.fetchall()]
-        
         conn.close()
-        
-        # LINE公式アカウント情報を取得
         line_bot_info = get_line_bot_info()
-        
         return render_template('admin/template_edit.html', 
                              template=dict(template),
                              folders=folders,
@@ -3516,89 +3516,107 @@ def edit_template(template_id):
     try:
         name = request.form.get('name', '').strip()
         template_type = request.form.get('type', 'text')
-        content = request.form.get('content', '').strip()
+        # 画像タイプの場合、フロントエンドからcontentは送られてこないか空文字のはず
+        # ただし、他のタイプでは必須なので、ここで取得はしておく
+        content = request.form.get('content', '').strip() 
         folder_id = request.form.get('folder_id', type=int)
-        image_file = request.files.get('image_file') # 画像ファイルを取得
+        image_file = request.files.get('image_file')
 
         if not name:
-            flash('テンプレート名は必須です', 'error')
-            return redirect(url_for('edit_template', template_id=template_id))
+            conn.close()
+            return jsonify({'success': False, 'message': 'テンプレート名は必須です'}), 400
 
         if not folder_id:
-            flash('フォルダの選択は必須です', 'error')
-            return redirect(url_for('edit_template', template_id=template_id))
-        
-        # プレビューテキストを生成
-        preview_text = content
-        if template_type == 'text':
-            preview_text = content.replace('\n', ' ').strip()
-            preview_text = preview_text[:100] + ('...' if len(preview_text) > 100 else '')
-        elif template_type == 'image':
-            # 画像の場合はファイル名またはURLをプレビューに使う
-            preview_text = "画像テンプレート"
-            if image_file and image_file.filename:
-                 preview_text = f"画像: {image_file.filename}"
-            elif content: # contentに既存のURLが入っている場合
-                 preview_text = f"画像: {content.split('/')[-1]}" # URLからファイル名らしきものを取得
-        elif template_type == 'video':
-            preview_text = f"動画: {content}"
-        elif template_type in ['carousel', 'flex']:
-            preview_text = f"{template_type.capitalize()}メッセージ"
+            conn.close()
+            return jsonify({'success': False, 'message': 'フォルダの選択は必須です'}), 400
         
         # フォルダ存在確認
         c.execute('SELECT id FROM template_folders WHERE id = ?', (folder_id,))
         if not c.fetchone():
-            flash('指定されたフォルダが存在しません', 'error')
-            return redirect(url_for('edit_template', template_id=template_id))
+            conn.close()
+            return jsonify({'success': False, 'message': '指定されたフォルダが見つかりません'}), 400
 
-        # 画像ファイルの処理
         current_image_url = template['image_url'] # 更新前の画像URL
-        new_image_url = current_image_url # デフォルトは既存のURL
+        new_image_url = current_image_url # 特に大きな変更がなければ元のURLを維持
 
-        if image_file and image_file.filename:
-            if not allowed_file(image_file.filename):
-                flash('許可されていないファイルタイプです', 'error')
-                return redirect(url_for('edit_template', template_id=template_id))
-            
-            # 既存の画像を削除（必要な場合）
-            if current_image_url:
-                try:
-                    # URLからファイルパスを推測 (これは環境依存なので注意)
-                    # 例: /static/uploads/templates/filename.png
-                    # request.host_url を使ってドメイン部分を除去
-                    if current_image_url.startswith(request.host_url):
-                        relative_path = current_image_url.replace(request.host_url, '')
-                        if relative_path.startswith('/'): 
-                            relative_path = relative_path[1:] # 先頭のスラッシュを削除
+        # プレビューテキストと画像URLの処理
+        preview_text = ""
+        if template_type == 'text':
+            if not content: # テキストタイプで本文が空の場合
+                conn.close()
+                return jsonify({'success': False, 'message': 'テキストテンプレートの本文は必須です'}), 400
+            preview_text = content.replace('\\n', ' ').strip()
+            preview_text = preview_text[:100] + ('...' if len(preview_text) > 100 else '')
+            new_image_url = None # テキストテンプレートなので画像URLはNULL
+        
+        elif template_type == 'image':
+            preview_text = "画像テンプレート" # デフォルトのプレビューテキスト
+            if image_file and allowed_file(image_file.filename):
+                # 新しい画像がアップロードされた場合
+                # 既存の画像を削除（もしあれば）
+                if current_image_url:
+                    try:
+                        # URLからファイルパスを推測（static/uploads/templates/filename.ext の形式を想定）
+                        # url_forで生成された相対パスまたは絶対パスを考慮
+                        filename_from_url = current_image_url.split('/')[-1]
+                        # UPLOAD_FOLDER_TEMPLATES は 'static/uploads/templates' のような相対パス
+                        # os.path.join で workspace からの相対パスを正しく作る
+                        old_filepath = os.path.join(app.config['UPLOAD_FOLDER_TEMPLATES'], filename_from_url)
                         
-                        existing_file_path = os.path.join(app.config['UPLOAD_FOLDER_TEMPLATES'], os.path.basename(relative_path))
-                        if os.path.exists(existing_file_path):
-                            os.remove(existing_file_path)
-                            logger.info(f"既存の画像ファイルを削除しました: {existing_file_path}")
+                        if os.path.exists(old_filepath):
+                            os.remove(old_filepath)
+                            logger.info(f"古い画像ファイルを削除しました: {old_filepath}")
+                        else:
+                            logger.warning(f"削除対象の古い画像ファイルが見つかりません: {old_filepath} (URL: {current_image_url})")
+                    except Exception as e:
+                        logger.error(f"古い画像の削除に失敗しました: {str(e)}")
+
+                # 新しい画像を保存
+                # ファイル名を一意にするためにタイムスタンプとマイクロ秒を追加
+                filename_base, file_extension = os.path.splitext(image_file.filename)
+                filename = secure_filename(f"{filename_base}_{datetime.now().strftime('%Y%m%d_%H%M%S%f')}{file_extension}")
+                save_path = os.path.join(app.config['UPLOAD_FOLDER_TEMPLATES'], filename)
+                try:
+                    if not os.path.exists(app.config['UPLOAD_FOLDER_TEMPLATES']):
+                        os.makedirs(app.config['UPLOAD_FOLDER_TEMPLATES'], exist_ok=True)
+                    image_file.save(save_path)
+                    # `url_for` で生成するパスは `static` から始まる
+                    new_image_url = url_for('static', filename=f'uploads/templates/{filename}', _external=True)
+                    logger.info(f"新しい画像ファイルを保存しました: {save_path}, URL: {new_image_url}")
+                    preview_text = f"画像: {filename}" # プレビューにはファイル名を使用
                 except Exception as e:
-                    logger.error(f"既存の画像ファイル削除エラー: {e}")
+                    logger.error(f"画像ファイルの保存に失敗しました: {str(e)}")
+                    conn.close()
+                    return jsonify({'success': False, 'message': f'画像ファイルの保存に失敗しました。'}), 500 # 詳細なエラーはクライアントに返さない
+            elif not current_image_url and not image_file:
+                 # 画像が無く、新しいファイルもアップロードされていない場合 (テンプレート作成時や、画像なしテンプレートを編集中など)
+                 # フロントエンドのバリデーションでここは通らないはずだが、念のため
+                 conn.close()
+                 return jsonify({'success': False, 'message': '画像タイプのテンプレートには画像ファイルが必要です'}), 400
+            elif current_image_url: # 新しいファイルがアップロードされず、既存の画像URLがある場合
+                preview_text = f"画像: {current_image_url.split('/')[-1]}"
+            
+            # 画像タイプの場合、本文(content)は常に空にする。画像URL(new_image_url)にパスが入る
+            content = "" 
+            
+        elif template_type == 'video':
+            if not content: # 動画タイプでURLが空の場合
+                conn.close()
+                return jsonify({'success': False, 'message': '動画テンプレートのURLは必須です'}), 400
+            preview_text = f"動画: {content}"
+            new_image_url = None # 動画テンプレートなので画像URLはNULL
+        elif template_type in ['carousel', 'flex']:
+            if not content: # カルーセル・Flexで本文が空の場合
+                conn.close()
+                return jsonify({'success': False, 'message': f'{template_type.capitalize()}メッセージの本文は必須です'}), 400
+            preview_text = f"{template_type.capitalize()}メッセージ"
+            new_image_url = None # カルーセル・Flexなので画像URLはNULL
+        else:
+            # 未知のテンプレートタイプ
+            conn.close()
+            return jsonify({'success': False, 'message': f'未知のテンプレートタイプです: {template_type}'}), 400
 
-            # 新しい画像を保存
-            filename = secure_filename(f"{os.path.splitext(image_file.filename)[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{os.path.splitext(image_file.filename)[1]}")
-            save_path = os.path.join(app.config['UPLOAD_FOLDER_TEMPLATES'], filename)
-            image_file.save(save_path)
-            # 絶対URLで保存
-            new_image_url = url_for('static', filename=f'uploads/templates/{filename}', _external=True)
-            logger.info(f"新しい画像ファイルを保存しました: {save_path}, URL: {new_image_url}")
-            content = new_image_url # contentにも絶対URLを保存
-        elif template_type == 'image' and not content and not current_image_url:
-            # 画像タイプで、新しいファイルも無く、contentも空で、既存URLも無い場合
-            flash('画像タイプのテンプレートには画像ファイルまたは画像URLが必要です', 'error')
-            return redirect(url_for('edit_template', template_id=template_id))
-        elif template_type == 'image' and content and not image_file:
-             # URLが手動でcontentに入力された場合、それをそのまま使う
-             if content.startswith('http://') or content.startswith('https://'):
-                 new_image_url = content
-             else:
-                 flash('画像URLは http:// または https:// で始まる必要があります。', 'error')
-                 return redirect(url_for('edit_template', template_id=template_id))
-
-        # テンプレート更新 (image_urlも更新)
+        # テンプレート更新
         c.execute('''
             UPDATE message_templates 
             SET folder_id = ?, name = ?, type = ?, content = ?, preview_text = ?, image_url = ?, updated_at = datetime('now')
@@ -3606,16 +3624,20 @@ def edit_template(template_id):
         ''', (folder_id, name, template_type, content, preview_text, new_image_url, template_id))
         
         conn.commit()
-        flash('テンプレートが更新されました', 'success')
+        logger.info(f"テンプレートが正常に更新されました。ID: {template_id}, Name: {name}, Type: {template_type}, Image URL: {new_image_url}")
         
     except Exception as e:
-        conn.rollback() # エラー時はロールバック
-        logger.error(f"テンプレート更新エラー: {str(e)}")
-        flash(f'テンプレートの更新に失敗しました: {str(e)}', 'error')
+        logger.error(f"テンプレート更新処理中に予期せぬエラー (template_id: {template_id}): {str(e)}", exc_info=True)
+        # conn が try ブロックの最初で取得されているので、ここで閉じる
+        return jsonify({'success': False, 'message': f'テンプレートの更新中に予期せぬサーバーエラーが発生しました。'}), 500
     finally:
-        conn.close()
-        
-    return redirect(url_for('edit_template', template_id=template_id))
+        if conn: # conn が開いている場合のみ閉じる
+            try:
+                conn.close()
+            except Exception as db_close_err: # sqlite3.ProgrammingError のようなエラーをキャッチ
+                logger.error(f"データベース接続クローズエラー (edit_template): {str(db_close_err)}")
+
+    return jsonify({'success': True, 'message': 'テンプレートが更新されました'})
 
 @app.route('/admin/templates/preview/<int:template_id>')
 @admin_required
