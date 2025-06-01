@@ -16,6 +16,7 @@ from flask_socketio import SocketIO  # 追加
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import re # 正規表現モジュール
+import uuid
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -3500,7 +3501,7 @@ def edit_template(template_id):
         # POSTリクエストでテンプレートが見つからない場合はJSONエラー
         conn.close() # DB接続を閉じる
         return jsonify({'success': False, 'message': 'テンプレートが見つかりません'}), 404
-
+    
     if request.method == 'GET':
         # フォルダ一覧を取得
         c.execute('SELECT * FROM template_folders ORDER BY sort_order, name')
@@ -3518,14 +3519,14 @@ def edit_template(template_id):
         template_type = request.form.get('type', 'text')
         # 画像タイプの場合、フロントエンドからcontentは送られてこないか空文字のはず
         # ただし、他のタイプでは必須なので、ここで取得はしておく
-        content = request.form.get('content', '').strip() 
+        content = request.form.get('content', '').strip()
         folder_id = request.form.get('folder_id', type=int)
         image_file = request.files.get('image_file')
 
         if not name:
             conn.close()
             return jsonify({'success': False, 'message': 'テンプレート名は必須です'}), 400
-
+        
         if not folder_id:
             conn.close()
             return jsonify({'success': False, 'message': 'フォルダの選択は必須です'}), 400
@@ -3538,7 +3539,7 @@ def edit_template(template_id):
 
         current_image_url = template['image_url'] # 更新前の画像URL
         new_image_url = current_image_url # 特に大きな変更がなければ元のURLを維持
-
+        
         # プレビューテキストと画像URLの処理
         preview_text = ""
         if template_type == 'text':
@@ -3615,7 +3616,7 @@ def edit_template(template_id):
             # 未知のテンプレートタイプ
             conn.close()
             return jsonify({'success': False, 'message': f'未知のテンプレートタイプです: {template_type}'}), 400
-
+        
         # テンプレート更新
         c.execute('''
             UPDATE message_templates 
@@ -3636,8 +3637,8 @@ def edit_template(template_id):
                 conn.close()
             except Exception as db_close_err: # sqlite3.ProgrammingError のようなエラーをキャッチ
                 logger.error(f"データベース接続クローズエラー (edit_template): {str(db_close_err)}")
-
-    return jsonify({'success': True, 'message': 'テンプレートが更新されました'})
+        
+        return jsonify({'success': True, 'message': 'テンプレートが更新されました'})
 
 @app.route('/admin/templates/preview/<int:template_id>')
 @admin_required
@@ -3844,13 +3845,10 @@ def test_send_template():
         logger.error(f"テスト送信エラー: {str(e)}")
         return jsonify({'success': False, 'message': 'テスト送信中にエラーが発生しました'})
 
-if __name__ == '__main__':
-    init_db()
-    logger.info("アプリケーションを開始しています...")
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-else:
-    # gunicornから参照されるオブジェクト（本番環境用）
-    application = socketio.wsgi_app
+# application = socketio.wsgi_app
+
+if __name__ == "__main__":
+    socketio.run(app, host='0.0.0.0', port=5000)
 
 # SocketIOイベントハンドラ
 @socketio.on('connect')
