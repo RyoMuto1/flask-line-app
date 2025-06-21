@@ -2,39 +2,38 @@
 
 {% block title %}テンプレート管理{% endblock %}
 
-{% block styles %}
-{{ super() }}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/templates.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="admin-container">
+<div class="templates__page-container">
     <!-- ヘッダー -->
-    <div class="admin-header">
-        <h1>テンプレート</h1>
+    <div class="templates__header">
+        <h1 class="templates__page-title">テンプレート</h1>
     </div>
     
     <!-- メインコンテンツ -->
-    <div class="admin-main">
+    <div class="templates__main">
         <!-- 左サイドバー（フォルダ一覧） -->
-        <div class="admin-sidebar">
-            <div class="sidebar-header">
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#templatesNewFolderModal">
+        <div class="templates__sidebar">
+            <div class="templates__sidebar-header">
+                <button class="templates__btn templates__btn-success" onclick="showCreateFolderModal()">
                     <i class="fas fa-plus"></i> 新しいフォルダ
                 </button>
-                <button class="btn-sm" onclick="reorderFolders()">並べ替え</button>
+                <button class="templates__btn-sm" onclick="reorderFolders()">並べ替え</button>
             </div>
             
-            <ul class="sidebar-list" id="folderList">
+            <ul class="templates__sidebar-list" id="folderList">
                 {% for folder in folders %}
-                <li class="sidebar-item {% if folder.id == selected_folder_id %}active{% endif %}" 
+                <li class="templates__sidebar-item {% if folder.id == selected_folder_id %}active{% endif %}" 
                     onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
-                    <i class="fas fa-folder sidebar-icon" style="color: {{ folder.color or '#FFA500' }}"></i>
-                    <span class="sidebar-name">{{ folder.name }}</span>
-                    <span class="sidebar-count">({{ folder.template_count }})</span>
-                    <div class="folder-dropdown">
-                        <button class="folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown({{ folder.id }})">編集</button>
-                        <div class="folder-dropdown-content" id="dropdown-{{ folder.id }}">
+                    <i class="fas fa-folder templates__sidebar-icon" style="color: {{ folder.color or '#FFA500' }}"></i>
+                    <span class="templates__sidebar-name">{{ folder.name }}</span>
+                    <span class="templates__sidebar-count">({{ folder.template_count }})</span>
+                    <div class="templates__folder-dropdown">
+                        <button class="templates__folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown({{ folder.id }})">編集</button>
+                        <div class="templates__folder-dropdown-content" id="dropdown-{{ folder.id }}">
                             <a onclick="editFolderName({{ folder.id }}, '{{ folder.name }}', '{{ folder.color }}')">名前を変更</a>
                             <a onclick="deleteFolder({{ folder.id }})">削除</a>
                         </div>
@@ -45,36 +44,36 @@
         </div>
         
         <!-- メインコンテンツエリア -->
-        <div class="admin-content">
+        <div class="templates__content">
             <!-- ツールバー -->
-            <div class="admin-toolbar">
-                <div class="toolbar-left">
-                    <div class="template-dropdown">
-                        <button class="btn btn-primary" onclick="toggleTemplateDropdown()">
+            <div class="templates__toolbar">
+                <div class="templates__toolbar-left">
+                    <div class="templates__dropdown">
+                        <button class="templates__btn templates__btn-primary" onclick="toggleTemplateDropdown()">
                             テンプレートを作成 <i class="fas fa-chevron-down"></i>
                         </button>
-                        <div class="template-dropdown-content" id="templateDropdown">
+                        <div class="templates__dropdown-content" id="templateDropdown">
                             <a onclick="showStandardMessageModal()">標準メッセージ</a>
                             <a onclick="showCarouselModal()">カルーセルメッセージ</a>
                             <a onclick="showFlexModal()">フレックスメッセージ</a>
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="showCreatePackModal()">
+                    <button class="templates__btn templates__btn-primary" onclick="showCreatePackModal()">
                         <i class="fas fa-plus"></i> テンプレートパックを作成
                     </button>
-                    <button class="btn-sm" onclick="reorderTemplates()">並べ替え</button>
+                    <button class="templates__btn-sm" onclick="reorderTemplates()">並べ替え</button>
                 </div>
-                <div class="toolbar-right">
-                    <input type="text" class="search-box" placeholder="検索" id="searchBox" onkeyup="searchTemplates()">
+                <div class="templates__toolbar-right">
+                    <input type="text" class="templates__search-box" placeholder="検索" id="searchBox" onkeyup="searchTemplates()">
                 </div>
             </div>
             
             <!-- テンプレート一覧 -->
-            <div class="admin-table">
-                <table class="data-table template-list">
+            <div class="templates__table-container">
+                <table class="templates__table">
                     <thead>
                         <tr>
-                            <th style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAll" class="templates__checkbox" onchange="toggleSelectAll()"></th>
                             <th style="width: 300px;">テンプレート名</th>
                             <th style="width: 120px;">登録日</th>
                             <th style="width: 80px;">操作</th>
@@ -84,13 +83,13 @@
                         {% for template in templates %}
                         <tr>
                             <td>
-                                <input type="checkbox" name="template_ids" value="{{ template.id }}" class="template-checkbox">
+                                <input type="checkbox" name="template_ids" value="{{ template.id }}" class="templates__checkbox">
                             </td>
                             <td>
-                                <div class="template-item">
-                                    <div class="template-title" onclick="editTemplateRedirect({{ template.id }})">{{ template.name }}</div>
-                                    <div class="template-meta">
-                                        <span class="template-type {{ template.type }}">
+                                <div class="templates__template-item">
+                                    <div class="templates__template-title" onclick="editTemplateRedirect({{ template.id }})">{{ template.name }}</div>
+                                    <div class="templates__template-meta">
+                                        <span class="templates__template-type {{ template.type }}">
                                             {% if template.type == 'text' %}テキスト
                                             {% elif template.type == 'image' %}画像
                                             {% elif template.type == 'video' %}動画
@@ -99,22 +98,22 @@
                                             {% endif %}
                                         </span>
                                         {% if template.preview_text %}
-                                        <div class="template-preview">{{ template.preview_text }}</div>
+                                        <div class="templates__template-preview">{{ template.preview_text }}</div>
                                         {% endif %}
                                     </div>
                                 </div>
                             </td>
-                            <td class="template-date">{{ template.created_at or '-' }}</td>
+                            <td class="templates__template-date">{{ template.created_at or '-' }}</td>
                             <td>
-                                <div class="template-actions-new">
-                                    <button class="action-btn preview-btn" onclick="showPreviewTestModal({{ template.id }})" title="プレビュー・テスト送信">
+                                <div class="templates__template-actions">
+                                    <button class="templates__action-btn templates__preview-btn" onclick="showPreviewTestModal({{ template.id }})" title="プレビュー・テスト送信">
                                         <i class="fas fa-play"></i>
                                     </button>
-                                    <div class="template-dropdown">
-                                        <button class="action-btn menu-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})" title="メニュー">
+                                    <div class="templates__dropdown">
+                                        <button class="templates__action-btn templates__menu-btn" onclick="toggleTemplateOperationDropdown({{ template.id }})" title="メニュー">
                                             <i class="fas fa-ellipsis-v"></i>
                                         </button>
-                                        <div class="template-dropdown-content" id="operationDropdown-{{ template.id }}">
+                                        <div class="templates__dropdown-content" id="operationDropdown-{{ template.id }}">
                                             <a onclick="editTemplateName({{ template.id }}, '{{ template.name }}')">名前を変更</a>
                                             <a onclick="deleteTemplate({{ template.id }})">削除</a>
                                         </div>
@@ -128,110 +127,116 @@
             </div>
             
             <!-- 下部ツールバー -->
-            <div class="bottom-toolbar">
-                <button class="delete-selected-btn" onclick="deleteSelectedTemplates()">削除</button>
+            <div class="templates__bottom-toolbar">
+                <button class="templates__delete-selected-btn" onclick="deleteSelectedTemplates()">削除</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 新しいフォルダ作成モーダル（Bootstrap形式） -->
-<div class="modal fade" id="templatesNewFolderModal" tabindex="-1" aria-labelledby="templatesNewFolderModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="templatesNewFolderModalLabel">新しいフォルダを作成</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form method="POST" action="{{ url_for('create_template_folder') }}">
-        <div class="modal-body">
-          <div class="form-group mb-3">
-            <label for="templatesFolderName" class="form-label">フォルダ名</label>
-            <input type="text" class="form-control" id="templatesFolderName" name="name" required>
-          </div>
-          <div class="form-group mb-3">
-            <label for="templatesFolderColor" class="form-label">色</label>
-            <input type="color" class="form-control" id="templatesFolderColor" name="color" value="#FFA500">
-          </div>
+<!-- 新しいフォルダ作成モーダル -->
+<div class="templates__modal" id="templatesNewFolderModal">
+    <div class="templates__modal-dialog">
+        <div class="templates__modal-content">
+            <div class="templates__modal-header">
+                <h5 class="templates__modal-title">新しいフォルダを作成</h5>
+                <button type="button" class="templates__btn-close" onclick="closeModal('templatesNewFolderModal')">&times;</button>
+            </div>
+            <form method="POST" action="{{ url_for('create_template_folder') }}">
+                <div class="templates__modal-body">
+                    <div class="templates__form-group">
+                        <label for="templatesFolderName" class="templates__form-label">フォルダ名</label>
+                        <input type="text" class="templates__form-control" id="templatesFolderName" name="name" required>
+                    </div>
+                    <div class="templates__form-group">
+                        <label for="templatesFolderColor" class="templates__form-label">色</label>
+                        <input type="color" class="templates__form-control" id="templatesFolderColor" name="color" value="#FFA500">
+                    </div>
+                </div>
+                <div class="templates__modal-footer">
+                    <button type="button" class="templates__btn templates__btn-secondary" onclick="closeModal('templatesNewFolderModal')">キャンセル</button>
+                    <button type="submit" class="templates__btn templates__btn-success">作成</button>
+                </div>
+            </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="submit" class="btn btn-success">作成</button>
-        </div>
-      </form>
     </div>
-  </div>
 </div>
 
 <!-- フォルダ編集モーダル -->
-<div id="editFolderModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('editFolderModal')">&times;</span>
-        <h2>フォルダ名を変更</h2>
-        <form id="editFolderForm" onsubmit="updateFolder(event)">
-            <div class="form-group">
-                <label for="editFolderName">フォルダ名</label>
-                <input type="text" id="editFolderName" name="name" class="form-control" required>
+<div id="editFolderModal" class="templates__modal">
+    <div class="templates__modal-dialog">
+        <div class="templates__modal-content">
+            <div class="templates__modal-header">
+                <h5 class="templates__modal-title">フォルダ名を変更</h5>
+                <button type="button" class="templates__btn-close" onclick="closeModal('editFolderModal')">&times;</button>
             </div>
-            <div class="form-group">
-                <label for="editFolderColor">色</label>
-                <input type="color" id="editFolderColor" name="color" class="form-control" value="#FFA500">
-            </div>
-            <input type="hidden" id="editFolderId" name="folder_id">
-            <button type="submit" class="btn btn-success">更新</button>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('editFolderModal')">キャンセル</button>
-        </form>
+            <form id="editFolderForm" onsubmit="updateFolder(event)">
+                <div class="templates__modal-body">
+                    <div class="templates__form-group">
+                        <label for="editFolderName" class="templates__form-label">フォルダ名</label>
+                        <input type="text" id="editFolderName" name="name" class="templates__form-control" required>
+                    </div>
+                    <div class="templates__form-group">
+                        <label for="editFolderColor" class="templates__form-label">色</label>
+                        <input type="color" id="editFolderColor" name="color" class="templates__form-control" value="#FFA500">
+                    </div>
+                    <input type="hidden" id="editFolderId" name="folder_id">
+                </div>
+                <div class="templates__modal-footer">
+                    <button type="button" class="templates__btn templates__btn-secondary" onclick="closeModal('editFolderModal')">キャンセル</button>
+                    <button type="submit" class="templates__btn templates__btn-success">更新</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- プレビュー・テスト送信モーダル -->
-<div id="previewTestModal" class="modal">
-    <div class="modal-content preview-test-modal-content">
-        <div class="preview-test-container">
-            <div class="preview-header">
+<div id="previewTestModal" class="templates__preview-modal">
+    <div class="templates__preview-modal-content">
+        <div class="templates__preview-header">
             <h2>プレビュー・テスト送信</h2>
-                <span class="close" onclick="closeModal('previewTestModal')">&times;</span>
+            <button class="templates__preview-close" onclick="closeModal('previewTestModal')">&times;</button>
+        </div>
+        <div class="templates__preview-layout">
+            <!-- 左側：プレビュー -->
+            <div class="templates__preview-section">
+                <div class="templates__preview-message-area">
+                    <div id="previewTestContent">プレビュー内容がここに表示されます</div>
+                </div>
             </div>
-            <div class="preview-test-layout">
-                <!-- 左側：プレビュー -->
-                <div class="preview-section">
-                    <div class="preview-message-area">
-                        <div id="previewTestContent">プレビュー内容がここに表示されます</div>
-                    </div>
+            
+            <!-- 右側：テストユーザー登録 -->
+            <div class="templates__test-user-section">
+                <div class="templates__test-user-header">
+                    <h3>テストユーザー登録</h3>
+                    <p>検索してもアカウントが表示されない場合は <a href="#" style="color: #00c851;">こちら</a></p>
+                    <button onclick="debugTestUsers()" class="templates__btn templates__btn-secondary">デバッグ: 保存状態確認</button>
+                    <button onclick="clearTestUsers()" class="templates__btn templates__btn-secondary">リセット</button>
                 </div>
                 
-                <!-- 右側：テストユーザー登録 -->
-                <div class="test-user-section">
-                    <div class="test-user-header">
-                        <h3>テストユーザー登録</h3>
-                        <p>検索してもアカウントが表示されない場合は <a href="#" style="color: #00c851;">こちら</a></p>
-                        <button onclick="debugTestUsers()" style="background: #6c757d; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8rem; margin-bottom: 0.5rem; margin-right: 0.5rem;">デバッグ: 保存状態確認</button>
-                        <button onclick="clearTestUsers()" style="background: #dc3545; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8rem; margin-bottom: 0.5rem;">リセット</button>
+                <div style="position: relative;">
+                    <input type="text" class="templates__test-user-search" placeholder="LINE名/システム表示名で検索" 
+                           oninput="searchUsers(this.value)" onblur="hideSearchSuggestions()" onfocus="showSearchSuggestions()">
+                    <i class="fas fa-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                </div>
+                
+                <!-- 検索候補リスト -->
+                <div class="templates__search-suggestions" id="searchSuggestions" style="display: none;">
+                    <!-- 検索結果がここに動的に表示される -->
+                </div>
+                
+                <div class="templates__test-user-list">
+                    <div class="templates__test-user-header-row">
+                        <span>テストユーザー名</span>
+                        <span>操作</span>
                     </div>
                     
-                    <div class="search-box-container">
-                        <input type="text" class="test-user-search" placeholder="LINE名/システム表示名で検索" 
-                               oninput="searchUsers(this.value)" onblur="hideSearchSuggestions()" onfocus="showSearchSuggestions()">
-                        <i class="fas fa-search search-icon"></i>
-                    </div>
-                    
-                    <!-- 検索候補リスト -->
-                    <div class="search-suggestions" id="searchSuggestions" style="display: none;">
-                        <!-- 検索結果がここに動的に表示される -->
-                    </div>
-                    
-                    <div class="test-user-list">
-                        <div class="test-user-header-row">
-                            <span>テストユーザー名</span>
-                            <span>操作</span>
-                        </div>
-                        
-                        <div id="selectedTestUsers">
-                            <!-- 選択されたテストユーザーがここに表示される -->
-                            <div class="no-users-message">
-                                テストユーザーが登録されていません。<br>
-                                上の検索欄から友だちを検索して追加してください。
-                            </div>
+                    <div id="selectedTestUsers">
+                        <!-- 選択されたテストユーザーがここに表示される -->
+                        <div class="templates__no-users-message">
+                            テストユーザーが登録されていません。<br>
+                            上の検索欄から友だちを検索して追加してください。
                         </div>
                     </div>
                 </div>
@@ -241,50 +246,27 @@
 </div>
 
 <!-- テンプレート名編集モーダル -->
-<div id="editTemplateNameModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('editTemplateNameModal')">&times;</span>
-        <h2>テンプレート名を変更</h2>
-        <form id="editTemplateNameForm" onsubmit="updateTemplateName(event)">
-            <div class="form-group">
-                <label for="editTemplateNameInput">テンプレート名</label>
-                <input type="text" id="editTemplateNameInput" name="name" class="form-control" required>
+<div id="editTemplateNameModal" class="templates__modal">
+    <div class="templates__modal-dialog">
+        <div class="templates__modal-content">
+            <div class="templates__modal-header">
+                <h5 class="templates__modal-title">テンプレート名を変更</h5>
+                <button type="button" class="templates__btn-close" onclick="closeModal('editTemplateNameModal')">&times;</button>
             </div>
-            <input type="hidden" id="editTemplateId" name="template_id">
-            <button type="submit" class="btn btn-success">更新</button>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('editTemplateNameModal')">キャンセル</button>
-        </form>
-    </div>
-</div>
-
-<!-- テンプレート作成モーダル（旧） -->
-<div id="createTemplateModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('createTemplateModal')">&times;</span>
-        <h2>テンプレートを作成</h2>
-        <form id="createTemplateForm" onsubmit="createTemplate(event)">
-            <div class="form-group">
-                <label for="templateName">テンプレート名</label>
-                <input type="text" id="templateName" name="name" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="templateType">タイプ</label>
-                <select id="templateType" name="type" class="form-control" onchange="changeTemplateType()">
-                    <option value="text">テキスト</option>
-                    <option value="image">画像</option>
-                    <option value="video">動画</option>
-                    <option value="carousel">カルーセル</option>
-                    <option value="flex">フレックス</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="templateContent">内容</label>
-                <textarea id="templateContent" name="content" class="form-control" rows="5" required></textarea>
-            </div>
-            <input type="hidden" id="templateFolderId" name="folder_id" value="{{ selected_folder_id or 1 }}">
-            <button type="submit" class="btn btn-success">作成</button>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('createTemplateModal')">キャンセル</button>
-        </form>
+            <form id="editTemplateNameForm" onsubmit="updateTemplateName(event)">
+                <div class="templates__modal-body">
+                    <div class="templates__form-group">
+                        <label for="editTemplateNameInput" class="templates__form-label">テンプレート名</label>
+                        <input type="text" id="editTemplateNameInput" name="name" class="templates__form-control" required>
+                    </div>
+                    <input type="hidden" id="editTemplateId" name="template_id">
+                </div>
+                <div class="templates__modal-footer">
+                    <button type="button" class="templates__btn templates__btn-secondary" onclick="closeModal('editTemplateNameModal')">キャンセル</button>
+                    <button type="submit" class="templates__btn templates__btn-success">更新</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -294,17 +276,20 @@ function selectFolder(folderId) {
     window.location.href = `{{ url_for('admin_templates') }}?folder_id=${folderId}`;
 }
 
-// Bootstrap モーダルを使用するため、この関数は不要になりました
+// フォルダ作成モーダル表示
+function showCreateFolderModal() {
+    document.getElementById('templatesNewFolderModal').classList.add('show');
+}
 
 // テンプレート作成ドロップダウン表示/非表示
 function toggleTemplateDropdown() {
-    const dropdown = document.querySelector('.template-dropdown');
+    const dropdown = document.querySelector('.templates__dropdown');
     dropdown.classList.toggle('show');
 }
 
 // 標準メッセージ作成画面表示
 function showStandardMessageModal() {
-    document.querySelector('.template-dropdown').classList.remove('show');
+    document.querySelector('.templates__dropdown').classList.remove('show');
     
     // 選択されたフォルダIDを取得
     const selectedFolderId = {{ selected_folder_id or 'null' }};
@@ -319,41 +304,42 @@ function showStandardMessageModal() {
 
 // カルーセルメッセージ（未実装）
 function showCarouselModal() {
-    document.querySelector('.template-dropdown').classList.remove('show');
+    document.querySelector('.templates__dropdown').classList.remove('show');
     alert('カルーセルメッセージ機能は実装予定です');
 }
 
 // フレックスメッセージ（未実装）
 function showFlexModal() {
-    document.querySelector('.template-dropdown').classList.remove('show');
+    document.querySelector('.templates__dropdown').classList.remove('show');
     alert('フレックスメッセージ機能は実装予定です');
 }
 
-// テンプレート作成モーダル表示（旧）
-function showCreateTemplateModal() {
-    document.getElementById('createTemplateModal').style.display = 'block';
+// テンプレートパック作成（未実装）
+function showCreatePackModal() {
+    alert('テンプレートパック機能は実装予定です');
 }
 
 // モーダル閉じる
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-    // テストユーザーリストは保持する（クリアしない）
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('show');
+    modal.style.display = 'none';
 }
 
 // 全選択トグル
 function toggleSelectAll() {
     const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.template-checkbox');
+    const checkboxes = document.querySelectorAll('.templates__checkbox[name="template_ids"]');
     checkboxes.forEach(cb => cb.checked = selectAll.checked);
 }
 
 // フォルダドロップダウンの表示切り替え
 function toggleFolderDropdown(folderId) {
     const dropdown = document.getElementById(`dropdown-${folderId}`);
-    const folderDropdown = dropdown.closest('.folder-dropdown');
+    const folderDropdown = dropdown.closest('.templates__folder-dropdown');
     
     // 他のドロップダウンを閉じる
-    document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+    document.querySelectorAll('.templates__folder-dropdown.show').forEach(el => {
         if (el !== folderDropdown) {
             el.classList.remove('show');
         }
@@ -368,10 +354,11 @@ function editFolderName(folderId, currentName, currentColor) {
     document.getElementById('editFolderId').value = folderId;
     document.getElementById('editFolderName').value = currentName;
     document.getElementById('editFolderColor').value = currentColor;
+    document.getElementById('editFolderModal').classList.add('show');
     document.getElementById('editFolderModal').style.display = 'block';
     
     // ドロップダウンを閉じる
-    document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+    document.querySelectorAll('.templates__folder-dropdown.show').forEach(el => {
         el.classList.remove('show');
     });
 }
@@ -420,33 +407,8 @@ function deleteFolder(folderId) {
     }
     
     // ドロップダウンを閉じる
-    document.querySelectorAll('.folder-dropdown.show').forEach(el => {
+    document.querySelectorAll('.templates__folder-dropdown.show').forEach(el => {
         el.classList.remove('show');
-    });
-}
-
-// Bootstrap フォーム送信を使用するため、この関数は不要になりました
-
-// テンプレート作成
-function createTemplate(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    
-    fetch('{{ url_for("create_template") }}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('テンプレートの作成に失敗しました: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('エラーが発生しました');
     });
 }
 
@@ -473,7 +435,7 @@ function deleteTemplate(templateId) {
 
 // 選択済みテンプレート削除
 function deleteSelectedTemplates() {
-    const selectedIds = Array.from(document.querySelectorAll('.template-checkbox:checked'))
+    const selectedIds = Array.from(document.querySelectorAll('.templates__checkbox[name="template_ids"]:checked'))
                            .map(cb => cb.value);
     
     if (selectedIds.length === 0) {
@@ -500,84 +462,13 @@ function deleteSelectedTemplates() {
     }
 }
 
-// 検索
-function searchTemplates() {
-    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-    const rows = document.querySelectorAll('#templateTableBody tr');
-    
-    rows.forEach(row => {
-        const templateName = row.querySelector('.template-title').textContent.toLowerCase();
-        const previewText = row.querySelector('.template-preview');
-        const preview = previewText ? previewText.textContent.toLowerCase() : '';
-        
-        if (templateName.includes(searchTerm) || preview.includes(searchTerm)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
-
-// テンプレート編集ページにリダイレクト
-function editTemplateRedirect(templateId) {
-    window.location.href = `/admin/templates/edit/${templateId}`;
-}
-
-// 現在のテンプレートIDを保存する変数
-let currentTemplateId = null;
-
-// プレビュー・テスト送信モーダル表示
-function showPreviewTestModal(templateId) {
-    currentTemplateId = templateId; // テンプレートIDを保存
-    
-    fetch(`/admin/templates/preview/${templateId}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const template = data.template;
-            const previewContent = document.getElementById('previewTestContent');
-            
-            // テンプレートタイプに応じてプレビュー内容を変更
-            if (template.type === 'image') {
-                // 画像タイプの場合
-                if (template.image_url) {
-                    previewContent.innerHTML = `
-                        <div class="image-message">
-                            <img src="${template.image_url}" alt="テンプレート画像" style="max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: contain;">
-                        </div>
-                    `;
-                } else {
-                    previewContent.innerHTML = '<div class="error-message" style="color: #dc3545;">画像が設定されていません</div>';
-                }
-            } else {
-                // テキストタイプなど他のタイプの場合
-                previewContent.textContent = template.content;
-            }
-            
-            // セッションストレージからテストユーザーを再読み込み
-            loadTestUsersFromSession();
-            
-            // テストユーザーリストを表示
-            updateTestUsersList();
-            
-            document.getElementById('previewTestModal').style.display = 'block';
-        } else {
-            alert('プレビューの取得に失敗しました: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('エラーが発生しました');
-    });
-}
-
-// テンプレート操作ドロップダウンの表示切り替え
+// テンプレート操作ドロップダウン
 function toggleTemplateOperationDropdown(templateId) {
     const dropdown = document.getElementById(`operationDropdown-${templateId}`);
-    const templateDropdown = dropdown.closest('.template-dropdown');
+    const templateDropdown = dropdown.closest('.templates__dropdown');
     
     // 他のドロップダウンを閉じる
-    document.querySelectorAll('.template-dropdown.show').forEach(el => {
+    document.querySelectorAll('.templates__dropdown.show').forEach(el => {
         if (el !== templateDropdown) {
             el.classList.remove('show');
         }
@@ -591,10 +482,11 @@ function toggleTemplateOperationDropdown(templateId) {
 function editTemplateName(templateId, currentName) {
     document.getElementById('editTemplateId').value = templateId;
     document.getElementById('editTemplateNameInput').value = currentName;
+    document.getElementById('editTemplateNameModal').classList.add('show');
     document.getElementById('editTemplateNameModal').style.display = 'block';
     
     // ドロップダウンを閉じる
-    document.querySelectorAll('.template-dropdown.show').forEach(el => {
+    document.querySelectorAll('.templates__dropdown.show').forEach(el => {
         el.classList.remove('show');
     });
 }
@@ -603,17 +495,15 @@ function editTemplateName(templateId, currentName) {
 function updateTemplateName(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
-    const templateId = formData.get('template_id');
-    const newName = formData.get('name');
     
-    fetch('/admin/templates/edit-name', {
+    fetch('{{ url_for("edit_template_name") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            template_id: templateId,
-            name: newName
+            template_id: formData.get('template_id'),
+            name: formData.get('name')
         })
     })
     .then(response => response.json())
@@ -630,391 +520,91 @@ function updateTemplateName(event) {
     });
 }
 
-// タイプ表示名を取得
-function getTypeDisplayName(type) {
-    const typeMap = {
-        'text': 'テキスト',
-        'image': '画像',
-        'video': '動画',
-        'carousel': 'カルーセル',
-        'flex': 'フレックス'
-    };
-    return typeMap[type] || type;
+// テンプレート編集ページへリダイレクト
+function editTemplateRedirect(templateId) {
+    window.location.href = `{{ url_for('edit_template', template_id=0) }}`.replace('0', templateId);
 }
 
-// テストユーザー検索機能
-let selectedTestUsers = [];
-let searchTimeout;
-
-// セッションストレージからテストユーザーを復元（即座に実行）
-function loadTestUsersFromSession() {
-    try {
-        const savedUsers = sessionStorage.getItem('selectedTestUsers');
-        if (savedUsers) {
-            const parsedUsers = JSON.parse(savedUsers);
-            
-            // 無効なユーザーデータをフィルタリング
-            selectedTestUsers = parsedUsers.filter(user => {
-                const isValid = user && user.id && user.id !== 'null' && user.id !== null && user.name;
-                if (!isValid) {
-                    console.warn('無効なユーザーデータを除外:', user);
-                }
-                return isValid;
-            });
-            
-            console.log('テストユーザーを復元しました:', selectedTestUsers);
-            
-            // 無効なデータが除外された場合はセッションストレージを更新
-            if (selectedTestUsers.length !== parsedUsers.length) {
-                console.log('無効なデータを除外したため、セッションストレージを更新します');
-                saveTestUsersToSession();
-            }
-        }
-    } catch (error) {
-        console.error('テストユーザーの復元に失敗:', error);
-        selectedTestUsers = [];
-        // エラーの場合はセッションストレージをクリア
-        sessionStorage.removeItem('selectedTestUsers');
-    }
-}
-
-// ページ読み込み時に即座に実行
-loadTestUsersFromSession();
-
-// テストユーザーリストをセッションストレージに保存
-function saveTestUsersToSession() {
-    try {
-        sessionStorage.setItem('selectedTestUsers', JSON.stringify(selectedTestUsers));
-        console.log('テストユーザーを保存しました:', selectedTestUsers);
-    } catch (error) {
-        console.error('テストユーザーの保存に失敗:', error);
-    }
-}
-
-function searchUsers(query) {
-    clearTimeout(searchTimeout);
-    
-    if (query.length === 0) {
-        hideSearchSuggestions();
-        return;
-    }
-    
-    // 検索のデバウンス（300ms後に実行）
-    searchTimeout = setTimeout(() => {
-        // 実際のAPIで友だちデータを検索
-        fetch('/api/search-friends', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: query })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const filteredUsers = data.users.filter(user => 
-                    !selectedTestUsers.find(selected => selected.id === user.id)
-                );
-                displaySearchSuggestions(filteredUsers);
-            } else {
-                displaySearchSuggestions([]);
-            }
-        })
-        .catch(error => {
-            console.error('Error searching users:', error);
-            displaySearchSuggestions([]);
-        });
-    }, 300);
-}
-
-function displaySearchSuggestions(users) {
-    const suggestionsContainer = document.getElementById('searchSuggestions');
-    
-    if (users.length === 0) {
-        hideSearchSuggestions();
-        return;
-    }
-    
-    const suggestionsHtml = users.map((user, index) => {
-        return `
-        <div class="suggestion-item" data-user-id="${user.id}" data-user-name="${user.name}" data-user-avatar="${user.avatar || ''}" onclick="addTestUserFromSuggestion(this)">
-            <div class="suggestion-avatar">
-                ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}">` : '<i class="fas fa-user-circle"></i>'}
-            </div>
-            <span class="suggestion-name">${user.name}</span>
-            <button class="suggestion-add-btn" data-user-id="${user.id}" data-user-name="${user.name}" data-user-avatar="${user.avatar || ''}" onclick="event.stopPropagation(); addTestUserFromButton(this);">追加</button>
-        </div>
-        `;
-    }).join('');
-    
-    suggestionsContainer.innerHTML = suggestionsHtml;
-    suggestionsContainer.style.display = 'block';
-}
-
-function hideSearchSuggestions() {
-    setTimeout(() => {
-        document.getElementById('searchSuggestions').style.display = 'none';
-    }, 200);
-}
-
-function showSearchSuggestions() {
-    const query = document.querySelector('.test-user-search').value;
-    if (query.length > 0) {
-        searchUsers(query);
-    }
-}
-
-// データ属性から安全にユーザーを追加する関数
-function addTestUserFromSuggestion(element) {
-    const userId = element.dataset.userId; // 文字列のまま保持
-    const userName = element.dataset.userName;
-    const userAvatar = element.dataset.userAvatar;
-    addTestUser(userId, userName, userAvatar);
-}
-
-function addTestUserFromButton(button) {
-    const userId = button.dataset.userId; // 文字列のまま保持
-    const userName = button.dataset.userName;
-    const userAvatar = button.dataset.userAvatar;
-    console.log('追加ボタンクリック:', { userId, userName, userAvatar });
-    addTestUser(userId, userName, userAvatar);
-}
-
-function addTestUser(userId, userName, userAvatar) {
-    console.log('=== addTestUser デバッグ開始 ===');
-    console.log('1. 受信データ:', { userId, userName, userAvatar });
-    console.log('2. userId型:', typeof userId);
-    console.log('3. 追加前のselectedTestUsers:', selectedTestUsers);
-    
-    // userIdがnullまたは空の場合はエラー
-    if (!userId || userId === 'null' || userId === null) {
-        console.error('4. 無効なuserId:', userId);
-        alert('このユーザーは追加できません（LINE IDが設定されていません）');
-        return;
-    }
-    
-    // 既に追加済みかチェック（文字列として比較）
-    if (selectedTestUsers.find(user => user.id === userId)) {
-        console.log('5. 既に追加済みのユーザー:', userId);
-        return;
-    }
-    
-    // テストユーザーリストに追加（userIdを文字列として保存）
-    const newUser = { id: userId, name: userName, avatar: userAvatar };
-    selectedTestUsers.push(newUser);
-    console.log('5. ユーザーを追加しました:', newUser);
-    console.log('6. 追加後のselectedTestUsers:', selectedTestUsers);
-    console.log('7. 新しいユーザーのID型:', typeof newUser.id);
-    
-    // セッションストレージに保存
-    saveTestUsersToSession();
-    
-    // 表示を更新
-    updateTestUsersList();
-    
-    // 検索ボックスをクリア
-    const searchBox = document.querySelector('.test-user-search');
-    if (searchBox) {
-        searchBox.value = '';
-    }
-    hideSearchSuggestions();
-    
-    console.log('addTestUser完了');
-}
-
-function removeTestUser(userId) {
-    console.log('=== removeTestUser デバッグ開始 ===');
-    console.log('1. 削除対象userId:', userId, '(型:', typeof userId, ')');
-    console.log('2. 削除前のselectedTestUsers:', selectedTestUsers);
-    
-    // 削除対象のユーザーを見つける
-    const targetUser = selectedTestUsers.find(user => user.id === userId);
-    if (!targetUser) {
-        console.error('削除対象のユーザーが見つかりません:', userId);
-        alert('削除対象のユーザーが見つかりません');
-        return;
-    }
-    
-    console.log('3. 削除対象ユーザー:', targetUser);
-    
-    // 確認ダイアログを表示
-    if (!confirm(`「${targetUser.name}」をテスト送信対象から削除しますか？`)) {
-        console.log('4. ユーザーがキャンセルしました');
-        return;
-    }
-    
-    // ユーザーを配列から削除
-    selectedTestUsers = selectedTestUsers.filter(user => user.id !== userId);
-    console.log('5. 削除後のselectedTestUsers:', selectedTestUsers);
-    
-    // セッションストレージに保存
-    saveTestUsersToSession();
-    
-    // 表示を更新
-    updateTestUsersList();
-    
-    console.log('6. ユーザー削除完了');
-}
-
-function updateTestUsersList() {
-    const container = document.getElementById('selectedTestUsers');
-    
-    if (selectedTestUsers.length === 0) {
-        container.innerHTML = `
-            <div class="no-users-message">
-                テストユーザーが登録されていません。<br>
-                上の検索欄から友だちを検索して追加してください。
-            </div>
-        `;
-        return;
-    }
-    
-    const usersHtml = selectedTestUsers.map(user => `
-        <div class="test-user-item">
-            <input type="checkbox" class="test-user-checkbox" value="${user.id}">
-            <div class="user-info">
-                <div class="user-avatar">
-                    ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}" style="width: 32px; height: 32px; border-radius: 50%;">` : '<i class="fas fa-user-circle"></i>'}
-                </div>
-                <span class="user-name">${user.name}</span>
-            </div>
-            <div class="test-user-actions">
-                <button class="test-send-btn" onclick="sendTestMessage('${user.id}', this)">テスト送信</button>
-                <button class="delete-user-btn" onclick="removeTestUser('${user.id}')" title="削除">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
-    
-    container.innerHTML = usersHtml;
-}
-
-function sendTestMessage(userId, buttonElement) {
-    console.log('=== sendTestMessage デバッグ開始 ===');
-    console.log('1. 受信したuserId:', userId, '(型:', typeof userId, ')');
-    console.log('2. currentTemplateId:', currentTemplateId);
-    console.log('3. selectedTestUsers配列:', selectedTestUsers);
-    console.log('4. selectedTestUsers.length:', selectedTestUsers.length);
-    
-    // userIdがnullまたは空の場合はエラー
-    if (!userId || userId === 'null' || userId === null) {
-        alert('無効なユーザーIDです（LINE IDが設定されていません）');
-        console.error('無効なuserId:', userId);
-        return;
-    }
-    
-    // 各ユーザーのIDと型を詳細チェック
-    selectedTestUsers.forEach((user, index) => {
-        console.log(`5-${index}. ユーザー${index}:`, {
-            id: user.id,
-            idType: typeof user.id,
-            name: user.name,
-            strictEqual: user.id === userId,
-            looseEqual: user.id == userId
-        });
-    });
-    
-    // userIdを文字列として比較
-    const user = selectedTestUsers.find(u => u.id === userId);
-    console.log('6. 検索結果:', user);
-    
-    if (!user) {
-        alert('ユーザーが見つかりません');
-        console.error('=== ユーザー検索失敗 ===');
-        console.error('検索対象userId:', userId, '(型:', typeof userId, ')');
-        console.error('selectedTestUsers:', selectedTestUsers);
-        return;
-    }
-    
-    console.log('7. ユーザー検索成功:', user);
-    
-    if (!currentTemplateId) {
-        alert('テンプレートが選択されていません');
-        console.error('currentTemplateIdが設定されていません:', currentTemplateId);
-        return;
-    }
-    
-    // 送信データをログ出力（userIdを文字列として送信）
-    const sendData = {
-        template_id: currentTemplateId,
-        user_id: userId  // 既に文字列なのでそのまま送信
-    };
-    console.log('送信データ:', sendData);
-    
-    // テスト送信ボタンを無効化
-    const originalText = buttonElement.textContent;
-    buttonElement.disabled = true;
-    buttonElement.textContent = '送信中...';
-    
-    // テスト送信API呼び出し
-    fetch('/admin/templates/test-send', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sendData)
-    })
-    .then(response => {
-        console.log('レスポンス:', response);
-        return response.json();
-    })
+// プレビュー・テスト送信モーダル
+function showPreviewTestModal(templateId) {
+    // テンプレート詳細を取得してプレビューを表示
+    fetch(`{{ url_for('preview_template', template_id=0) }}`.replace('0', templateId))
+    .then(response => response.json())
     .then(data => {
-        console.log('レスポンスデータ:', data);
         if (data.success) {
-            alert(`${user.name}にテストメッセージを送信しました！`);
+            // プレビューコンテンツを設定
+            const previewContent = document.getElementById('previewTestContent');
+            if (data.template.type === 'text') {
+                previewContent.innerHTML = data.template.content.replace(/\n/g, '<br>');
+            } else if (data.template.type === 'image') {
+                const imageUrl = data.template.image_url || data.template.content;
+                previewContent.innerHTML = `<div class="image-message"><img src="${imageUrl}" alt="プレビュー画像" style="max-width: 100%; height: auto;"></div>`;
+            } else {
+                previewContent.innerHTML = data.template.preview_text || 'プレビューできません';
+            }
+            
+            // モーダル表示
+            document.getElementById('previewTestModal').classList.add('show');
+            document.getElementById('previewTestModal').style.display = 'block';
+            
+            // テンプレートIDを保存
+            window.currentTemplateId = templateId;
         } else {
-            alert(`送信に失敗しました: ${data.message}`);
+            alert('プレビューの取得に失敗しました: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('テスト送信エラー:', error);
-        alert('送信中にエラーが発生しました');
-    })
-    .finally(() => {
-        // ボタンを元に戻す
-        buttonElement.disabled = false;
-        buttonElement.textContent = originalText;
+        console.error('Error:', error);
+        alert('エラーが発生しました');
     });
 }
 
-// デバッグ用関数
+// 検索機能（簡易実装）
+function searchTemplates() {
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    const rows = document.querySelectorAll('#templateTableBody tr');
+    
+    rows.forEach(row => {
+        const templateName = row.querySelector('.templates__template-title').textContent.toLowerCase();
+        const templatePreview = row.querySelector('.templates__template-preview');
+        const previewText = templatePreview ? templatePreview.textContent.toLowerCase() : '';
+        
+        if (templateName.includes(searchTerm) || previewText.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// テストユーザー関連機能（簡易実装）
+function searchUsers(query) {
+    // 実装予定：ユーザー検索API呼び出し
+    console.log('ユーザー検索:', query);
+}
+
+function showSearchSuggestions() {
+    // 実装予定：検索候補表示
+}
+
+function hideSearchSuggestions() {
+    // 実装予定：検索候補非表示
+}
+
 function debugTestUsers() {
-    const sessionData = sessionStorage.getItem('selectedTestUsers');
-    alert(`
-現在のテストユーザー配列: ${JSON.stringify(selectedTestUsers, null, 2)}
-
-セッションストレージの内容: ${sessionData}
-
-配列の長さ: ${selectedTestUsers.length}
-    `);
+    console.log('テストユーザーデバッグ情報');
 }
 
-// テストユーザーリセット機能
 function clearTestUsers() {
-    if (confirm('テスト送信対象のユーザーをすべてクリアしますか？\n※この操作は元に戻せません。')) {
-        console.log('=== テストユーザーリセット開始 ===');
-        console.log('リセット前のselectedTestUsers:', selectedTestUsers);
-        
-        // 配列をクリア
-        selectedTestUsers = [];
-        
-        // セッションストレージをクリア
-        sessionStorage.removeItem('selectedTestUsers');
-        
-        // 表示を更新
-        updateTestUsersList();
-        
-        console.log('テストユーザーリセット完了');
-        alert('テスト送信対象のユーザーをすべてクリアしました。');
-    }
+    document.getElementById('selectedTestUsers').innerHTML = `
+        <div class="templates__no-users-message">
+            テストユーザーが登録されていません。<br>
+            上の検索欄から友だちを検索して追加してください。
+        </div>
+    `;
 }
 
-// 未実装の関数
-function showCreatePackModal() {
-    alert('テンプレートパック機能は実装予定です');
-}
-
+// 並び替え機能（簡易実装）
 function reorderFolders() {
     alert('フォルダ並び替え機能は実装予定です');
 }
@@ -1023,55 +613,18 @@ function reorderTemplates() {
     alert('テンプレート並び替え機能は実装予定です');
 }
 
-// テンプレートタイプ変更時
-function changeTemplateType() {
-    const type = document.getElementById('templateType').value;
-    const contentLabel = document.querySelector('label[for="templateContent"]');
-    const content = document.getElementById('templateContent');
-    
-    switch(type) {
-        case 'text':
-            contentLabel.textContent = '内容';
-            content.placeholder = 'メッセージ内容を入力してください';
-            break;
-        case 'image':
-            contentLabel.textContent = '画像URL';
-            content.placeholder = 'https://example.com/image.jpg';
-            break;
-        case 'video':
-            contentLabel.textContent = '動画URL';
-            content.placeholder = 'https://example.com/video.mp4';
-            break;
-        case 'carousel':
-        case 'flex':
-            contentLabel.textContent = 'JSON設定';
-            content.placeholder = 'JSON形式で設定を入力してください';
-            break;
-    }
-}
-
-// モーダル外クリックで閉じる
-window.onclick = function(event) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-    
-    // ドロップダウン外クリックで閉じる
-    if (!event.target.matches('.folder-edit-btn') && 
-        !event.target.matches('.create-template-btn') && 
-        !event.target.matches('.operation-btn') &&
-        !event.target.closest('.folder-dropdown') &&
-        !event.target.closest('.template-dropdown')) {
-        document.querySelectorAll('.folder-dropdown.show').forEach(el => {
-            el.classList.remove('show');
-        });
-        document.querySelectorAll('.template-dropdown.show').forEach(el => {
+// 外部クリックでドロップダウンを閉じる
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.templates__dropdown')) {
+        document.querySelectorAll('.templates__dropdown.show').forEach(el => {
             el.classList.remove('show');
         });
     }
-}
+    if (!event.target.closest('.templates__folder-dropdown')) {
+        document.querySelectorAll('.templates__folder-dropdown.show').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+});
 </script>
 {% endblock %} 
