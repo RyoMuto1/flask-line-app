@@ -1,13 +1,13 @@
-/* LINE流入元分析ページ専用CSS - 完全独立 */
+/* タグ管理画面専用CSS - 完全独立 */
 
 /* ===== レイアウト ===== */
-.analytics__container {
+.tags__container {
     background-color: #f8f9fa;
     min-height: 100vh;
     padding: 0;
 }
 
-.analytics__header {
+.tags__header {
     background: white;
     padding: 1rem;
     border-bottom: 1px solid #e9ecef;
@@ -16,19 +16,19 @@
     justify-content: space-between;
 }
 
-.analytics__header h1 {
+.tags__header h1 {
     font-size: 1.5rem;
     margin: 0;
     color: #333;
 }
 
-.analytics__main {
+.tags__main {
     display: flex;
     height: calc(100vh - 200px);
 }
 
 /* ===== サイドバー ===== */
-.analytics__sidebar {
+.tags__sidebar {
     width: 280px;
     background: white;
     border-right: 1px solid #e9ecef;
@@ -36,20 +36,20 @@
     overflow-y: auto;
 }
 
-.analytics__sidebar-header {
+.tags__sidebar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
 
-.analytics__sidebar-list {
+.tags__sidebar-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.analytics__sidebar-item {
+.tags__sidebar-item {
     padding: 0.75rem;
     border-radius: 4px;
     cursor: pointer;
@@ -60,27 +60,27 @@
     transition: background-color 0.2s;
 }
 
-.analytics__sidebar-item:hover {
+.tags__sidebar-item:hover {
     background-color: #f8f9fa;
 }
 
-.analytics__sidebar-item.active {
+.tags__sidebar-item.active {
     background-color: #e3f2fd;
     border-left: 3px solid #2196f3;
 }
 
-.analytics__sidebar-icon {
+.tags__sidebar-icon {
     color: #ffa500;
     font-size: 0.9rem;
 }
 
-.analytics__sidebar-name {
+.tags__sidebar-name {
     flex: 1;
     font-size: 0.9rem;
     color: #333;
 }
 
-.analytics__sidebar-count {
+.tags__sidebar-count {
     background: #e9ecef;
     color: #6c757d;
     font-size: 0.8rem;
@@ -89,7 +89,7 @@
 }
 
 /* ===== メインコンテンツ ===== */
-.analytics__content {
+.tags__content {
     flex: 1;
     background: white;
     display: flex;
@@ -97,7 +97,7 @@
     padding: 0;
 }
 
-.analytics__toolbar {
+.tags__toolbar {
     padding: 1rem 2rem;
     border-bottom: 1px solid #e9ecef;
     display: flex;
@@ -105,20 +105,20 @@
     align-items: center;
 }
 
-.analytics__toolbar-left {
+.tags__toolbar-left {
     display: flex;
     gap: 1rem;
     align-items: center;
 }
 
-.analytics__toolbar-right {
+.tags__toolbar-right {
     display: flex;
     gap: 1rem;
     align-items: center;
 }
 
 /* ===== ボタン ===== */
-.analytics__btn {
+.tags__btn {
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 4px;
@@ -131,16 +131,34 @@
     transition: all 0.2s;
 }
 
-.analytics__btn-success {
+.tags__btn-success {
     background: #28a745;
     color: white;
 }
 
-.analytics__btn-success:hover {
+.tags__btn-success:hover {
     background: #218838;
 }
 
-.analytics__btn-sm {
+.tags__btn-primary {
+    background: #2196f3;
+    color: white;
+}
+
+.tags__btn-primary:hover {
+    background: #1976d2;
+}
+
+.tags__btn-warning {
+    background: #ffc107;
+    color: #333;
+}
+
+.tags__btn-warning:hover {
+    background: #e0a800;
+}
+
+.tags__btn-sm {
     background: #6c757d;
     color: white;
     border: none;
@@ -155,25 +173,25 @@
     gap: 0.25rem;
 }
 
-.analytics__btn-sm:hover {
+.tags__btn-sm:hover {
     background: #5a6268;
     color: white;
     text-decoration: none;
 }
 
 /* ===== テーブル ===== */
-.analytics__table {
+.tags__table {
     flex: 1;
     overflow-y: auto;
 }
 
-.analytics__data-table {
+.tags__data-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
 }
 
-.analytics__data-table th {
+.tags__data-table th {
     background: #f8f9fa;
     padding: 1rem;
     text-align: left;
@@ -183,48 +201,44 @@
     font-size: 0.9rem;
 }
 
-.analytics__data-table td {
+.tags__data-table td {
     padding: 1rem;
     border-bottom: 1px solid #f1f3f4;
     vertical-align: top;
 }
 
-.analytics__data-table tr:hover {
+.tags__data-table tr:hover {
     background-color: #f8f9fa;
 }
 
-/* ===== リンクアイテム ===== */
-.analytics__link-item {
+/* ===== タグアイテム ===== */
+.tags__tag-item {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 0.5rem;
 }
 
-.analytics__link-name {
-    font-weight: 600;
+.tags__tag-name {
+    font-weight: 500;
     color: #333;
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-    cursor: pointer;
+    font-size: 0.9rem;
 }
 
-.analytics__link-name:hover {
+.tags__tag-checkbox {
+    margin: 0;
+}
+
+.tags__tag-users-link {
     color: #2196f3;
-    text-decoration: underline;
-}
-
-.analytics__link-meta {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.analytics__link-source {
-    color: #6c757d;
+    text-decoration: none;
     font-size: 0.85rem;
 }
 
-.analytics__user-count {
+.tags__tag-users-link:hover {
+    text-decoration: underline;
+}
+
+.tags__user-count {
     background: #e3f2fd;
     color: #1976d2;
     padding: 0.2rem 0.5rem;
@@ -234,22 +248,22 @@
     text-decoration: none;
 }
 
-.analytics__user-count:hover {
+.tags__user-count:hover {
     text-decoration: underline;
 }
 
-.analytics__item-date {
+.tags__item-date {
     color: #6c757d;
     font-size: 0.85rem;
 }
 
 /* ===== ドロップダウン ===== */
-.analytics__dropdown {
+.tags__dropdown {
     position: relative;
     display: inline-block;
 }
 
-.analytics__dropdown-content {
+.tags__dropdown-content {
     display: none;
     position: absolute;
     right: 0;
@@ -261,7 +275,7 @@
     border: 1px solid #ddd;
 }
 
-.analytics__dropdown-content a {
+.tags__dropdown-content a {
     color: #333;
     padding: 8px 12px;
     text-decoration: none;
@@ -270,21 +284,21 @@
     cursor: pointer;
 }
 
-.analytics__dropdown-content a:hover {
+.tags__dropdown-content a:hover {
     background-color: #f1f1f1;
 }
 
-.analytics__dropdown.show .analytics__dropdown-content {
+.tags__dropdown.show .tags__dropdown-content {
     display: block;
 }
 
 /* ===== フォルダドロップダウン ===== */
-.analytics__folder-dropdown {
+.tags__folder-dropdown {
     position: relative;
     display: inline-block;
 }
 
-.analytics__folder-edit-btn {
+.tags__folder-edit-btn {
     opacity: 0;
     background: #6c757d;
     color: white;
@@ -297,11 +311,11 @@
     transition: opacity 0.2s;
 }
 
-.analytics__sidebar-item:hover .analytics__folder-edit-btn {
+.tags__sidebar-item:hover .tags__folder-edit-btn {
     opacity: 1;
 }
 
-.analytics__folder-dropdown-content {
+.tags__folder-dropdown-content {
     display: none;
     position: absolute;
     right: 0;
@@ -313,7 +327,7 @@
     border: 1px solid #ddd;
 }
 
-.analytics__folder-dropdown-content a {
+.tags__folder-dropdown-content a {
     color: #333;
     padding: 8px 12px;
     text-decoration: none;
@@ -322,16 +336,21 @@
     cursor: pointer;
 }
 
-.analytics__folder-dropdown-content a:hover {
+.tags__folder-dropdown-content a:hover {
     background-color: #f1f1f1;
 }
 
-.analytics__folder-dropdown.show .analytics__folder-dropdown-content {
+.tags__folder-dropdown.show .tags__folder-dropdown-content {
     display: block;
 }
 
-/* ===== 並び替え機能 ===== */
-.analytics__sortable-list {
+/* ===== フォルダ関連（独自スタイル） ===== */
+.tags__folder-item {
+    /* フォルダ識別用のクラス - JavaScript用 */
+}
+
+/* ===== 並び替え関連 ===== */
+.tags__sortable-list {
     border: 1px solid #e9ecef;
     border-radius: 4px;
     background: white;
@@ -339,37 +358,35 @@
     overflow-y: auto;
 }
 
-.analytics__sortable-item {
+.tags__sortable-item {
+    cursor: move;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     padding: 0.75rem;
-    border-bottom: 1px solid #f1f3f4;
-    cursor: move;
-    background: white;
-    transition: all 0.2s;
 }
 
-.analytics__sortable-item:last-child {
-    border-bottom: none;
-}
-
-.analytics__sortable-item:hover {
-    background-color: #f8f9fa;
+.tags__sortable-item:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
 }
 
-.analytics__sortable-item .analytics__drag-handle {
+.tags__sortable-item .tags__drag-handle {
+    cursor: grab;
     color: #6c757d;
     margin-right: 1rem;
-    cursor: grab;
     font-size: 1.1rem;
 }
 
-.analytics__sortable-item .analytics__drag-handle:active {
+.tags__sortable-item .tags__drag-handle:active {
     cursor: grabbing;
 }
 
-.analytics__sortable-item .analytics__item-content {
+.tags__sortable-item .tags__item-content {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -377,24 +394,24 @@
     color: #333;
 }
 
-.analytics__sortable-item .analytics__item-content i {
+.tags__sortable-item .tags__item-content i {
     color: #6c757d;
     width: 16px;
     text-align: center;
 }
 
 /* ===== フォーム ===== */
-.analytics__form-group {
+.tags__form-group {
     margin-bottom: 1rem;
 }
 
-.analytics__form-group label {
+.tags__form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
 }
 
-.analytics__form-control {
+.tags__form-control {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #ddd;
@@ -402,54 +419,104 @@
     font-size: 0.9rem;
 }
 
-.analytics__form-control:focus {
+.tags__form-control:focus {
     outline: none;
     border-color: #2196f3;
     box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
 
-/* ===== モーダル関連 ===== */
-.analytics__modal-backdrop {
-    z-index: 1040;
+/* ===== 下部ツールバー ===== */
+.tags__bottom-toolbar {
+    padding: 1rem 2rem;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.analytics__modal {
-    z-index: 1050;
+.tags__delete-selected-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
 }
 
-.analytics__modal.show {
-    display: block !important;
+.tags__delete-selected-btn:hover {
+    background: #c82333;
+}
+
+/* ===== 検索ボックス ===== */
+.tags__search-box {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 200px;
+    font-size: 0.85rem;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+/* ===== アクションボタン ===== */
+.tags__action-btn {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 0.9rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.tags__action-btn:hover {
+    background: #e9ecef;
+    color: #495057;
 }
 
 /* ===== レスポンシブ ===== */
 @media (max-width: 768px) {
-    .analytics__main {
+    .tags__main {
         flex-direction: column;
         height: auto;
     }
     
-    .analytics__sidebar {
+    .tags__sidebar {
         width: 100%;
         border-right: none;
         border-bottom: 1px solid #e9ecef;
     }
     
-    .analytics__toolbar {
+    .tags__toolbar {
         flex-direction: column;
         gap: 1rem;
         align-items: stretch;
     }
     
-    .analytics__toolbar-left,
-    .analytics__toolbar-right {
+    .tags__toolbar-left,
+    .tags__toolbar-right {
         justify-content: center;
     }
     
-    .analytics__sortable-item {
-        padding: 0.5rem;
+    .tags__tag-name {
+        font-size: 0.8rem;
     }
     
-    .analytics__sortable-item .analytics__item-content {
-        font-size: 0.8rem;
+    .tags__user-count {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+    }
+    
+    .tags__search-box {
+        width: 100%;
     }
 } 

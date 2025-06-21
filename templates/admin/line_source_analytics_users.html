@@ -1,54 +1,68 @@
 {% extends "admin/base.html" %}
 
+{% block title %}流入分析ユーザー詳細{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analytics-users.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ link.name }} - LINE登録者一覧</h2>
-    <a href="{{ url_for('line_source_analytics') }}" class="btn btn-outline-secondary">戻る</a>
-</div>
-
-<!-- フラッシュメッセージ表示 -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
-<!-- 登録者一覧 -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title h5 mb-0">登録者一覧</h3>
+<div class="analyticsusers__container">
+    <!-- ヘッダー -->
+    <div class="analyticsusers__header">
+        <h2>{{ link.name }} - LINE登録者一覧</h2>
+        <a href="{{ url_for('line_source_analytics') }}" class="analyticsusers__btn analyticsusers__btn-outline-secondary">戻る</a>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ユーザー名</th>
-                        <th>登録日時</th>
-                        <th>注文数</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>{{ user.name }}</td>
-                        <td>{{ user.registered_at }}</td>
-                        <td>{{ user.order_count }}</td>
-                        <td>
-                            <a href="{{ url_for('admin_user_detail', line_user_id=user.line_user_id) }}" class="btn btn-sm btn-primary">
-                                <i class="bi bi-person-badge"></i> 詳細を見る
-                            </a>
-                        </td>
-                    </tr>
+    
+    <!-- メインコンテンツ -->
+    <div class="analyticsusers__main">
+        <div class="analyticsusers__content">
+            <!-- フラッシュメッセージ表示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="analyticsusers__alert analyticsusers__alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} analyticsusers__alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="analyticsusers__btn-close" data-bs-dismiss="alert"></button>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                {% endif %}
+            {% endwith %}
+
+            <!-- 登録者一覧 -->
+            <div class="analyticsusers__card">
+                <div class="analyticsusers__card-header">
+                    <h3 class="analyticsusers__card-title">登録者一覧</h3>
+                </div>
+                <div class="analyticsusers__card-body">
+                    <div class="analyticsusers__table-responsive">
+                        <table class="analyticsusers__table">
+                            <thead>
+                                <tr>
+                                    <th>ユーザー名</th>
+                                    <th>登録日時</th>
+                                    <th>注文数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.name }}</td>
+                                    <td>{{ user.registered_at }}</td>
+                                    <td>{{ user.order_count }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_user_detail', line_user_id=user.line_user_id) }}" class="analyticsusers__btn analyticsusers__btn-primary analyticsusers__btn-sm">
+                                            <i class="bi bi-person-badge"></i> 詳細を見る
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

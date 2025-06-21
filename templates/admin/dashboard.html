@@ -1,82 +1,99 @@
 {% extends "admin/base.html" %}
 
+{% block title %}ダッシュボード{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>注文一覧</h2>
-</div>
-
-<!-- フラッシュメッセージ表示 -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>注文日時</th>
-                        <th>注文者名</th>
-                        <th>LINE名</th>
-                        <th>学校名</th>
-                        <th>使用日</th>
-                        <th>予算</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for order in orders %}
-                    <tr>
-                        <td>{{ order.created_at }}</td>
-                        <td>{{ order.name }}</td>
-                        <td>
-                            {% if order.line_name %}
-                                <a href="{{ url_for('admin_user_detail', line_user_id=order.line_user_id) }}">
-                                    {{ order.line_name }}
-                                </a>
-                            {% else %}
-                                <span class="text-muted">未設定</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ order.school_name }}</td>
-                        <td>{{ order.event_date }}</td>
-                        <td>{{ order.budget }}</td>
-                        <td>
-                            <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="btn btn-primary btn-sm">
-                                <i class="bi bi-eye"></i> 注文詳細
-                            </a>
-                        </td>
-                    </tr>
+<div class="dashboard__container">
+    <!-- ヘッダー -->
+    <div class="dashboard__header">
+        <h2>注文一覧</h2>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div class="dashboard__main">
+        <div class="dashboard__content">
+            <!-- フラッシュメッセージ表示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="dashboard__alert dashboard__alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} dashboard__alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="dashboard__btn-close" data-bs-dismiss="alert"></button>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                {% endif %}
+            {% endwith %}
+
+            <div class="dashboard__card">
+                <div class="dashboard__card-body">
+                    <div class="dashboard__table-responsive">
+                        <table class="dashboard__table">
+                            <thead>
+                                <tr>
+                                    <th>注文日時</th>
+                                    <th>注文者名</th>
+                                    <th>LINE名</th>
+                                    <th>学校名</th>
+                                    <th>使用日</th>
+                                    <th>予算</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.created_at }}</td>
+                                    <td>{{ order.name }}</td>
+                                    <td>
+                                        {% if order.line_name %}
+                                            <a href="{{ url_for('admin_user_detail', line_user_id=order.line_user_id) }}" class="dashboard__user-link">
+                                                {{ order.line_name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="dashboard__text-muted">未設定</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ order.school_name }}</td>
+                                    <td>{{ order.event_date }}</td>
+                                    <td>{{ order.budget }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="dashboard__btn dashboard__btn-primary dashboard__btn-sm">
+                                            <i class="bi bi-eye"></i> 注文詳細
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ナビゲーションメニュー -->
+            <nav class="dashboard__nav">
+                <ul class="dashboard__nav-list">
+                    <li class="dashboard__nav-item">
+                        <a class="dashboard__nav-link" href="{{ url_for('admin_dashboard') }}">ダッシュボード</a>
+                    </li>
+                    <li class="dashboard__nav-item">
+                        <a class="dashboard__nav-link" href="{{ url_for('line_source_analytics') }}">LINE流入分析</a>
+                    </li>
+                    <li class="dashboard__nav-item">
+                        <a class="dashboard__nav-link" href="{{ url_for('admin_chat') }}">チャット管理</a>
+                    </li>
+                    <li class="dashboard__nav-item">
+                        <a class="dashboard__nav-link" href="{{ url_for('admin_change_password') }}">パスワード変更</a>
+                    </li>
+                    <li class="dashboard__nav-item">
+                        <a class="dashboard__nav-link" href="{{ url_for('admin_logout') }}">ログアウト</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>
-
-<ul class="nav">
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">ダッシュボード</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('line_source_analytics') }}">LINE流入分析</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('admin_chat') }}">チャット管理</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('admin_change_password') }}">パスワード変更</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('admin_logout') }}">ログアウト</a>
-    </li>
-</ul>
 {% endblock %} 

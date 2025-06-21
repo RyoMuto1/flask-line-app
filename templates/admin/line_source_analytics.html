@@ -1,209 +1,171 @@
 {% extends "admin/base.html" %}
 
-{% block styles %}
-{{ super() }}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/line-source-analytics.css') }}">
 {% endblock %}
 
+{% block title %}LINE流入元分析{% endblock %}
+
 {% block content %}
-<div class="admin-container">
-  <!-- ヘッダー -->
-  <div class="admin-header">
-    <h1>LINE流入経路分析</h1>
-    <div class="admin-description">友だち登録の流入経路を分析し、効果的なマーケティング戦略を立てることができます。</div>
-  </div>
-  
-  <!-- メインコンテンツ -->
-  <div class="admin-main">
-    <!-- 左サイドバー（フォルダ一覧） -->
-    <div class="admin-sidebar">
-      <div class="sidebar-header">
-        <button class="new-folder-btn" data-bs-toggle="modal" data-bs-target="#createFolderModal">
-          <i class="fas fa-plus"></i> 新しいフォルダ
-        </button>
-        <button class="btn-sm" onclick="reorderFolders()">並べ替え</button>
-      </div>
-      
-      <ul class="sidebar-list">
-        <!-- フォルダ一覧 -->
-        {% for folder in folders %}
-        <li class="sidebar-item {% if selected_folder_id == folder.id %}active{% endif %}" 
-            onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
-          <i class="fas fa-folder sidebar-icon" style="color: #FFA500"></i>
-          <span class="sidebar-name">{{ folder.name }}</span>
-          <span class="sidebar-count">({{ folder.link_count or 0 }})</span>
-          {% if folder.name != '未分類' %}
-          <div class="folder-dropdown">
-            <button class="folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown({{ folder.id }})">編集</button>
-            <div class="folder-dropdown-content" id="dropdown-{{ folder.id }}">
-              <a onclick="editFolderName({{ folder.id }}, '{{ folder.name }}')">名前を変更</a>
-              <a onclick="deleteFolder({{ folder.id }})">削除</a>
-            </div>
-          </div>
-          {% endif %}
-        </li>
-        {% endfor %}
-      </ul>
+<div class="analytics__container">
+    <!-- ヘッダー -->
+    <div class="analytics__header">
+        <h1>流入経路</h1>
     </div>
     
-    <!-- メインコンテンツエリア -->
-    <div class="admin-content">
-      <!-- ツールバー -->
-      <div class="admin-toolbar">
-        <div class="toolbar-left">
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newLinkModal">
-            <i class="fas fa-plus"></i> 新しい登録リンクを作成
-          </button>
-          <button class="btn-sm" onclick="reorderLinks()">リンク並べ替え</button>
-        </div>
-        <div class="toolbar-right">
-          {% for folder in folders %}
-            {% if folder.id == selected_folder_id %}
-              <span class="text-muted">フォルダ: {{ folder.name }}</span>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-      
-      <!-- フラッシュメッセージ表示 -->
-      {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-              {% for category, message in messages %}
-                  <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                      {{ message }}
-                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                  </div>
-              {% endfor %}
-          {% endif %}
-      {% endwith %}
-      
-      <!-- 登録リンク一覧 -->
-      <div class="admin-table">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th style="width: 30%;">リンク名</th>
-              <th style="width: 15%;">フォルダ</th>
-              <th style="width: 15%;">登録者数</th>
-              <th style="width: 20%;">作成日</th>
-              <th style="width: 20%;">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for link in registration_links %}
-            <tr>
-              <td>
-                <div class="data-item">
-                  <div class="item-title">{{ link.name }}</div>
-                </div>
-              </td>
-              <td>
-                {% if link.folder_name %}
-                  <span class="folder-badge">{{ link.folder_name }}</span>
-                {% else %}
-                  <span class="text-muted">-</span>
-                {% endif %}
-              </td>
-              <td>
-                <a href="{{ url_for('line_source_analytics_users', link_id=link.id) }}" class="text-decoration-none">
-                  <span class="status-badge active">{{ link.registration_count }}人</span>
-                </a>
-              </td>
-              <td class="item-date">{{ link.created_at }}</td>
-              <td>
-                <div class="item-actions">
-                  <button class="action-btn copy-link" data-link="{{ link.full_url }}" title="リンクをコピー">
-                    <i class="fas fa-copy"></i>
-                  </button>
-                  <button class="action-btn delete-btn" data-bs-toggle="modal" data-bs-target="#deleteLinkModal{{ link.id }}" title="削除">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-                
-                <!-- 削除確認モーダル -->
-                <div class="modal fade" id="deleteLinkModal{{ link.id }}" tabindex="-1">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title">リンク削除の確認</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p>リンク「{{ link.name }}」を削除してもよろしいですか？</p>
-                        <p class="text-danger">この操作は取り消せません。このリンクから登録したユーザーの流入元情報も削除されます。</p>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                        <form method="POST" action="{{ url_for('delete_registration_link', link_id=link.id) }}">
-                          <button type="submit" class="btn btn-danger">削除する</button>
-                        </form>
-                      </div>
+    <!-- メインコンテンツ -->
+    <div class="analytics__main">
+        <!-- 左サイドバー（フォルダ一覧） -->
+        <div class="analytics__sidebar">
+            <div class="analytics__sidebar-header">
+                <button class="analytics__btn analytics__btn-success" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                    <i class="fas fa-plus"></i> 新しいフォルダ
+                </button>
+                <button class="analytics__btn-sm" onclick="reorderFolders()">並べ替え</button>
+            </div>
+            
+            <ul class="analytics__sidebar-list" id="folderList">
+                {% for folder in folders %}
+                <li class="analytics__sidebar-item {% if selected_folder_id == folder.id %}active{% endif %}" 
+                    onclick="selectFolder({{ folder.id }})" data-folder-id="{{ folder.id }}">
+                    <i class="fas fa-folder analytics__sidebar-icon"></i>
+                    <span class="analytics__sidebar-name">{{ folder.name }}</span>
+                    <span class="analytics__sidebar-count">({{ folder.link_count }})</span>
+                    <div class="analytics__folder-dropdown">
+                        <button class="analytics__folder-edit-btn" onclick="event.stopPropagation(); toggleFolderDropdown({{ folder.id }})">編集</button>
+                        <div class="analytics__folder-dropdown-content" id="dropdown-{{ folder.id }}">
+                            <a onclick="editFolderName({{ folder.id }}, '{{ folder.name }}')">名前を変更</a>
+                            <a onclick="deleteFolder({{ folder.id }})">削除</a>
+                        </div>
                     </div>
-                  </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- メインコンテンツエリア -->
+        <div class="analytics__content">
+            <!-- ツールバー -->
+            <div class="analytics__toolbar">
+                <div class="analytics__toolbar-left">
+                    <button class="analytics__btn analytics__btn-success" data-bs-toggle="modal" data-bs-target="#createLinkModal">
+                        <i class="fas fa-plus"></i> 新しいリンク
+                    </button>
+                    <button class="analytics__btn-sm" onclick="reorderLinks()">並べ替え</button>
                 </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                <div class="analytics__toolbar-right">
+                    <!-- 将来的な検索機能用 -->
+                </div>
+            </div>
+            
+            <!-- 登録リンク一覧 -->
+            <div class="analytics__table">
+                <table class="analytics__data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 300px;">リンク名</th>
+                            <th style="width: 150px;">流入元</th>
+                            <th style="width: 100px;">登録者数</th>
+                            <th style="width: 120px;">作成日</th>
+                            <th style="width: 80px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linkTableBody">
+                        {% for link in registration_links %}
+                        <tr>
+                            <td>
+                                <div class="analytics__link-item">
+                                    <div class="analytics__link-name">{{ link.name }}</div>
+                                    <div class="analytics__link-meta">
+                                        <span class="analytics__link-source">{{ link.full_url }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ link.source }}</td>
+                            <td>
+                                {% if link.registration_count > 0 %}
+                                <a href="{{ url_for('line_source_analytics_users', link_id=link.id) }}" class="analytics__user-count">
+                                    {{ link.registration_count }}人
+                                </a>
+                                {% else %}
+                                <span class="analytics__user-count">0人</span>
+                                {% endif %}
+                            </td>
+                            <td class="analytics__item-date">{{ link.created_at[:10] if link.created_at else '-' }}</td>
+                            <td>
+                                <div class="analytics__dropdown">
+                                    <button class="analytics__btn-sm" onclick="toggleDropdown({{ link.id }})">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="analytics__dropdown-content" id="dropdown-link-{{ link.id }}">
+                                        <a onclick="copyToClipboard('{{ link.full_url }}')">URLをコピー</a>
+                                        <a onclick="deleteLink({{ link.id }})">削除</a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- 新しい登録リンク作成モーダル -->
-<div class="modal fade" id="newLinkModal" tabindex="-1" aria-labelledby="newLinkModalLabel" aria-hidden="true">
+<!-- 新しいフォルダ作成モーダル（Bootstrap形式） -->
+<div class="modal fade" id="newFolderModal" tabindex="-1" aria-labelledby="newFolderModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="newLinkModalLabel">新しい登録リンクを作成</h5>
+        <h5 class="modal-title" id="newFolderModalLabel">新しいフォルダを作成</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form method="POST" action="{{ url_for('create_registration_link') }}">
+      <form method="POST" action="{{ url_for('create_source_analytics_folder') }}">
         <div class="modal-body">
-          <div class="form-group mb-3">
-            <label for="linkName" class="form-label">リンク名</label>
-            <input type="text" class="form-control" id="linkName" name="name" required>
-            <div class="form-text">例：Instagram用、Twitter用など</div>
+          <div class="analytics__form-group mb-3">
+            <label for="folderName" class="form-label">フォルダ名</label>
+            <input type="text" class="analytics__form-control form-control" id="folderName" name="name" required>
           </div>
-          <div class="form-group mb-3">
-            <label for="folderSelect" class="form-label">フォルダ</label>
-            <select class="form-select" id="folderSelect" name="folder_id">
-              {% for folder in folders %}
-                <option value="{{ folder.id }}" {% if selected_folder_id == folder.id %}selected{% endif %}>{{ folder.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <input type="hidden" name="source" value="line">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="submit" class="btn btn-primary">作成</button>
+          <button type="submit" class="analytics__btn analytics__btn-success">作成</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- フォルダ作成モーダル -->
-<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+<!-- 新しいリンク作成モーダル（Bootstrap形式） -->
+<div class="modal fade" id="createLinkModal" tabindex="-1" aria-labelledby="createLinkModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="createFolderModalLabel">新しいフォルダを作成</h5>
+        <h5 class="modal-title" id="createLinkModalLabel">新しいリンクを作成</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form method="POST" action="{{ url_for('create_source_analytics_folder') }}">
+      <form method="POST" action="{{ url_for('create_registration_link') }}">
         <div class="modal-body">
-          <div class="form-group">
-            <label for="folderName" class="form-label">フォルダ名</label>
-            <input type="text" class="form-control" id="folderName" name="name" required>
-            <div class="form-text">例：SNS、広告、イベントなど</div>
+          <div class="analytics__form-group mb-3">
+            <label for="linkName" class="form-label">リンク名</label>
+            <input type="text" class="analytics__form-control form-control" id="linkName" name="name" placeholder="例：Instagram用" required>
+          </div>
+          <div class="analytics__form-group mb-3">
+            <label for="linkSource" class="form-label">流入元</label>
+            <input type="text" class="analytics__form-control form-control" id="linkSource" name="source" placeholder="例：instagram" required>
+          </div>
+          <div class="analytics__form-group mb-3">
+            <label for="linkFolderId" class="form-label">フォルダ</label>
+            <select class="analytics__form-control form-control" id="linkFolderId" name="folder_id">
+              {% for folder in folders %}
+              <option value="{{ folder.id }}" {% if folder.id == selected_folder_id %}selected{% endif %}>{{ folder.name }}</option>
+              {% endfor %}
+            </select>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="submit" class="btn btn-primary">作成</button>
+          <button type="submit" class="analytics__btn analytics__btn-success">作成</button>
         </div>
       </form>
     </div>
@@ -211,308 +173,284 @@
 </div>
 
 <!-- フォルダ編集モーダル -->
-<div class="modal fade" id="editFolderModal" tabindex="-1" aria-labelledby="editFolderModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+<div id="editFolderModal" class="modal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editFolderModalLabel">フォルダ編集</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form id="editFolderForm" method="POST">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="editFolderName" class="form-label">フォルダ名</label>
-            <input type="text" class="form-control" id="editFolderName" name="name" required>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-          <button type="submit" class="btn btn-primary">保存</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- フォルダ削除確認モーダル -->
-<div class="modal fade" id="deleteFolderModal" tabindex="-1" aria-labelledby="deleteFolderModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="deleteFolderModalLabel">フォルダ削除の確認</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p>フォルダ「<span id="deleteFolderName"></span>」を削除してもよろしいですか？</p>
-        <p class="text-warning">フォルダ内の登録リンクは「未分類」フォルダに移動されます。</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-        <form id="deleteFolderForm" method="POST">
-          <button type="submit" class="btn btn-danger">削除する</button>
+        <span class="close" onclick="closeModal('editFolderModal')">&times;</span>
+        <h2>フォルダ名を変更</h2>
+        <form id="editFolderForm" onsubmit="updateFolder(event)">
+            <div class="analytics__form-group">
+                <label for="editFolderName">フォルダ名</label>
+                <input type="text" id="editFolderName" name="name" class="analytics__form-control" required>
+            </div>
+            <input type="hidden" id="editFolderId" name="folder_id">
+            <button type="submit" class="analytics__btn analytics__btn-success">更新</button>
+            <button type="button" class="analytics__btn analytics__btn-secondary" onclick="closeModal('editFolderModal')">キャンセル</button>
         </form>
-      </div>
     </div>
-  </div>
 </div>
 
-<!-- フォルダ並び替えモーダル -->
-<div class="modal fade" id="reorderFoldersModal" tabindex="-1" aria-labelledby="reorderFoldersModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+<!-- 並び替えモーダル -->
+<div id="reorderModal" class="modal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="reorderFoldersModalLabel">フォルダ並び替え</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div id="folderSortList">
-          <!-- フォルダリストはJavaScriptで生成 -->
+        <span class="close" onclick="closeModal('reorderModal')">&times;</span>
+        <h2 id="reorderTitle">並び替え</h2>
+        <div class="analytics__sortable-list" id="reorderList">
+            <!-- 動的に生成される -->
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-        <button type="button" class="btn btn-success" onclick="saveFolderOrder()">この順番で決定する</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- リンク並び替えモーダル -->
-<div class="modal fade" id="reorderLinksModal" tabindex="-1" aria-labelledby="reorderLinksModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="reorderLinksModalLabel">登録リンク並び替え</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div id="linkSortList">
-          <!-- リンクリストはJavaScriptで生成 -->
+        <div style="margin-top: 1rem;">
+            <button class="analytics__btn analytics__btn-success" onclick="saveOrder()">保存</button>
+            <button class="analytics__btn analytics__btn-secondary" onclick="closeModal('reorderModal')">キャンセル</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-        <button type="button" class="btn btn-success" onclick="saveLinkOrder()">この順番で決定する</button>
-      </div>
     </div>
-  </div>
 </div>
-
-
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // リンクコピー機能
-    document.querySelectorAll('.copy-link').forEach(button => {
-        button.addEventListener('click', function() {
-            const link = this.dataset.link;
-            navigator.clipboard.writeText(link).then(() => {
-                alert('リンクをコピーしました');
-            });
-        });
-    });
-
-    // モーダルが閉じられた時の処理
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('hidden.bs.modal', function() {
-            // モーダルのバックドロップを確実に削除
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(backdrop => backdrop.remove());
-            
-            // bodyのクラスを削除
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        });
-    });
-});
-
 // フォルダ選択
 function selectFolder(folderId) {
-    window.location.href = `/admin/line-source-analytics?folder_id=${folderId}`;
+    window.location.href = `{{ url_for('line_source_analytics') }}?folder_id=${folderId}`;
 }
 
-// フォルダドロップダウン表示切り替え
+// モーダル閉じる
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// フォルダドロップダウンの表示切り替え
 function toggleFolderDropdown(folderId) {
+    const dropdown = document.getElementById(`dropdown-${folderId}`);
+    const folderDropdown = dropdown.closest('.analytics__folder-dropdown');
+    
     // 他のドロップダウンを閉じる
-    document.querySelectorAll('.folder-dropdown-content').forEach(dropdown => {
-        if (dropdown.id !== `dropdown-${folderId}`) {
-            dropdown.classList.remove('show');
+    document.querySelectorAll('.analytics__folder-dropdown.show').forEach(el => {
+        if (el !== folderDropdown) {
+            el.classList.remove('show');
         }
     });
     
-    // 対象のドロップダウンを切り替え
-    const dropdown = document.getElementById(`dropdown-${folderId}`);
-    dropdown.classList.toggle('show');
+    // 現在のドロップダウンを切り替え
+    folderDropdown.classList.toggle('show');
+}
+
+// リンクドロップダウンの表示切り替え
+function toggleDropdown(linkId) {
+    const dropdown = document.getElementById(`dropdown-link-${linkId}`);
+    const parentDropdown = dropdown.closest('.analytics__dropdown');
+    
+    // 他のドロップダウンを閉じる
+    document.querySelectorAll('.analytics__dropdown.show').forEach(el => {
+        if (el !== parentDropdown) {
+            el.classList.remove('show');
+        }
+    });
+    
+    // 現在のドロップダウンを切り替え
+    parentDropdown.classList.toggle('show');
 }
 
 // フォルダ名編集
 function editFolderName(folderId, currentName) {
+    document.getElementById('editFolderId').value = folderId;
     document.getElementById('editFolderName').value = currentName;
-    document.getElementById('editFolderForm').action = `/admin/line-source-analytics/folders/edit/${folderId}`;
-    
-    const modal = new bootstrap.Modal(document.getElementById('editFolderModal'));
-    modal.show();
+    document.getElementById('editFolderModal').style.display = 'block';
     
     // ドロップダウンを閉じる
-    document.getElementById(`dropdown-${folderId}`).classList.remove('show');
+    document.querySelectorAll('.analytics__folder-dropdown.show').forEach(el => {
+        el.classList.remove('show');
+    });
+}
+
+// フォルダ更新
+function updateFolder(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const folderId = formData.get('folder_id');
+    
+    fetch(`{{ url_for('edit_source_analytics_folder', folder_id=0) }}`.replace('0', folderId), {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('フォルダの更新に失敗しました: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました');
+    });
 }
 
 // フォルダ削除
 function deleteFolder(folderId) {
-    const folderName = document.querySelector(`[data-folder-id="${folderId}"] .sidebar-name`).textContent;
-    
-    document.getElementById('deleteFolderName').textContent = folderName;
-    document.getElementById('deleteFolderForm').action = `/admin/line-source-analytics/folders/delete/${folderId}`;
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteFolderModal'));
-    modal.show();
+    if (confirm('このフォルダを削除しますか？')) {
+        fetch(`{{ url_for('delete_source_analytics_folder', folder_id=0) }}`.replace('0', folderId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('フォルダの削除に失敗しました: ' + data.message);
+            }
+        });
+    }
     
     // ドロップダウンを閉じる
-    document.getElementById(`dropdown-${folderId}`).classList.remove('show');
+    document.querySelectorAll('.analytics__folder-dropdown.show').forEach(el => {
+        el.classList.remove('show');
+    });
+}
+
+// リンク削除
+function deleteLink(linkId) {
+    if (confirm('このリンクを削除しますか？')) {
+        fetch(`{{ url_for('delete_registration_link', link_id=0) }}`.replace('0', linkId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('リンクの削除に失敗しました: ' + data.message);
+            }
+        });
+    }
+}
+
+// URLをクリップボードにコピー
+function copyToClipboard(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        alert('URLをクリップボードにコピーしました');
+    }, function(err) {
+        console.error('クリップボードへのコピーに失敗しました: ', err);
+    });
+}
+
+// フォルダ並び替え
+function reorderFolders() {
+    document.getElementById('reorderTitle').textContent = 'フォルダ並び替え';
+    const folders = document.querySelectorAll('.analytics__sidebar-item[data-folder-id]');
+    const list = document.getElementById('reorderList');
+    list.innerHTML = '';
+    
+    folders.forEach(folder => {
+        const folderId = folder.dataset.folderId;
+        const folderName = folder.querySelector('.analytics__sidebar-name').textContent;
+        const item = document.createElement('div');
+        item.className = 'analytics__sortable-item';
+        item.dataset.id = folderId;
+        item.innerHTML = `
+            <i class="fas fa-grip-vertical analytics__drag-handle"></i>
+            <div class="analytics__item-content">
+                <i class="fas fa-folder"></i>
+                <span>${folderName}</span>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+    
+    // Sortable.js を使用（要ライブラリ読み込み）
+    if (window.Sortable) {
+        window.currentSortable = Sortable.create(list, {
+            handle: '.analytics__drag-handle',
+            animation: 150
+        });
+    }
+    
+    window.currentReorderType = 'folder';
+    document.getElementById('reorderModal').style.display = 'block';
+}
+
+// リンク並び替え
+function reorderLinks() {
+    document.getElementById('reorderTitle').textContent = 'リンク並び替え';
+    const links = document.querySelectorAll('#linkTableBody tr');
+    const list = document.getElementById('reorderList');
+    list.innerHTML = '';
+    
+    links.forEach((link, index) => {
+        const linkName = link.querySelector('.analytics__link-name').textContent;
+        const item = document.createElement('div');
+        item.className = 'analytics__sortable-item';
+        item.dataset.index = index;
+        item.innerHTML = `
+            <i class="fas fa-grip-vertical analytics__drag-handle"></i>
+            <div class="analytics__item-content">
+                <i class="fas fa-link"></i>
+                <span>${linkName}</span>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+    
+    // Sortable.js を使用（要ライブラリ読み込み）
+    if (window.Sortable) {
+        window.currentSortable = Sortable.create(list, {
+            handle: '.analytics__drag-handle',
+            animation: 150
+        });
+    }
+    
+    window.currentReorderType = 'link';
+    document.getElementById('reorderModal').style.display = 'block';
+}
+
+// 順序保存
+function saveOrder() {
+    const items = document.querySelectorAll('#reorderList .analytics__sortable-item');
+    const order = Array.from(items).map(item => 
+        window.currentReorderType === 'folder' ? item.dataset.id : item.dataset.index
+    );
+    
+    let url, data;
+    if (window.currentReorderType === 'folder') {
+        url = '{{ url_for("reorder_source_analytics_folders") }}';
+        data = { folder_order: order };
+    } else {
+        url = '{{ url_for("reorder_registration_links") }}';
+        data = { 
+            link_order: order,
+            folder_id: {{ selected_folder_id or 'null' }}
+        };
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('並び替えの保存に失敗しました');
+        }
+    });
+    
+    closeModal('reorderModal');
 }
 
 // 外部クリックでドロップダウンを閉じる
 document.addEventListener('click', function(event) {
-    if (!event.target.closest('.folder-dropdown')) {
-        document.querySelectorAll('.folder-dropdown-content').forEach(dropdown => {
-            dropdown.classList.remove('show');
+    if (!event.target.closest('.analytics__folder-dropdown') && !event.target.closest('.analytics__dropdown')) {
+        document.querySelectorAll('.analytics__folder-dropdown.show, .analytics__dropdown.show').forEach(el => {
+            el.classList.remove('show');
         });
     }
 });
-
-// フォルダ並び替え機能
-function reorderFolders() {
-    // フォルダ並び替えモーダルを表示
-    const modal = new bootstrap.Modal(document.getElementById('reorderFoldersModal'));
-    modal.show();
-    
-    // フォルダリストを取得して表示
-    loadFolderSortList();
-}
-
-// リンク並び替え機能
-function reorderLinks() {
-    // リンク並び替えモーダルを表示
-    const modal = new bootstrap.Modal(document.getElementById('reorderLinksModal'));
-    modal.show();
-    
-    // リンクリストを取得して表示
-    loadLinkSortList();
-}
-
-function loadFolderSortList() {
-    // 現在のフォルダリストを取得
-    const folders = document.querySelectorAll('.sidebar-item[data-folder-id]');
-    const sortList = document.getElementById('folderSortList');
-    
-    let html = '<div class="sortable-list" id="sortableFolders">';
-    folders.forEach(folder => {
-        const folderId = folder.dataset.folderId;
-        const folderName = folder.querySelector('.sidebar-name').textContent;
-        html += `
-            <div class="sortable-item" data-id="${folderId}">
-                <div class="drag-handle">
-                    <i class="fas fa-grip-vertical"></i>
-                </div>
-                <div class="item-content">
-                    <i class="fas fa-folder"></i>
-                    <span>${folderName}</span>
-                </div>
-            </div>
-        `;
-    });
-    html += '</div>';
-    
-    sortList.innerHTML = html;
-    
-    // ソート機能を初期化（SortableJSが必要）
-    // 簡易版として、上下移動ボタンで実装
-}
-
-function loadLinkSortList() {
-    // 現在のリンクリストを取得
-    const links = document.querySelectorAll('.data-table tbody tr');
-    const sortList = document.getElementById('linkSortList');
-    
-    let html = '<div class="sortable-list" id="sortableLinks">';
-    links.forEach((link, index) => {
-        const linkName = link.querySelector('.item-title').textContent;
-        html += `
-            <div class="sortable-item" data-index="${index}">
-                <div class="drag-handle">
-                    <i class="fas fa-grip-vertical"></i>
-                </div>
-                <div class="item-content">
-                    <i class="fas fa-link"></i>
-                    <span>${linkName}</span>
-                </div>
-            </div>
-        `;
-    });
-    html += '</div>';
-    
-    sortList.innerHTML = html;
-}
-
-// フォルダ順序保存
-function saveFolderOrder() {
-    const folderItems = document.querySelectorAll('#sortableFolders .sortable-item');
-    const folderOrder = Array.from(folderItems).map(item => item.dataset.id);
-    
-    fetch('/admin/line-source-analytics/folders/reorder', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            folder_order: folderOrder
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('並び替えに失敗しました: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('エラーが発生しました');
-    });
-}
-
-// リンク順序保存
-function saveLinkOrder() {
-    const linkItems = document.querySelectorAll('#sortableLinks .sortable-item');
-    const linkOrder = Array.from(linkItems).map(item => item.dataset.index);
-    
-    // 現在選択されているフォルダIDを取得
-    const currentFolderId = new URLSearchParams(window.location.search).get('folder_id');
-    
-    fetch('/admin/line-source-analytics/links/reorder', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            link_order: linkOrder,
-            folder_id: currentFolderId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('並び替えに失敗しました: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('エラーが発生しました');
-    });
-}
 </script>
 {% endblock %} 

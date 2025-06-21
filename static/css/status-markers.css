@@ -1,0 +1,371 @@
+/* 対応マーク管理画面専用CSS - 完全独立 */
+
+/* ===== レイアウト ===== */
+.statusmarks__container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.statusmarks__header {
+    background: white;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.statusmarks__header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #333;
+}
+
+.statusmarks__description {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.statusmarks__main {
+    display: flex;
+    height: calc(100vh - 200px);
+}
+
+/* ===== メインコンテンツ（サイドバーなし） ===== */
+.statusmarks__content {
+    flex: 1;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-left: 0; /* サイドバーなしなので左マージンなし */
+}
+
+.statusmarks__toolbar {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.statusmarks__toolbar-left {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.statusmarks__toolbar-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* ===== ボタン ===== */
+.statusmarks__btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.statusmarks__btn-primary {
+    background: #2196f3;
+    color: white;
+}
+
+.statusmarks__btn-primary:hover {
+    background: #1976d2;
+}
+
+.statusmarks__btn-sm {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.statusmarks__btn-sm:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+/* ===== 対応マークリスト（カード式） ===== */
+.statusmarks__table {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 2rem;
+}
+
+.statusmarks__marker-list {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.statusmarks__marker-item {
+    padding: 1rem;
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.2s;
+}
+
+.statusmarks__marker-item:last-child {
+    border-bottom: none;
+}
+
+.statusmarks__marker-item:hover {
+    background-color: #f8f9fa;
+}
+
+.statusmarks__marker-item.sortable-ghost {
+    background-color: #e9ecef;
+    opacity: 0.5;
+}
+
+/* ===== ドラッグハンドル ===== */
+.statusmarks__drag-handle {
+    cursor: grab;
+    margin-right: 0.5rem;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.statusmarks__drag-handle:active {
+    cursor: grabbing;
+}
+
+/* ===== マーカーインデックス ===== */
+.statusmarks__marker-index {
+    font-weight: bold;
+    color: #6c757d;
+    margin-right: 1rem;
+    min-width: 30px;
+}
+
+/* ===== マーカー名（インライン編集） ===== */
+.statusmarks__marker-name {
+    flex: 1;
+    padding: 0.5rem;
+    margin-right: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    background: transparent;
+    transition: all 0.2s;
+}
+
+.statusmarks__marker-name:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    background-color: #fff;
+}
+
+.statusmarks__editing .statusmarks__marker-name {
+    border-color: #80bdff;
+    background-color: #fff;
+}
+
+/* ===== マーカーカラー ===== */
+.statusmarks__marker-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 1rem;
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s;
+}
+
+.statusmarks__marker-color:hover {
+    transform: scale(1.1);
+}
+
+/* ===== アクションボタン ===== */
+.statusmarks__marker-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.statusmarks__marker-actions button {
+    margin-left: 0.5rem;
+}
+
+.statusmarks__set-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.statusmarks__set-button:hover {
+    background: #218838;
+}
+
+.statusmarks__delete-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.statusmarks__delete-button:hover {
+    background: #c82333;
+}
+
+/* ===== カラーピッカー ===== */
+.statusmarks__color-picker-container {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.statusmarks__color-picker-container.show {
+    display: block;
+}
+
+.statusmarks__color-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.statusmarks__color-option {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s;
+}
+
+.statusmarks__color-option:hover {
+    transform: scale(1.1);
+}
+
+.statusmarks__color-option.selected {
+    border: 2px solid #000;
+}
+
+/* ===== 追加ボタン ===== */
+.statusmarks__add-button {
+    margin-top: 1rem;
+}
+
+/* ===== フラッシュメッセージ ===== */
+.statusmarks__alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.statusmarks__alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.statusmarks__alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.statusmarks__alert-dismissible {
+    padding-right: 4rem;
+}
+
+.statusmarks__btn-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #000;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.statusmarks__btn-close:hover {
+    opacity: 0.75;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .statusmarks__main {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .statusmarks__toolbar {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .statusmarks__toolbar-left,
+    .statusmarks__toolbar-right {
+        justify-content: center;
+    }
+    
+    .statusmarks__marker-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .statusmarks__marker-actions {
+        justify-content: flex-end;
+    }
+    
+    .statusmarks__color-picker-container {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+} 

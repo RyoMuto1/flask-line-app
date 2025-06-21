@@ -4,7 +4,6 @@
 
 {% block styles %}
 {{ super() }}
-<!-- テンプレート管理画面専用CSS -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/templates.css') }}">
 {% endblock %}
 
@@ -20,7 +19,7 @@
         <!-- 左サイドバー（フォルダ一覧） -->
         <div class="admin-sidebar">
             <div class="sidebar-header">
-                <button class="new-folder-btn" onclick="showNewFolderModal()">
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#templatesNewFolderModal">
                     <i class="fas fa-plus"></i> 新しいフォルダ
                 </button>
                 <button class="btn-sm" onclick="reorderFolders()">並べ替え</button>
@@ -136,24 +135,32 @@
     </div>
 </div>
 
-<!-- 新しいフォルダ作成モーダル -->
-<div id="newFolderModal" class="modal">
+<!-- 新しいフォルダ作成モーダル（Bootstrap形式） -->
+<div class="modal fade" id="templatesNewFolderModal" tabindex="-1" aria-labelledby="templatesNewFolderModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
-        <span class="close" onclick="closeModal('newFolderModal')">&times;</span>
-        <h2>新しいフォルダを作成</h2>
-        <form id="newFolderForm" onsubmit="createFolder(event)">
-            <div class="form-group">
-                <label for="folderName">フォルダ名</label>
-                <input type="text" id="folderName" name="name" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="folderColor">色</label>
-                <input type="color" id="folderColor" name="color" class="form-control" value="#FFA500">
-            </div>
-            <button type="submit" class="btn btn-success">作成</button>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('newFolderModal')">キャンセル</button>
-        </form>
+      <div class="modal-header">
+        <h5 class="modal-title" id="templatesNewFolderModalLabel">新しいフォルダを作成</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('create_template_folder') }}">
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <label for="templatesFolderName" class="form-label">フォルダ名</label>
+            <input type="text" class="form-control" id="templatesFolderName" name="name" required>
+          </div>
+          <div class="form-group mb-3">
+            <label for="templatesFolderColor" class="form-label">色</label>
+            <input type="color" class="form-control" id="templatesFolderColor" name="color" value="#FFA500">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-success">作成</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <!-- フォルダ編集モーダル -->
@@ -287,10 +294,7 @@ function selectFolder(folderId) {
     window.location.href = `{{ url_for('admin_templates') }}?folder_id=${folderId}`;
 }
 
-// 新しいフォルダモーダル表示
-function showNewFolderModal() {
-    document.getElementById('newFolderModal').style.display = 'block';
-}
+// Bootstrap モーダルを使用するため、この関数は不要になりました
 
 // テンプレート作成ドロップダウン表示/非表示
 function toggleTemplateDropdown() {
@@ -421,28 +425,7 @@ function deleteFolder(folderId) {
     });
 }
 
-// フォルダ作成
-function createFolder(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    
-    fetch('{{ url_for("create_template_folder") }}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('フォルダの作成に失敗しました: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('エラーが発生しました');
-    });
-}
+// Bootstrap フォーム送信を使用するため、この関数は不要になりました
 
 // テンプレート作成
 function createTemplate(event) {

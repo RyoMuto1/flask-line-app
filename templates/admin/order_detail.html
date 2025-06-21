@@ -1,37 +1,90 @@
 {% extends "admin/base.html" %}
 
+{% block title %}注文詳細{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/order-detail.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>注文詳細</h2>
-    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">一覧に戻る</a>
-</div>
+<div class="orderdetail__container">
+    <!-- ヘッダー -->
+    <div class="orderdetail__header">
+        <h2>注文詳細</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="orderdetail__btn orderdetail__btn-secondary">一覧に戻る</a>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div class="orderdetail__main">
+        <div class="orderdetail__content">
+            <!-- 基本情報 -->
+            <div class="orderdetail__card orderdetail__section">
+                <div class="orderdetail__card-body">
+                    <h3 class="orderdetail__card-title">基本情報</h3>
+                    <div class="orderdetail__row">
+                        <div class="orderdetail__col-half">
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">注文者名</div>
+                                <div class="orderdetail__info-value">{{ order.name }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">注文日時</div>
+                                <div class="orderdetail__info-value">{{ order.created_at }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">商品名</div>
+                                <div class="orderdetail__info-value">{{ order.item }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">数量</div>
+                                <div class="orderdetail__info-value">{{ order.quantity }}枚</div>
+                            </div>
+                        </div>
+                        <div class="orderdetail__col-half">
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">使用日</div>
+                                <div class="orderdetail__info-value">{{ order.event_date }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">クラス・担任</div>
+                                <div class="orderdetail__info-value">{{ order.class_teacher }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">予算</div>
+                                <div class="orderdetail__info-value">{{ order.budget }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<div class="card">
-    <div class="card-body">
-        <h3 class="card-title mb-4">基本情報</h3>
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>注文者名：</strong>{{ order.name }}</p>
-                <p><strong>注文日時：</strong>{{ order.created_at }}</p>
-                <p><strong>商品名：</strong>{{ order.item }}</p>
-                <p><strong>数量：</strong>{{ order.quantity }}枚</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>使用日：</strong>{{ order.event_date }}</p>
-                <p><strong>クラス・担任：</strong>{{ order.class_teacher }}</p>
-                <p><strong>予算：</strong>{{ order.budget }}</p>
-            </div>
-        </div>
-
-        <h3 class="card-title mb-4 mt-4">お届け先情報</h3>
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>学校名：</strong>{{ order.school_name }}</p>
-                <p><strong>宛名：</strong>{{ order.delivery_name }}</p>
-                <p><strong>郵便番号：</strong>{{ order.postal_code }}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>住所：</strong>{{ order.prefecture }}{{ order.city }}{{ order.address }}</p>
+            <!-- お届け先情報 -->
+            <div class="orderdetail__card orderdetail__section">
+                <div class="orderdetail__card-body">
+                    <h3 class="orderdetail__card-title">お届け先情報</h3>
+                    <div class="orderdetail__row">
+                        <div class="orderdetail__col-half">
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">学校名</div>
+                                <div class="orderdetail__info-value">{{ order.school_name }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">宛名</div>
+                                <div class="orderdetail__info-value">{{ order.delivery_name }}</div>
+                            </div>
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">郵便番号</div>
+                                <div class="orderdetail__info-value">{{ order.postal_code }}</div>
+                            </div>
+                        </div>
+                        <div class="orderdetail__col-half">
+                            <div class="orderdetail__info-item">
+                                <div class="orderdetail__info-label">住所</div>
+                                <div class="orderdetail__info-value">{{ order.prefecture }}{{ order.city }}{{ order.address }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

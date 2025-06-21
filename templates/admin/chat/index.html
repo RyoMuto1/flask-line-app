@@ -2,61 +2,60 @@
 
 {% block title %}チャット管理{% endblock %}
 
-{% block styles %}
-{{ super() }}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="chat-page-container">
+<div class="chat__page-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
+                <div class="chat__alert chat__alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
     
-    <div class="chat-container">
+    <div class="chat__container">
         <!-- 左ペイン：ユーザーリスト -->
-        <div class="users-pane">
-            <div class="search-box">
-                <input type="text" id="userSearch" class="form-control" placeholder="ユーザーを検索...">
+        <div class="chat__users-pane">
+            <div class="chat__search-box">
+                <input type="text" id="userSearch" class="chat__form-control" placeholder="ユーザーを検索...">
             </div>
-            <div id="userList" class="user-list">
+            <div id="userList" class="chat__user-list">
                 <!-- ユーザーリストはJavaScriptで動的に生成 -->
-                <div class="loading-spinner">
+                <div class="chat__loading-spinner">
                     <i class="fas fa-spinner fa-spin"></i> 読み込み中...
                 </div>
             </div>
         </div>
         
         <!-- 中央ペイン：チャット内容 -->
-        <div class="chat-pane">
-            <div class="chat-header" id="chatHeader">
-                <div class="chat-header-avatar" id="chatHeaderAvatar" style="display: none;">
-                    <span class="default-avatar">👤</span>
+        <div class="chat__chat-pane">
+            <div class="chat__chat-header" id="chatHeader">
+                <div class="chat__chat-header-avatar" id="chatHeaderAvatar" style="display: none;">
+                    <span class="chat__default-avatar">👤</span>
                 </div>
-                <div class="chat-header-name-container">
-                    <h5 class="chat-header-name" id="chatHeaderName">ユーザーを選択してください</h5>
-                    <span class="chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
+                <div class="chat__chat-header-name-container">
+                    <h5 class="chat__chat-header-name" id="chatHeaderName">ユーザーを選択してください</h5>
+                    <span class="chat__chat-header-status" id="chatHeaderStatus" style="display: none;">対応マーク</span>
                 </div>
-                <div class="user-status" id="userStatus"></div>
+                <div class="chat__user-status" id="userStatus"></div>
             </div>
             
-            <div class="messages-container" id="messagesContainer">
-                <div class="empty-state">
-                    <i class="far fa-comments fa-3x mb-3"></i>
+            <div class="chat__messages-container" id="messagesContainer">
+                <div class="chat__empty-state">
+                    <i class="far fa-comments fa-3x chat__mb-3"></i>
                     <p>左側からユーザーを選択して会話を開始してください</p>
                 </div>
             </div>
             
-            <div class="message-input">
+            <div class="chat__message-input">
                 <form id="messageForm" style="display: none;">
-                    <div class="input-group">
-                        <input type="text" id="messageInput" class="form-control" placeholder="メッセージを入力..." required>
-                        <div class="input-group-append">
-                            <button type="submit" class="btn btn-primary">
+                    <div class="chat__input-group">
+                        <input type="text" id="messageInput" class="chat__form-control" placeholder="メッセージを入力..." required>
+                        <div class="chat__input-group-append">
+                            <button type="submit" class="chat__btn chat__btn-primary">
                                 <i class="fas fa-paper-plane"></i> 送信
                             </button>
                         </div>
@@ -66,40 +65,40 @@
         </div>
         
         <!-- 右ペイン：ユーザー情報とメモ -->
-        <div class="info-pane">
-            <div class="user-info" id="userInfo">
+        <div class="chat__info-pane">
+            <div class="chat__user-info" id="userInfo">
                 <!-- ユーザー情報はJavaScriptで動的に生成 -->
-                <div class="empty-state">
+                <div class="chat__empty-state">
                     <p>ユーザーを選択してください</p>
                 </div>
             </div>
             
-            <div class="user-notes" id="userNotes" style="display: none;">
-                <div class="note-title">
+            <div class="chat__user-notes" id="userNotes" style="display: none;">
+                <div class="chat__note-title">
                     <h5>メモ</h5>
-                    <button id="editNoteBtn" class="btn btn-sm btn-outline-primary">
+                    <button id="editNoteBtn" class="chat__btn chat__btn-sm chat__btn-outline-primary">
                         <i class="fas fa-edit"></i> 編集
                     </button>
                 </div>
-                <div id="noteDisplay" class="note-content p-2 bg-white rounded border mb-3" style="min-height: 80px;">
+                <div id="noteDisplay" class="chat__note-content chat__p-2 chat__bg-white chat__rounded chat__border chat__mb-3" style="min-height: 80px;">
                     <!-- メモ内容はJavaScriptで動的に表示 -->
-                    <div class="empty-state">
-                        <p class="small text-muted">メモはありません</p>
+                    <div class="chat__empty-state">
+                        <p class="chat__small chat__text-muted">メモはありません</p>
                     </div>
                 </div>
             </div>
             
-            <div class="user-tags" id="userTags" style="display: none; padding: 15px; border-top: 1px solid #ddd;">
-                <div class="tags-title d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">タグ</h5>
-                    <button id="editTagsBtn" class="btn btn-sm btn-outline-primary">
+            <div class="chat__user-tags" id="userTags" style="display: none; padding: 15px; border-top: 1px solid #ddd;">
+                <div class="chat__tags-title chat__d-flex chat__justify-content-between chat__align-items-center chat__mb-3">
+                    <h5 class="chat__mb-0">タグ</h5>
+                    <button id="editTagsBtn" class="chat__btn chat__btn-sm chat__btn-outline-primary">
                         <i class="fas fa-edit"></i> 編集
                     </button>
                 </div>
-                <div id="tagsDisplay" class="mb-3">
+                <div id="tagsDisplay" class="chat__mb-3">
                     <!-- タグはJavaScriptで動的に生成 -->
-                    <div class="empty-state">
-                        <p class="small text-muted">タグがありません</p>
+                    <div class="chat__empty-state">
+                        <p class="chat__small chat__text-muted">タグがありません</p>
                     </div>
                 </div>
             </div>
@@ -187,7 +186,7 @@
                 // 接続成功したらステータス表示を更新
                 const statusEl = document.getElementById('userStatus');
                 if (statusEl) {
-                    statusEl.innerHTML = '<span class="badge badge-success">リアルタイム接続中</span>';
+                    statusEl.innerHTML = '<span class="chat__badge chat__badge-success">リアルタイム接続中</span>';
                 }
             });
             
@@ -196,7 +195,7 @@
                 console.log('Socket.IO disconnected');
                 const statusEl = document.getElementById('userStatus');
                 if (statusEl) {
-                    statusEl.innerHTML = '<span class="badge badge-warning">接続が切断されました</span>';
+                    statusEl.innerHTML = '<span class="chat__badge chat__badge-warning">接続が切断されました</span>';
                 }
             });
             
@@ -205,7 +204,7 @@
                 console.error('Socket.IO connection error:', error);
                 const statusEl = document.getElementById('userStatus');
                 if (statusEl) {
-                    statusEl.innerHTML = '<span class="badge badge-danger">接続エラー</span>';
+                    statusEl.innerHTML = '<span class="chat__badge chat__badge-danger">接続エラー</span>';
                 }
                 // ポーリングによるフォールバックを確実に動作させる
                 startPolling();
@@ -261,55 +260,55 @@
             })
             .catch(error => {
                 console.error('Error loading users:', error);
-                document.getElementById('userList').innerHTML = '<div class="empty-state">ユーザーの読み込みに失敗しました</div>';
+                document.getElementById('userList').innerHTML = '<div class="chat__empty-state">ユーザーの読み込みに失敗しました</div>';
             });
     }
     
     // ユーザーリストのレンダリング
-    function renderUserList(usersList) {
+    function chatRenderUserList(usersList) {
         const userListElement = document.getElementById('userList');
         userListElement.innerHTML = '';
         
         if (usersList.length === 0) {
-            userListElement.innerHTML = '<div class="empty-state">ユーザーが見つかりません</div>';
+            userListElement.innerHTML = '<div class="chat__empty-state">ユーザーが見つかりません</div>';
             return;
         }
         
         usersList.forEach(user => {
             const userItem = document.createElement('div');
-            userItem.className = 'user-list-item';
+            userItem.className = 'chat__user-list-item';
             userItem.dataset.userId = user.line_user_id;
             
             if (selectedUserId === user.line_user_id) {
-                userItem.classList.add('active');
+                userItem.classList.add('chat__active');
             }
             
             let unreadBadge = '';
             if (user.unread_count > 0) {
-                unreadBadge = `<span class="unread-badge float-right">${user.unread_count}</span>`;
+                unreadBadge = `<span class="chat__unread-badge chat__float-right">${user.unread_count}</span>`;
             }
             
             // ユーザーアイコンの表示処理
             let userAvatarHtml = '';
             if (user.profile_image_url) {
-                userAvatarHtml = `<img src="${user.profile_image_url}" alt="${user.name}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">`;
+                userAvatarHtml = `<img src="${user.profile_image_url}" alt="${user.name}" class="chat__rounded-circle chat__me-2" style="width: 32px; height: 32px; object-fit: cover;">`;
             } else {
-                userAvatarHtml = `<div class="rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: #cccccc; color: white; font-weight: bold; font-size: 14px;">👤</div>`;
+                userAvatarHtml = `<div class="chat__rounded-circle chat__me-2 chat__d-flex chat__align-items-center chat__justify-content-center" style="width: 32px; height: 32px; background-color: #cccccc; color: white; font-weight: bold; font-size: 14px;">👤</div>`;
             }
             
             // 対応マークの表示処理を追加
             let statusMarkerHtml = '';
             if (user.status_marker_name && user.status_marker_color) {
-                statusMarkerHtml = `<span class="status-marker-inline" style="background-color: ${user.status_marker_color};">${user.status_marker_name}</span>`;
+                statusMarkerHtml = `<span class="chat__status-marker-inline" style="background-color: ${user.status_marker_color};">${user.status_marker_name}</span>`;
             }
             
             userItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center w-100">
-                    <div class="d-flex align-items-center">
+                <div class="chat__d-flex chat__justify-content-between chat__align-items-center chat__w-100">
+                    <div class="chat__d-flex chat__align-items-center">
                         ${userAvatarHtml}
                         <div>
                             <strong>${user.name}${statusMarkerHtml}</strong>
-                            <div class="small text-muted">${user.last_message || '新規ユーザー'}</div>
+                            <div class="chat__small chat__text-muted">${user.last_message || '新規ユーザー'}</div>
                         </div>
                     </div>
                     ${unreadBadge}
@@ -324,6 +323,11 @@
         });
     }
     
+    // 関数名も統一
+    function renderUserList(usersList) {
+        return chatRenderUserList(usersList);
+    }
+    
     // ユーザーの選択
     function selectUser(userId) {
         if (!userId) return;
@@ -331,10 +335,10 @@
         selectedUserId = userId;
         
         // 選択状態を更新
-        document.querySelectorAll('.user-list-item').forEach(item => {
-            item.classList.remove('active');
+        document.querySelectorAll('.chat__user-list-item').forEach(item => {
+            item.classList.remove('chat__active');
             if (item.dataset.userId === userId) {
-                item.classList.add('active');
+                item.classList.add('chat__active');
             }
         });
         
@@ -364,7 +368,7 @@
             })
             .catch(error => {
                 console.error('Error loading user info:', error);
-                document.getElementById('userInfo').innerHTML = '<div class="empty-state">ユーザー情報の読み込みに失敗しました</div>';
+                document.getElementById('userInfo').innerHTML = '<div class="chat__empty-state">ユーザー情報の読み込みに失敗しました</div>';
             });
     }
     
@@ -380,7 +384,7 @@
         if (user.profile_image_url) {
             chatHeaderAvatar.innerHTML = `<img src="${user.profile_image_url}" alt="${user.name}">`;
         } else {
-            chatHeaderAvatar.innerHTML = '<span class="default-avatar">👤</span>';
+            chatHeaderAvatar.innerHTML = '<span class="chat__default-avatar">👤</span>';
         }
         chatHeaderAvatar.style.display = 'flex';
         
@@ -410,7 +414,7 @@
         const userInfoElement = document.getElementById('userInfo');
         
         userInfoElement.innerHTML = `
-            <table class="table table-sm">
+            <table class="chat__table chat__table-sm">
                 <tr>
                     <th scope="row">登録日</th>
                     <td>${formatDateTime(user.created_at)}</td>
@@ -477,7 +481,7 @@
             })
             .catch(error => {
                 console.error('Error loading chat history:', error);
-                document.getElementById('messagesContainer').innerHTML = '<div class="empty-state">チャット履歴の読み込みに失敗しました</div>';
+                document.getElementById('messagesContainer').innerHTML = '<div class="chat__empty-state">チャット履歴の読み込みに失敗しました</div>';
             });
     }
     
@@ -487,7 +491,7 @@
         messagesContainer.innerHTML = '';
         
         if (messages.length === 0) {
-            messagesContainer.innerHTML = '<div class="empty-state">まだメッセージはありません</div>';
+            messagesContainer.innerHTML = '<div class="chat__empty-state">まだメッセージはありません</div>';
             return;
         }
         
@@ -508,64 +512,51 @@
         // 日付ごとにメッセージを表示
         Object.keys(messagesByDate).sort().forEach(date => {
             // 日付セパレータの追加
-            const dateDiv = document.createElement('div');
-            dateDiv.className = 'date-separator';
-            dateDiv.innerHTML = `<span class="date-text">${date}</span>`;
-            messagesContainer.appendChild(dateDiv);
+            const dateSeparator = document.createElement('div');
+            dateSeparator.className = 'chat__date-separator';
+            dateSeparator.innerHTML = `<span class="chat__date-text">${date}</span>`;
+            messagesContainer.appendChild(dateSeparator);
             
             // その日のメッセージを表示
             messagesByDate[date].forEach(message => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${message.is_from_admin ? 'message-admin' : 'message-user'}`;
+                const messageEl = document.createElement('div');
+                messageEl.className = `chat__message ${message.is_from_admin ? 'chat__message-admin' : 'chat__message-user'}`;
                 
-                // 時間のフォーマット
-                const messageDate = new Date(message.sent_at + 'Z');
-                const time = messageDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                
-                // アイコンとメッセージバブルを追加
                 let avatarHtml = '';
-                if (!message.is_from_admin) {
-                    // LINEのプロフィール画像があれば使用、なければデフォルトアイコン
-                    if (message.profile_image_url) {
-                        avatarHtml = `
-                            <div class="message-avatar">
-                                <img src="${message.profile_image_url}" alt="User Avatar" 
-                                     onerror="this.style.display='none'; this.parentNode.innerHTML='<span class=&quot;default-avatar&quot;>U</span>';">
-                            </div>
-                        `;
-                    } else {
-                        avatarHtml = `
-                            <div class="message-avatar">
-                                <span class="default-avatar">U</span>
-                            </div>
-                        `;
-                    }
+                if (!message.is_from_admin && message.profile_image_url) {
+                    avatarHtml = `<div class="chat__message-avatar"><img src="${message.profile_image_url}" alt="User"></div>`;
+                } else if (!message.is_from_admin) {
+                    avatarHtml = `<div class="chat__message-avatar"><span class="chat__default-avatar">👤</span></div>`;
                 }
                 
-                messageDiv.innerHTML = `
+                const messageTime = new Date(message.sent_at + 'Z').toLocaleTimeString('ja-JP', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false
+                });
+                
+                messageEl.innerHTML = `
                     ${avatarHtml}
-                    <div class="message-content-wrapper">
-                        <div class="message-bubble">
-                            <div class="message-content">${message.message}</div>
-                        </div>
-                        <div class="message-info">${time}</div>
+                    <div class="chat__message-bubble">
+                        <div class="chat__message-content">${escapeHtml(message.message)}</div>
+                        <div class="chat__message-info">${messageTime}</div>
                     </div>
                 `;
                 
-                messagesContainer.appendChild(messageDiv);
+                messagesContainer.appendChild(messageEl);
             });
         });
         
-        // 最新メッセージにスクロール
+        // 最下部にスクロール
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
     
-    // メッセージの送信
+    // メッセージ送信
     function sendMessage(userId, message) {
         fetch('/admin/api/send-message', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 user_id: userId,
@@ -575,8 +566,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // メッセージが送信されたら履歴を再読み込み
+                // 送信成功したらチャット履歴を更新
                 loadChatHistory(userId);
+                // ユーザーリストも更新（最新メッセージが表示されるように）
+                loadUsers();
             } else {
                 alert('メッセージの送信に失敗しました: ' + data.error);
             }
@@ -587,414 +580,183 @@
         });
     }
     
+    // ユーザーフィルタリング
+    function filterUsers(searchTerm) {
+        const filteredUsers = users.filter(user => 
+            user.name.toLowerCase().includes(searchTerm) ||
+            (user.last_message && user.last_message.toLowerCase().includes(searchTerm))
+        );
+        renderUserList(filteredUsers);
+    }
+    
+    // HTMLエスケープ
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // 日時フォーマット
+    function formatDateTime(dateString) {
+        if (!dateString) return '不明';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
+    
     // ユーザーメモの読み込み
     function loadUserNote(userId) {
         fetch(`/admin/api/user-note/${userId}`)
             .then(response => response.json())
             .then(data => {
-                // メモの表示エリアを更新
-                const noteContent = data.note || '';
                 const noteDisplay = document.getElementById('noteDisplay');
-                if (noteContent) {
-                    noteDisplay.innerHTML = noteContent.replace(/\n/g, '<br>');
+                if (data.note && data.note.trim()) {
+                    noteDisplay.innerHTML = `<div class="chat__note-text">${escapeHtml(data.note)}</div>`;
                 } else {
-                    noteDisplay.innerHTML = '<div class="empty-state"><p class="small text-muted">メモはありません</p></div>';
+                    noteDisplay.innerHTML = '<div class="chat__empty-state"><p class="chat__small chat__text-muted">メモはありません</p></div>';
                 }
             })
             .catch(error => {
                 console.error('Error loading user note:', error);
-                document.getElementById('noteDisplay').innerHTML = '<div class="empty-state"><p class="small text-muted">メモの読み込みに失敗しました</p></div>';
+                document.getElementById('noteDisplay').innerHTML = '<div class="chat__empty-state"><p class="chat__small chat__text-danger">メモの読み込みに失敗しました</p></div>';
             });
     }
     
-    // ユーザーメモの保存
-    function saveUserNote(userId, note, modalInstance) {
-        fetch('/admin/api/save-note', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                note: note
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // モーダルを閉じる
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                
-                // メモ表示を更新
-                loadUserNote(userId);
-                
-                alert('メモを保存しました');
-            } else {
-                alert('メモの保存に失敗しました: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error saving note:', error);
-            alert('メモの保存に失敗しました');
-        });
-    }
-    
-    // ユーザーの検索フィルタリング
-    function filterUsers(searchTerm) {
-        if (!searchTerm) {
-            renderUserList(users);
-            return;
-        }
-        
-        const filteredUsers = users.filter(user => {
-            return user.name.toLowerCase().includes(searchTerm) || 
-                  (user.email && user.email.toLowerCase().includes(searchTerm));
-        });
-        
-        renderUserList(filteredUsers);
-    }
-    
-    // ユーザーのタグ読み込み
+    // ユーザータグの読み込み
     function loadUserTags(userId) {
         fetch(`/admin/api/user-tags/${userId}`)
             .then(response => response.json())
             .then(data => {
-                renderUserTags(data.tags || []);
+                const tagsDisplay = document.getElementById('tagsDisplay');
+                if (data.tags && data.tags.length > 0) {
+                    let tagsHtml = '';
+                    data.tags.forEach(tag => {
+                        const folderName = tag.folder_name ? `${tag.folder_name} > ` : '';
+                        tagsHtml += `<span class="chat__badge chat__badge-secondary chat__mr-1 chat__mb-1">${folderName}${tag.name}</span>`;
+                    });
+                    tagsDisplay.innerHTML = tagsHtml;
+                } else {
+                    tagsDisplay.innerHTML = '<div class="chat__empty-state"><p class="chat__small chat__text-muted">タグがありません</p></div>';
+                }
             })
             .catch(error => {
                 console.error('Error loading user tags:', error);
-                document.getElementById('tagsDisplay').innerHTML = '<div class="empty-state"><p class="small text-muted">タグの読み込みに失敗しました</p></div>';
+                document.getElementById('tagsDisplay').innerHTML = '<div class="chat__empty-state"><p class="chat__small chat__text-danger">タグの読み込みに失敗しました</p></div>';
             });
     }
     
-    // ユーザーのタグを表示
-    function renderUserTags(tags) {
-        const tagsContainer = document.getElementById('tagsDisplay');
-        tagsContainer.innerHTML = '';
-        
-        if (!tags || tags.length === 0) {
-            tagsContainer.innerHTML = '<div class="empty-state"><p class="small text-muted">タグがありません</p></div>';
-            return;
-        }
-        
-        // フォルダごとにタグをグループ化
-        const folderGroups = {};
-        
-        tags.forEach(tag => {
-            const folderName = tag.folder_name || '未分類';
-            if (!folderGroups[folderName]) {
-                folderGroups[folderName] = [];
-            }
-            folderGroups[folderName].push(tag);
-        });
-        
-        // フォルダごとにタグを表示
-        Object.keys(folderGroups).forEach(folderName => {
-            const folderDiv = document.createElement('div');
-            folderDiv.className = 'tag-folder mb-2';
-            
-            // フォルダ名
-            folderDiv.innerHTML = `<div class="folder-name mb-1"><i class="fas fa-folder text-warning"></i> ${folderName}</div>`;
-            
-            // タグリスト
-            const tagsDiv = document.createElement('div');
-            tagsDiv.className = 'tag-list ml-3 d-flex flex-wrap';
-            
-            folderGroups[folderName].forEach(tag => {
-                const tagBadge = document.createElement('span');
-                tagBadge.className = 'badge bg-info text-white me-2 mb-2';
-                tagBadge.textContent = tag.name;
-                tagBadge.style.padding = '5px 10px';
-                tagsDiv.appendChild(tagBadge);
-            });
-            
-            folderDiv.appendChild(tagsDiv);
-            tagsContainer.appendChild(folderDiv);
-        });
-    }
-    
-    // メモ編集モーダルを表示
+    // メモ編集モーダル表示（base.htmlから継承したモーダル機能を使用）
     function showNoteEditModal(userId) {
-        // すでにモーダルが存在する場合は削除
-        const existingModal = document.getElementById('noteEditModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // 現在のメモを取得
+        // 現在のメモ内容を取得
         fetch(`/admin/api/user-note/${userId}`)
             .then(response => response.json())
             .then(data => {
                 const currentNote = data.note || '';
+                const noteText = prompt('メモを編集してください:', currentNote);
                 
-                // モーダルを作成
-                const modal = document.createElement('div');
-                modal.className = 'modal fade';
-                modal.id = 'noteEditModal';
-                modal.tabIndex = '-1';
-                modal.setAttribute('aria-labelledby', 'noteEditModalLabel');
-                modal.setAttribute('aria-hidden', 'true');
-                
-                let modalHtml = `
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="noteEditModalLabel">メモを編集</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <textarea id="noteModalInput" class="form-control" rows="8" 
-                                    placeholder="このユーザーに関するメモを入力..." 
-                                    style="resize: vertical; background-color: white; color: black;">${currentNote}</textarea>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                                <button type="button" class="btn btn-primary" id="saveNoteBtn">保存</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                modal.innerHTML = modalHtml;
-                document.body.appendChild(modal);
-                
-                // モーダルを表示
-                const modalInstance = new bootstrap.Modal(modal);
-                modalInstance.show();
-                
-                // モーダルが完全に表示された後にテキストエリアにフォーカスを設定
-                modal.addEventListener('shown.bs.modal', function() {
-                    const textarea = document.getElementById('noteModalInput');
-                    const saveBtn = document.getElementById('saveNoteBtn');
-                    
-                    if (textarea) {
-                        // disabled属性を明示的に削除
-                        textarea.removeAttribute('disabled');
-                        textarea.removeAttribute('readonly');
-                        // フォーカスを設定
-                        textarea.focus();
-                        // カーソルを末尾に移動
-                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                        console.log('テキストエリアにフォーカスを設定しました');
-                    }
-                    
-                    if (saveBtn) {
-                        // 保存ボタンを明示的に有効化
-                        saveBtn.removeAttribute('disabled');
-                        saveBtn.style.pointerEvents = 'auto';
-                        saveBtn.style.opacity = '1';
-                        console.log('保存ボタンを有効化しました');
-                    }
-                });
-                
-                // 保存ボタンのイベントリスナーを追加
-                document.getElementById('saveNoteBtn').addEventListener('click', function() {
-                    console.log('保存ボタンがクリックされました');
-                    const noteText = document.getElementById('noteModalInput').value.trim();
-                    console.log('入力されたメモ:', noteText);
-                    saveUserNote(userId, noteText, modalInstance);
-                });
+                if (noteText !== null) { // キャンセルされなかった場合
+                    // メモを保存
+                    fetch('/admin/api/save-note', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            note: noteText
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // メモ表示を更新
+                            loadUserNote(userId);
+                        } else {
+                            alert('メモの保存に失敗しました: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving note:', error);
+                        alert('メモの保存に失敗しました');
+                    });
+                }
             })
             .catch(error => {
-                console.error('Error loading note for editing:', error);
-                alert('メモ情報の読み込みに失敗しました');
+                console.error('Error loading current note:', error);
+                alert('現在のメモの読み込みに失敗しました');
             });
     }
     
-    // タグ編集モーダルを表示
+    // タグ編集モーダル表示（簡易版）
     function showTagEditModal(currentTags, userId) {
-        // すでにモーダルが存在する場合は削除
-        const existingModal = document.getElementById('tagEditModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // すべてのタグとフォルダを取得
+        // 全タグ一覧を取得
         fetch('/admin/api/all-tags')
             .then(response => response.json())
             .then(data => {
-                const allTags = data.tags || [];
-                
-                // フォルダとタグを別々に整理
-                const folders = allTags.filter(tag => tag.is_folder);
-                const tags = allTags.filter(tag => !tag.is_folder);
-                
-                // モーダルを作成
-                const modal = document.createElement('div');
-                modal.className = 'modal fade';
-                modal.id = 'tagEditModal';
-                modal.tabIndex = '-1';
-                modal.setAttribute('aria-labelledby', 'tagEditModalLabel');
-                modal.setAttribute('aria-hidden', 'true');
-                
-                let modalHtml = `
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="tagEditModalLabel">タグを編集</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="tag-selection-container">
-                `;
-                
-                // フォルダごとにタグを表示
-                folders.forEach(folder => {
-                    const folderTags = tags.filter(tag => tag.parent_id === folder.id);
-                    
-                    modalHtml += `
-                        <div class="folder-section mb-3">
-                            <h6><i class="fas fa-folder text-warning"></i> ${folder.name}</h6>
-                            <div class="tag-options ms-3">
-                    `;
-                    
-                    folderTags.forEach(tag => {
-                        const isChecked = currentTags.some(t => t.id === tag.id);
-                        modalHtml += `
-                            <div class="form-check form-check-inline mb-2">
-                                <input class="form-check-input tag-checkbox" type="checkbox" 
-                                    id="tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
-                                <label class="form-check-label" for="tag-${tag.id}">${tag.name}</label>
-                            </div>
-                        `;
-                    });
-                    
-                    modalHtml += `
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                // 未分類のタグ（親IDがないもの）
-                const unclassifiedTags = tags.filter(tag => !tag.parent_id);
-                if (unclassifiedTags.length > 0) {
-                    modalHtml += `
-                        <div class="folder-section mb-3">
-                            <h6><i class="fas fa-folder text-warning"></i> 未分類</h6>
-                            <div class="tag-options ms-3">
-                    `;
-                    
-                    unclassifiedTags.forEach(tag => {
-                        const isChecked = currentTags.some(t => t.id === tag.id);
-                        modalHtml += `
-                            <div class="form-check form-check-inline mb-2">
-                                <input class="form-check-input tag-checkbox" type="checkbox" 
-                                    id="tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
-                                <label class="form-check-label" for="tag-${tag.id}">${tag.name}</label>
-                            </div>
-                        `;
-                    });
-                    
-                    modalHtml += `
-                            </div>
-                        </div>
-                    `;
+                if (!data.success) {
+                    alert('タグ一覧の取得に失敗しました');
+                    return;
                 }
                 
-                modalHtml += `
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                                <button type="button" class="btn btn-primary" id="saveTagsBtn">保存</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const allTags = data.tags;
+                const currentTagIds = currentTags.map(tag => tag.id);
                 
-                modal.innerHTML = modalHtml;
-                document.body.appendChild(modal);
+                // 簡易的なタグ選択ダイアログ
+                let tagOptions = 'タグを選択してください（カンマ区切りで番号を入力）:\n\n';
+                allTags.forEach((tag, index) => {
+                    const isSelected = currentTagIds.includes(tag.id) ? '✓' : '　';
+                    const folderName = tag.parent_id ? '' : '📁 ';
+                    tagOptions += `${index + 1}: ${isSelected} ${folderName}${tag.name}\n`;
+                });
                 
-                // モーダルを表示
-                const modalInstance = new bootstrap.Modal(modal);
-                modalInstance.show();
+                const selectedIndices = prompt(tagOptions + '\n例: 1,3,5', 
+                    currentTags.map(tag => 
+                        allTags.findIndex(t => t.id === tag.id) + 1
+                    ).join(',')
+                );
                 
-                // モーダルが完全に表示された後にチェックボックスと保存ボタンを有効化
-                modal.addEventListener('shown.bs.modal', function() {
-                    const saveBtn = document.getElementById('saveTagsBtn');
-                    const checkboxes = document.querySelectorAll('.tag-checkbox');
-                    
-                    // 保存ボタンを明示的に有効化
-                    if (saveBtn) {
-                        saveBtn.removeAttribute('disabled');
-                        saveBtn.style.pointerEvents = 'auto';
-                        saveBtn.style.opacity = '1';
-                        console.log('タグ保存ボタンを有効化しました');
+                if (selectedIndices !== null) {
+                    const selectedTagIds = [];
+                    if (selectedIndices.trim()) {
+                        const indices = selectedIndices.split(',').map(s => parseInt(s.trim()) - 1);
+                        indices.forEach(index => {
+                            if (index >= 0 && index < allTags.length) {
+                                selectedTagIds.push(allTags[index].id);
+                            }
+                        });
                     }
                     
-                    // チェックボックスを明示的に有効化
-                    checkboxes.forEach(checkbox => {
-                        checkbox.removeAttribute('disabled');
-                        checkbox.style.pointerEvents = 'auto';
-                    });
-                    console.log('タグチェックボックスを有効化しました:', checkboxes.length, '個');
-                });
-                
-                // 保存ボタンのイベントリスナー
-                document.getElementById('saveTagsBtn').addEventListener('click', function() {
-                    console.log('タグ保存ボタンがクリックされました');
-                    // 選択されたタグIDを取得
-                    const selectedTagIds = [];
-                    document.querySelectorAll('.tag-checkbox:checked').forEach(checkbox => {
-                        selectedTagIds.push(parseInt(checkbox.value));
-                    });
-                    console.log('選択されたタグID:', selectedTagIds);
-                    
                     // タグを保存
-                    saveUserTags(userId, selectedTagIds, modalInstance);
-                });
+                    fetch('/admin/api/save-user-tags', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            tag_ids: selectedTagIds
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // タグ表示を更新
+                            loadUserTags(userId);
+                            // ユーザーリストも更新（タグ情報が変更される可能性があるため）
+                            loadUsers();
+                        } else {
+                            alert('タグの保存に失敗しました: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving tags:', error);
+                        alert('タグの保存に失敗しました');
+                    });
+                }
             })
             .catch(error => {
                 console.error('Error loading all tags:', error);
-                alert('タグ情報の読み込みに失敗しました');
+                alert('タグ一覧の読み込みに失敗しました');
             });
-    }
-    
-    // ユーザーのタグを保存
-    function saveUserTags(userId, tagIds, modalInstance) {
-        fetch('/admin/api/save-user-tags', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                tag_ids: tagIds
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // モーダルを閉じる
-                modalInstance.hide();
-                
-                // タグ表示を更新
-                loadUserTags(userId);
-                
-                alert('タグを保存しました');
-            } else {
-                alert('タグの保存に失敗しました: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error saving tags:', error);
-            alert('タグの保存に失敗しました');
-        });
-    }
-    
-    // formatDateTime関数の定義を追加
-    function formatDateTime(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     }
 </script>
 {% endblock %} 

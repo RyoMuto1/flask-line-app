@@ -1,157 +1,165 @@
 {% extends "admin/base.html" %}
 
+{% block title %}ユーザー詳細{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-detail.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- フラッシュメッセージ表示 -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    
-    <!-- ユーザー情報カード -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">ユーザー情報</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th style="width: 150px;">LINE名</th>
-                                    <td>{{ user.name }}</td>
-                                </tr>
-                                <tr>
-                                    <th>LINE ID</th>
-                                    <td><code>{{ user.line_user_id }}</code></td>
-                                </tr>
-                                <tr>
-                                    <th>登録日時</th>
-                                    <td>{{ user.created_at }}</td>
-                                </tr>
-                            </table>
+<div class="userdetail__container">
+    <div class="userdetail__main">
+        <div class="userdetail__content">
+            <!-- フラッシュメッセージ表示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="userdetail__alert userdetail__alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} userdetail__alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="userdetail__btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-end">
-                                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
-                                    <i class="bi bi-arrow-left"></i> 注文一覧に戻る
-                                </a>
-                            </div>
-                            <!-- 将来的にここにLINEメッセージ送信ボタンなどを追加できます -->
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- ユーザー情報カード -->
+            <div class="userdetail__row">
+                <div class="userdetail__col">
+                    <div class="userdetail__card">
+                        <div class="userdetail__card-header">
+                            <h5>ユーザー情報</h5>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 流入登録情報 -->
-    {% if registrations %}
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">流入経路情報</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>流入元</th>
-                                    <th>登録日時</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for reg in registrations %}
-                                <tr>
-                                    <td>{{ reg.link_name }}</td>
-                                    <td>{{ reg.registered_at }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- ユーザータグ情報 -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">タグ情報</h5>
-                    <button id="editTagsBtn" class="btn btn-sm btn-light">
-                        <i class="bi bi-pencil"></i> 編集
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div id="tagsDisplay">
-                        <!-- タグはJavaScriptで動的に生成 -->
-                        <div class="empty-state">
-                            <p class="text-muted">タグを読み込み中...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 注文履歴 -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">注文履歴</h5>
-                </div>
-                <div class="card-body">
-                    {% if orders %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>注文日時</th>
-                                    <th>注文者名</th>
-                                    <th>商品</th>
-                                    <th>数量</th>
-                                    <th>学校名</th>
-                                    <th>使用日</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for order in orders %}
-                                <tr>
-                                    <td>{{ order.created_at }}</td>
-                                    <td>{{ order.name }}</td>
-                                    <td>{{ order.item }}</td>
-                                    <td>{{ order.quantity }}</td>
-                                    <td>{{ order.school_name }}</td>
-                                    <td>{{ order.event_date }}</td>
-                                    <td>
-                                        <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="btn btn-primary btn-sm">
-                                            <i class="bi bi-eye"></i> 詳細
+                        <div class="userdetail__card-body">
+                            <div class="userdetail__row">
+                                <div class="userdetail__col-half">
+                                    <table class="userdetail__table userdetail__table-borderless">
+                                        <tr>
+                                            <th>LINE名</th>
+                                            <td>{{ user.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>LINE ID</th>
+                                            <td><code class="userdetail__code">{{ user.line_user_id }}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th>登録日時</th>
+                                            <td>{{ user.created_at }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="userdetail__col-half">
+                                    <div style="display: flex; justify-content: flex-end;">
+                                        <a href="{{ url_for('admin_dashboard') }}" class="userdetail__btn userdetail__btn-secondary">
+                                            <i class="bi bi-arrow-left"></i> 注文一覧に戻る
                                         </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    {% else %}
-                    <p class="text-muted">このユーザーの注文履歴はありません。</p>
-                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 流入登録情報 -->
+            {% if registrations %}
+            <div class="userdetail__row">
+                <div class="userdetail__col">
+                    <div class="userdetail__card">
+                        <div class="userdetail__card-header userdetail__card-header-info">
+                            <h5>流入経路情報</h5>
+                        </div>
+                        <div class="userdetail__card-body">
+                            <div class="userdetail__table-responsive">
+                                <table class="userdetail__table userdetail__table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>流入元</th>
+                                            <th>登録日時</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for reg in registrations %}
+                                        <tr>
+                                            <td>{{ reg.link_name }}</td>
+                                            <td>{{ reg.registered_at }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ユーザータグ情報 -->
+            <div class="userdetail__row">
+                <div class="userdetail__col">
+                    <div class="userdetail__card">
+                        <div class="userdetail__card-header">
+                            <h5>タグ情報</h5>
+                            <button id="userdetailEditTagsBtn" class="userdetail__btn userdetail__btn-light userdetail__btn-sm">
+                                <i class="bi bi-pencil"></i> 編集
+                            </button>
+                        </div>
+                        <div class="userdetail__card-body">
+                            <div id="userdetailTagsDisplay">
+                                <div class="userdetail__empty-state">
+                                    <p class="userdetail__text-muted">タグを読み込み中...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 注文履歴 -->
+            <div class="userdetail__row">
+                <div class="userdetail__col">
+                    <div class="userdetail__card">
+                        <div class="userdetail__card-header userdetail__card-header-success">
+                            <h5>注文履歴</h5>
+                        </div>
+                        <div class="userdetail__card-body">
+                            {% if orders %}
+                            <div class="userdetail__table-responsive">
+                                <table class="userdetail__table userdetail__table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>注文日時</th>
+                                            <th>注文者名</th>
+                                            <th>商品</th>
+                                            <th>数量</th>
+                                            <th>学校名</th>
+                                            <th>使用日</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in orders %}
+                                        <tr>
+                                            <td>{{ order.created_at }}</td>
+                                            <td>{{ order.name }}</td>
+                                            <td>{{ order.item }}</td>
+                                            <td>{{ order.quantity }}</td>
+                                            <td>{{ order.school_name }}</td>
+                                            <td>{{ order.event_date }}</td>
+                                            <td>
+                                                <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="userdetail__btn userdetail__btn-primary userdetail__btn-sm">
+                                                    <i class="bi bi-eye"></i> 詳細
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="userdetail__text-muted">このユーザーの注文履歴はありません。</p>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -170,15 +178,15 @@
         
         if (userId) {
             // ユーザータグを読み込む
-            loadUserTags(userId);
+            userdetailLoadUserTags(userId);
             
             // 編集ボタンのイベントリスナー
-            document.getElementById('editTagsBtn').addEventListener('click', function() {
+            document.getElementById('userdetailEditTagsBtn').addEventListener('click', function() {
                 // タグ編集モーダルを表示する前に、現在のタグ情報を取得
                 fetch(`/admin/api/user-tags/${userId}`)
                     .then(response => response.json())
                     .then(data => {
-                        showTagEditModal(data.tags || [], userId);
+                        userdetailShowTagEditModal(data.tags || [], userId);
                     })
                     .catch(error => {
                         console.error('Error loading tags for editing:', error);
@@ -189,25 +197,25 @@
     });
     
     // ユーザーのタグ読み込み
-    function loadUserTags(userId) {
+    function userdetailLoadUserTags(userId) {
         fetch(`/admin/api/user-tags/${userId}`)
             .then(response => response.json())
             .then(data => {
-                renderUserTags(data.tags || []);
+                userdetailRenderUserTags(data.tags || []);
             })
             .catch(error => {
                 console.error('Error loading user tags:', error);
-                document.getElementById('tagsDisplay').innerHTML = '<div class="empty-state"><p class="text-muted">タグの読み込みに失敗しました</p></div>';
+                document.getElementById('userdetailTagsDisplay').innerHTML = '<div class="userdetail__empty-state"><p class="userdetail__text-muted">タグの読み込みに失敗しました</p></div>';
             });
     }
     
     // ユーザーのタグを表示
-    function renderUserTags(tags) {
-        const tagsContainer = document.getElementById('tagsDisplay');
+    function userdetailRenderUserTags(tags) {
+        const tagsContainer = document.getElementById('userdetailTagsDisplay');
         tagsContainer.innerHTML = '';
         
         if (!tags || tags.length === 0) {
-            tagsContainer.innerHTML = '<div class="empty-state"><p class="text-muted">タグがありません</p></div>';
+            tagsContainer.innerHTML = '<div class="userdetail__empty-state"><p class="userdetail__text-muted">タグがありません</p></div>';
             return;
         }
         
@@ -225,20 +233,22 @@
         // フォルダごとにタグを表示
         Object.keys(folderGroups).forEach(folderName => {
             const folderDiv = document.createElement('div');
-            folderDiv.className = 'mb-3';
+            folderDiv.className = 'userdetail__folder-section';
             
             // フォルダ名
-            folderDiv.innerHTML = `<h6 class="mb-2"><i class="bi bi-folder text-warning"></i> ${folderName}</h6>`;
+            const folderTitle = document.createElement('h6');
+            folderTitle.className = 'userdetail__folder-title';
+            folderTitle.innerHTML = `<i class="bi bi-folder text-warning"></i> ${folderName}`;
+            folderDiv.appendChild(folderTitle);
             
             // タグリスト
             const tagsDiv = document.createElement('div');
-            tagsDiv.className = 'ms-3 d-flex flex-wrap';
+            tagsDiv.className = 'userdetail__tag-list';
             
             folderGroups[folderName].forEach(tag => {
                 const tagBadge = document.createElement('span');
-                tagBadge.className = 'badge bg-info text-white me-2 mb-2';
+                tagBadge.className = 'userdetail__tag-badge';
                 tagBadge.textContent = tag.name;
-                tagBadge.style.padding = '5px 10px';
                 tagsDiv.appendChild(tagBadge);
             });
             
@@ -248,9 +258,9 @@
     }
     
     // タグ編集モーダルを表示
-    function showTagEditModal(currentTags, userId) {
+    function userdetailShowTagEditModal(currentTags, userId) {
         // すでにモーダルが存在する場合は削除
-        const existingModal = document.getElementById('tagEditModal');
+        const existingModal = document.getElementById('userdetailTagEditModal');
         if (existingModal) {
             existingModal.remove();
         }
@@ -267,21 +277,18 @@
                 
                 // モーダルを作成
                 const modal = document.createElement('div');
-                modal.className = 'modal fade';
-                modal.id = 'tagEditModal';
-                modal.tabIndex = '-1';
-                modal.setAttribute('aria-labelledby', 'tagEditModalLabel');
-                modal.setAttribute('aria-hidden', 'true');
+                modal.className = 'userdetail__modal';
+                modal.id = 'userdetailTagEditModal';
                 
                 let modalHtml = `
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="tagEditModalLabel">タグを編集</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="userdetail__modal-dialog">
+                        <div class="userdetail__modal-content">
+                            <div class="userdetail__modal-header">
+                                <h5 class="userdetail__modal-title">タグを編集</h5>
+                                <button type="button" class="userdetail__btn-close" onclick="userdetailCloseModal()">×</button>
                             </div>
-                            <div class="modal-body">
-                                <div class="tag-selection-container">
+                            <div class="userdetail__modal-body">
+                                <div class="userdetail__tags-container">
                 `;
                 
                 // フォルダごとにタグを表示
@@ -289,18 +296,18 @@
                     const folderTags = tags.filter(tag => tag.parent_id === folder.id);
                     
                     modalHtml += `
-                        <div class="folder-section mb-3">
-                            <h6><i class="bi bi-folder text-warning"></i> ${folder.name}</h6>
-                            <div class="tag-options ms-3">
+                        <div class="userdetail__folder-section">
+                            <h6 class="userdetail__folder-title"><i class="bi bi-folder text-warning"></i> ${folder.name}</h6>
+                            <div class="userdetail__tag-list" style="margin-left: 1rem;">
                     `;
                     
                     folderTags.forEach(tag => {
                         const isChecked = currentTags.some(t => t.id === tag.id);
                         modalHtml += `
-                            <div class="form-check form-check-inline mb-2">
-                                <input class="form-check-input tag-checkbox" type="checkbox" 
-                                    id="tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
-                                <label class="form-check-label" for="tag-${tag.id}">${tag.name}</label>
+                            <div class="userdetail__form-check userdetail__form-check-inline">
+                                <input class="userdetail__form-check-input userdetail__tag-checkbox" type="checkbox" 
+                                    id="userdetail-tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
+                                <label class="userdetail__form-check-label" for="userdetail-tag-${tag.id}">${tag.name}</label>
                             </div>
                         `;
                     });
@@ -315,18 +322,18 @@
                 const unclassifiedTags = tags.filter(tag => !tag.parent_id);
                 if (unclassifiedTags.length > 0) {
                     modalHtml += `
-                        <div class="folder-section mb-3">
-                            <h6><i class="bi bi-folder text-warning"></i> 未分類</h6>
-                            <div class="tag-options ms-3">
+                        <div class="userdetail__folder-section">
+                            <h6 class="userdetail__folder-title"><i class="bi bi-folder text-warning"></i> 未分類</h6>
+                            <div class="userdetail__tag-list" style="margin-left: 1rem;">
                     `;
                     
                     unclassifiedTags.forEach(tag => {
                         const isChecked = currentTags.some(t => t.id === tag.id);
                         modalHtml += `
-                            <div class="form-check form-check-inline mb-2">
-                                <input class="form-check-input tag-checkbox" type="checkbox" 
-                                    id="tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
-                                <label class="form-check-label" for="tag-${tag.id}">${tag.name}</label>
+                            <div class="userdetail__form-check userdetail__form-check-inline">
+                                <input class="userdetail__form-check-input userdetail__tag-checkbox" type="checkbox" 
+                                    id="userdetail-tag-${tag.id}" value="${tag.id}" ${isChecked ? 'checked' : ''}>
+                                <label class="userdetail__form-check-label" for="userdetail-tag-${tag.id}">${tag.name}</label>
                             </div>
                         `;
                     });
@@ -340,9 +347,9 @@
                 modalHtml += `
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                                <button type="button" class="btn btn-primary" id="saveTagsBtn">保存</button>
+                            <div class="userdetail__modal-footer">
+                                <button type="button" class="userdetail__btn userdetail__btn-secondary" onclick="userdetailCloseModal()">キャンセル</button>
+                                <button type="button" class="userdetail__btn userdetail__btn-primary" id="userdetailSaveTagsBtn">保存</button>
                             </div>
                         </div>
                     </div>
@@ -352,19 +359,18 @@
                 document.body.appendChild(modal);
                 
                 // モーダルを表示
-                const modalInstance = new bootstrap.Modal(modal);
-                modalInstance.show();
+                modal.classList.add('show');
                 
                 // 保存ボタンのイベントリスナー
-                document.getElementById('saveTagsBtn').addEventListener('click', function() {
+                document.getElementById('userdetailSaveTagsBtn').addEventListener('click', function() {
                     // 選択されたタグIDを取得
                     const selectedTagIds = [];
-                    document.querySelectorAll('.tag-checkbox:checked').forEach(checkbox => {
+                    document.querySelectorAll('.userdetail__tag-checkbox:checked').forEach(checkbox => {
                         selectedTagIds.push(parseInt(checkbox.value));
                     });
                     
                     // タグを保存
-                    saveUserTags(userId, selectedTagIds, modalInstance);
+                    userdetailSaveUserTags(userId, selectedTagIds);
                 });
             })
             .catch(error => {
@@ -373,8 +379,19 @@
             });
     }
     
+    // モーダルを閉じる
+    function userdetailCloseModal() {
+        const modal = document.getElementById('userdetailTagEditModal');
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.remove();
+            }, 300);
+        }
+    }
+    
     // ユーザーのタグを保存
-    function saveUserTags(userId, tagIds, modalInstance) {
+    function userdetailSaveUserTags(userId, tagIds) {
         fetch('/admin/api/save-user-tags', {
             method: 'POST',
             headers: {
@@ -389,10 +406,10 @@
         .then(data => {
             if (data.success) {
                 // モーダルを閉じる
-                modalInstance.hide();
+                userdetailCloseModal();
                 
                 // タグ表示を更新
-                loadUserTags(userId);
+                userdetailLoadUserTags(userId);
                 
                 alert('タグを保存しました');
             } else {
@@ -406,7 +423,7 @@
     }
 
     // formatDateTime関数の定義を追加
-    function formatDateTime(dateString) {
+    function userdetailFormatDateTime(dateString) {
         if (!dateString) return '-';
         const date = new Date(dateString);
         return date.toLocaleString('ja-JP', {

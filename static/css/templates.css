@@ -1,7 +1,7 @@
 /* テンプレート管理画面専用スタイル */
 
 /* フォルダ管理 */
-.new-folder-btn {
+.templates__new-folder-btn {
     background: #28a745;
     color: white;
     border: none;
@@ -11,7 +11,7 @@
     cursor: pointer;
 }
 
-.folder-edit-btn {
+.templates__folder-edit-btn {
     opacity: 0;
     background: #6c757d;
     color: white;
@@ -24,17 +24,17 @@
     transition: opacity 0.2s;
 }
 
-.sidebar-item:hover .folder-edit-btn {
+.sidebar-item:hover .templates__folder-edit-btn {
     opacity: 1;
 }
 
 /* フォルダドロップダウン */
-.folder-dropdown {
+.templates__folder-dropdown {
     position: relative;
     display: inline-block;
 }
 
-.folder-dropdown-content {
+.templates__folder-dropdown-content {
     display: none;
     position: absolute;
     right: 0;
@@ -46,7 +46,7 @@
     border: 1px solid #ddd;
 }
 
-.folder-dropdown-content a {
+.templates__folder-dropdown-content a {
     color: #333;
     padding: 8px 12px;
     text-decoration: none;
@@ -55,11 +55,11 @@
     cursor: pointer;
 }
 
-.folder-dropdown-content a:hover {
+.templates__folder-dropdown-content a:hover {
     background-color: #f1f1f1;
 }
 
-.folder-dropdown.show .folder-dropdown-content {
+.templates__folder-dropdown.show .templates__folder-dropdown-content {
     display: block;
 }
 

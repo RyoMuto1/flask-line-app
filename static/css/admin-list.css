@@ -1,0 +1,379 @@
+/* 管理者一覧画面専用CSS - 完全独立 */
+
+/* ===== レイアウト ===== */
+.adminlist__container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.adminlist__header {
+    background: white;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.adminlist__header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #333;
+}
+
+.adminlist__description {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.adminlist__main {
+    display: flex;
+    height: calc(100vh - 200px);
+}
+
+/* ===== メインコンテンツ（サイドバーなし） ===== */
+.adminlist__content {
+    flex: 1;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-left: 0; /* サイドバーなしなので左マージンなし */
+}
+
+.adminlist__toolbar {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adminlist__toolbar-left {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.adminlist__toolbar-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* ===== ボタン ===== */
+.adminlist__btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.adminlist__btn-primary {
+    background: #2196f3;
+    color: white;
+}
+
+.adminlist__btn-primary:hover {
+    background: #1976d2;
+    color: white;
+    text-decoration: none;
+}
+
+.adminlist__btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.adminlist__btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+.adminlist__btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.adminlist__btn-danger:hover {
+    background: #c82333;
+    color: white;
+    text-decoration: none;
+}
+
+/* ===== フラッシュメッセージ ===== */
+.adminlist__alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    margin: 1rem 2rem;
+}
+
+.adminlist__alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.adminlist__alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.adminlist__alert-dismissible {
+    padding-right: 4rem;
+    position: relative;
+}
+
+.adminlist__btn-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #000;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.adminlist__btn-close:hover {
+    opacity: 0.75;
+}
+
+/* ===== テーブル ===== */
+.adminlist__table-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 2rem;
+}
+
+.adminlist__data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.adminlist__data-table thead {
+    background-color: #f8f9fa;
+}
+
+.adminlist__data-table th,
+.adminlist__data-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.adminlist__data-table th {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.adminlist__data-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.adminlist__data-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.adminlist__data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ===== データアイテム ===== */
+.adminlist__data-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.adminlist__item-title {
+    font-weight: 500;
+    color: #333;
+}
+
+.adminlist__item-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.adminlist__item-date {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* ===== ステータスバッジ ===== */
+.adminlist__status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.adminlist__status-badge--active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+/* ===== アクションボタン ===== */
+.adminlist__item-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.adminlist__action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.adminlist__action-btn--delete {
+    background: #fff5f5;
+    color: #dc3545;
+    border: 1px solid #f5c6cb;
+}
+
+.adminlist__action-btn--delete:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* ===== テキストスタイル ===== */
+.adminlist__text-muted {
+    color: #6c757d;
+}
+
+/* ===== モーダル ===== */
+.adminlist__modal {
+    display: none;
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.adminlist__modal.show {
+    display: block;
+}
+
+.adminlist__modal-dialog {
+    position: relative;
+    width: auto;
+    max-width: 500px;
+    margin: 1.75rem auto;
+    pointer-events: none;
+}
+
+.adminlist__modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 0.3rem;
+    pointer-events: auto;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.5);
+}
+
+.adminlist__modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.adminlist__modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.adminlist__modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1rem;
+}
+
+.adminlist__modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.adminlist__text-danger {
+    color: #dc3545;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .adminlist__main {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .adminlist__toolbar {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .adminlist__toolbar-left,
+    .adminlist__toolbar-right {
+        justify-content: center;
+    }
+    
+    .adminlist__data-table {
+        font-size: 0.8rem;
+    }
+    
+    .adminlist__data-table th,
+    .adminlist__data-table td {
+        padding: 0.5rem;
+    }
+    
+    .adminlist__modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+} 

@@ -1,0 +1,220 @@
+/* 流入分析ユーザー詳細画面専用CSS - 完全独立 */
+
+/* ===== レイアウト ===== */
+.analyticsusers__container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.analyticsusers__header {
+    background: white;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.analyticsusers__header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #333;
+}
+
+.analyticsusers__main {
+    display: flex;
+    height: calc(100vh - 200px);
+}
+
+/* ===== メインコンテンツ ===== */
+.analyticsusers__content {
+    flex: 1;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    margin-left: 250px; /* サイドバー分のマージン */
+    overflow-y: auto;
+}
+
+/* ===== ボタン ===== */
+.analyticsusers__btn {
+    padding: 0.375rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+}
+
+.analyticsusers__btn-outline-secondary {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.analyticsusers__btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+}
+
+.analyticsusers__btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.analyticsusers__btn-primary:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.analyticsusers__btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* ===== フラッシュメッセージ ===== */
+.analyticsusers__alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.analyticsusers__alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.analyticsusers__alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.analyticsusers__alert-dismissible {
+    padding-right: 4rem;
+    position: relative;
+}
+
+.analyticsusers__btn-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #000;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.analyticsusers__btn-close:hover {
+    opacity: 0.75;
+}
+
+/* ===== カード ===== */
+.analyticsusers__card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.analyticsusers__card-header {
+    padding: 1rem 1.25rem;
+    margin-bottom: 0;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.analyticsusers__card-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.analyticsusers__card-body {
+    padding: 1.25rem;
+}
+
+/* ===== テーブル ===== */
+.analyticsusers__table-responsive {
+    overflow-x: auto;
+}
+
+.analyticsusers__table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.analyticsusers__table th,
+.analyticsusers__table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.analyticsusers__table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.analyticsusers__table tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.analyticsusers__table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .analyticsusers__content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+    
+    .analyticsusers__header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .analyticsusers__main {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .analyticsusers__card-body {
+        padding: 1rem;
+    }
+    
+    .analyticsusers__table-responsive {
+        font-size: 0.8rem;
+    }
+    
+    .analyticsusers__table th,
+    .analyticsusers__table td {
+        padding: 0.5rem;
+    }
+} 

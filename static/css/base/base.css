@@ -1,0 +1,110 @@
+/* base.html専用スタイル */
+
+/* 基本レイアウト */
+.admin-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.admin-header {
+    background: white;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.admin-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #333;
+}
+
+.admin-main {
+    display: flex;
+    height: calc(100vh - 200px);
+}
+
+/* 左サイドバー（ナビゲーション） */
+.admin-nav-sidebar {
+    width: 250px;
+    background: white;
+    border-right: 1px solid #e9ecef;
+    padding: 1rem 0;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.admin-nav-sidebar .nav {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-nav-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: none;
+    transition: all 0.2s;
+}
+
+.admin-nav-sidebar .nav-link i {
+    width: 16px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.admin-nav-sidebar .nav-link span {
+    font-weight: 500;
+}
+
+.admin-nav-sidebar .nav-link:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.admin-nav-sidebar .nav-link.active {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-right: 3px solid #1976d2;
+}
+
+/* メインコンテンツエリア */
+.admin-content {
+    margin-left: 250px;
+    flex: 1;
+    padding: 0;
+    background: white;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .admin-nav-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .admin-content {
+        margin-left: 0;
+    }
+    
+    .admin-main {
+        flex-direction: column;
+        height: auto;
+    }
+} 

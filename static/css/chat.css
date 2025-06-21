@@ -1,8 +1,12 @@
-/* チャット管理画面専用スタイル */
-.chat-page-container {
+/* チャット管理画面専用スタイル - 完全独立版 */
+
+/* =================================
+   基本レイアウト
+   ================================= */
+.chat__page-container {
     position: fixed;
     top: 0;
-    left: 80px; /* サイドバーの幅分を空ける */
+    left: 250px; /* base.cssのサイドバー幅に合わせる */
     right: 0;
     bottom: 0;
     background-color: #f8f9fa;
@@ -10,7 +14,7 @@
     z-index: 1;
 }
 
-.chat-container {
+.chat__container {
     display: flex;
     height: 100vh;
     border: none;
@@ -19,8 +23,10 @@
     overflow: hidden;
 }
 
-/* フラッシュメッセージのスタイル */
-.chat-page-container .alert {
+/* =================================
+   Bootstrap代替クラス - アラート
+   ================================= */
+.chat__alert {
     position: absolute;
     top: 10px;
     left: 50%;
@@ -31,10 +37,374 @@
     margin: 0;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 12px 20px;
+    border: 1px solid transparent;
 }
 
-/* 左ペイン：ユーザーリスト */
-.users-pane {
+.chat__alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.chat__alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.chat__alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.chat__alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+/* =================================
+   Bootstrap代替クラス - ボタン
+   ================================= */
+.chat__btn {
+    display: inline-block;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.chat__btn:hover {
+    color: #212529;
+    text-decoration: none;
+}
+
+.chat__btn:focus {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.chat__btn-primary {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.chat__btn-primary:hover {
+    color: #fff;
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+.chat__btn-secondary {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.chat__btn-secondary:hover {
+    color: #fff;
+    background-color: #545b62;
+    border-color: #4e555b;
+}
+
+.chat__btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+    background-color: transparent;
+}
+
+.chat__btn-outline-primary:hover {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.chat__btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 3px;
+}
+
+/* =================================
+   Bootstrap代替クラス - フォーム
+   ================================= */
+.chat__form-control {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.chat__form-control:focus {
+    color: #495057;
+    background-color: #fff;
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.chat__input-group {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    width: 100%;
+}
+
+.chat__input-group .chat__form-control {
+    position: relative;
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.chat__input-group-append {
+    margin-left: -1px;
+    display: flex;
+}
+
+.chat__input-group-append .chat__btn {
+    position: relative;
+    z-index: 2;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.chat__input-group .chat__form-control:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* =================================
+   Bootstrap代替クラス - テーブル
+   ================================= */
+.chat__table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.chat__table th,
+.chat__table td {
+    padding: 8px;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
+}
+
+.chat__table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.chat__table-sm th,
+.chat__table-sm td {
+    padding: 4px;
+}
+
+/* =================================
+   Bootstrap代替クラス - バッジ
+   ================================= */
+.chat__badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 4px;
+}
+
+.chat__badge-primary {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.chat__badge-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+
+.chat__badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.chat__badge-danger {
+    color: #fff;
+    background-color: #dc3545;
+}
+
+.chat__badge-warning {
+    color: #212529;
+    background-color: #ffc107;
+}
+
+.chat__badge-info {
+    color: #fff;
+    background-color: #17a2b8;
+}
+
+/* =================================
+   Bootstrap代替クラス - フレックス
+   ================================= */
+.chat__d-flex {
+    display: flex !important;
+}
+
+.chat__justify-content-between {
+    justify-content: space-between !important;
+}
+
+.chat__justify-content-center {
+    justify-content: center !important;
+}
+
+.chat__align-items-center {
+    align-items: center !important;
+}
+
+.chat__align-items-start {
+    align-items: flex-start !important;
+}
+
+.chat__flex-wrap {
+    flex-wrap: wrap !important;
+}
+
+.chat__w-100 {
+    width: 100% !important;
+}
+
+/* =================================
+   Bootstrap代替クラス - スペーシング
+   ================================= */
+.chat__m-0 { margin: 0 !important; }
+.chat__m-1 { margin: 4px !important; }
+.chat__m-2 { margin: 8px !important; }
+.chat__m-3 { margin: 16px !important; }
+
+.chat__mb-0 { margin-bottom: 0 !important; }
+.chat__mb-1 { margin-bottom: 4px !important; }
+.chat__mb-2 { margin-bottom: 8px !important; }
+.chat__mb-3 { margin-bottom: 16px !important; }
+
+.chat__mt-0 { margin-top: 0 !important; }
+.chat__mt-1 { margin-top: 4px !important; }
+.chat__mt-2 { margin-top: 8px !important; }
+.chat__mt-3 { margin-top: 16px !important; }
+
+.chat__mr-0 { margin-right: 0 !important; }
+.chat__mr-1 { margin-right: 4px !important; }
+.chat__mr-2 { margin-right: 8px !important; }
+.chat__mr-3 { margin-right: 16px !important; }
+
+.chat__ml-0 { margin-left: 0 !important; }
+.chat__ml-1 { margin-left: 4px !important; }
+.chat__ml-2 { margin-left: 8px !important; }
+.chat__ml-3 { margin-left: 16px !important; }
+
+.chat__me-0 { margin-right: 0 !important; }
+.chat__me-1 { margin-right: 4px !important; }
+.chat__me-2 { margin-right: 8px !important; }
+.chat__me-3 { margin-right: 16px !important; }
+
+.chat__p-0 { padding: 0 !important; }
+.chat__p-1 { padding: 4px !important; }
+.chat__p-2 { padding: 8px !important; }
+.chat__p-3 { padding: 16px !important; }
+
+/* =================================
+   Bootstrap代替クラス - テキスト
+   ================================= */
+.chat__text-muted {
+    color: #6c757d !important;
+}
+
+.chat__text-primary {
+    color: #007bff !important;
+}
+
+.chat__text-success {
+    color: #28a745 !important;
+}
+
+.chat__text-danger {
+    color: #dc3545 !important;
+}
+
+.chat__text-warning {
+    color: #ffc107 !important;
+}
+
+.chat__text-info {
+    color: #17a2b8 !important;
+}
+
+.chat__small {
+    font-size: 12px;
+    font-weight: 400;
+}
+
+/* =================================
+   Bootstrap代替クラス - その他
+   ================================= */
+.chat__bg-white {
+    background-color: #fff !important;
+}
+
+.chat__bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.chat__border {
+    border: 1px solid #dee2e6 !important;
+}
+
+.chat__rounded {
+    border-radius: 4px !important;
+}
+
+.chat__rounded-circle {
+    border-radius: 50% !important;
+}
+
+.chat__float-right {
+    float: right !important;
+}
+
+.chat__float-left {
+    float: left !important;
+}
+
+/* =================================
+   左ペイン：ユーザーリスト
+   ================================= */
+.chat__users-pane {
     width: 300px;
     border-right: 1px solid #e9ecef;
     overflow-y: auto;
@@ -42,7 +412,35 @@
     padding: 1rem;
 }
 
-.user-list-item {
+.chat__search-box {
+    margin-bottom: 1rem;
+    width: 100%;
+    border: none !important;
+    padding: 0;
+    background: transparent;
+}
+
+.chat__search-box .chat__form-control {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #f8f9fa;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.chat__search-box .chat__form-control:focus {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.chat__user-list {
+    overflow-y: auto;
+}
+
+.chat__user-list-item {
     padding: 0.75rem;
     border-radius: 4px;
     cursor: pointer;
@@ -54,50 +452,28 @@
     border-bottom: 1px solid #eee;
 }
 
-.user-list-item:hover {
+.chat__user-list-item:hover {
     background-color: #f8f9fa;
 }
 
-.user-list-item.active {
+.chat__user-list-item.chat__active {
     background-color: #e3f2fd;
     border-left: 3px solid #2196f3;
 }
 
-.user-list-item .unread-badge {
+.chat__unread-badge {
     background-color: #ff5a5f;
     color: white;
     border-radius: 50%;
     padding: 3px 6px;
     font-size: 0.7rem;
+    font-weight: bold;
 }
 
-/* チャット管理画面の検索ボックス（admin-common.cssを上書き） */
-.users-pane .search-box {
-    margin-bottom: 1rem;
-    width: 100%;
-    border: none !important;
-    padding: 0;
-    background: transparent;
-}
-
-.users-pane .search-box .form-control {
-    border: none !important;
-    box-shadow: none !important;
-    background-color: #f8f9fa;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.users-pane .search-box .form-control:focus {
-    border: none !important;
-    box-shadow: none !important;
-    background-color: #fff;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* 中央ペイン：チャット内容 */
-.chat-pane {
+/* =================================
+   中央ペイン：チャット内容
+   ================================= */
+.chat__chat-pane {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -106,7 +482,7 @@
     background-color: #fff;
 }
 
-.chat-header {
+.chat__chat-header {
     padding: 1rem 2rem;
     border-bottom: 1px solid #e9ecef;
     background-color: white;
@@ -115,7 +491,7 @@
     gap: 0.75rem;
 }
 
-.chat-header-avatar {
+.chat__chat-header-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -129,20 +505,20 @@
     flex-shrink: 0;
 }
 
-.chat-header-avatar img {
+.chat__chat-header-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.chat-header-name-container {
+.chat__chat-header-name-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex: 1;
 }
 
-.chat-header-name {
+.chat__chat-header-name {
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0;
@@ -152,12 +528,12 @@
     transition: color 0.2s;
 }
 
-.chat-header-name:hover {
+.chat__chat-header-name:hover {
     color: #2196f3;
     text-decoration: underline;
 }
 
-.chat-header-status {
+.chat__chat-header-status {
     display: inline-block;
     padding: 4px 12px;
     border-radius: 4px;
@@ -166,7 +542,7 @@
     color: white;
 }
 
-.messages-container {
+.chat__messages-container {
     flex-grow: 1;
     overflow-y: auto;
     padding: 15px;
@@ -174,8 +550,10 @@
     min-height: 0;
 }
 
-/* メッセージバブルスタイル */
-.message {
+/* =================================
+   メッセージスタイル
+   ================================= */
+.chat__message {
     margin-bottom: 15px;
     max-width: 85%;
     clear: both;
@@ -184,16 +562,16 @@
     align-items: flex-start;
 }
 
-.message-admin {
+.chat__message-admin {
     float: right;
     margin-left: auto;
 }
 
-.message-user {
+.chat__message-user {
     float: left;
 }
 
-.message-avatar {
+.chat__message-avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -208,108 +586,140 @@
     flex-shrink: 0;
 }
 
-.message-avatar img {
+.chat__message-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.message-avatar .default-avatar {
+.chat__default-avatar {
     font-size: 18px;
 }
 
-.message-admin .message-avatar {
+.chat__message-admin .chat__message-avatar {
     display: none;
 }
 
-.message-bubble {
+.chat__message-bubble {
     padding: 10px 15px;
     border-radius: 15px;
     position: relative;
 }
 
-.message-admin .message-bubble {
+.chat__message-admin .chat__message-bubble {
     background-color: #94e832;  /* LINE送信メッセージ色 */
     border-top-right-radius: 0;
 }
 
-.message-user .message-bubble {
+.chat__message-user .chat__message-bubble {
     background-color: #ffffff;  /* LINE受信メッセージ色 */
     border-top-left-radius: 0;
 }
 
-.message-content {
+.chat__message-content {
     word-break: break-word;
 }
 
-.message-info {
+.chat__message-info {
     font-size: 0.7rem;
     color: #6c757d;
     margin-top: 4px;
     text-align: right;
 }
 
-.message-admin .message-info {
+.chat__message-admin .chat__message-info {
     text-align: right;
 }
 
-.message-user .message-info {
+.chat__message-user .chat__message-info {
     text-align: left;
 }
 
-.message-time {
+.chat__message-time {
     font-size: 0.7rem;
     color: #6c757d;
     align-self: flex-end;
     margin: 0 4px;
 }
 
-.message-input {
+.chat__message-input {
     flex-shrink: 0;
     padding: 15px;
     border-top: 1px solid #ddd;
     background-color: #f8f9fa;
 }
 
-/* 右ペイン：ユーザー情報とメモ */
-.info-pane {
+/* =================================
+   右ペイン：ユーザー情報とメモ
+   ================================= */
+.chat__info-pane {
     width: 300px;
     border-left: 1px solid #ddd;
     background-color: #f8f9fa;
     overflow-y: auto;
 }
 
-.user-info {
+.chat__user-info {
     padding: 15px;
     border-bottom: 1px solid #ddd;
 }
 
-.user-notes {
+.chat__user-notes {
     padding: 15px;
 }
 
-.note-title {
+.chat__note-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
 
-/* ローディングとエラー表示 */
-.loading-spinner {
+.chat__note-content {
+    min-height: 80px;
+    padding: 8px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.chat__note-text {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.chat__user-tags {
+    padding: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.chat__tags-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* =================================
+   共通要素
+   ================================= */
+.chat__loading-spinner {
     text-align: center;
     padding: 20px;
     color: #6c757d;
 }
 
-.empty-state {
+.chat__empty-state {
     text-align: center;
     padding: 50px 20px;
     color: #6c757d;
 }
 
-/* 日付区切り */
-.date-separator {
+/* =================================
+   日付区切り
+   ================================= */
+.chat__date-separator {
     text-align: center;
     margin: 20px 0;
     position: relative;
@@ -317,7 +727,7 @@
     overflow: hidden;
 }
 
-.date-separator::before {
+.chat__date-separator::before {
     content: '';
     position: absolute;
     left: 0;
@@ -328,7 +738,7 @@
     z-index: 1;
 }
 
-.date-text {
+.chat__date-text {
     background-color: rgba(255,255,255,0.9);
     padding: 5px 15px;
     border-radius: 15px;
@@ -341,8 +751,10 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* 対応マーク用スタイル */
-.status-marker-inline {
+/* =================================
+   対応マーク用スタイル
+   ================================= */
+.chat__status-marker-inline {
     display: inline-block;
     padding: 2px 6px;
     border-radius: 4px;
@@ -353,7 +765,7 @@
     vertical-align: middle;
 }
 
-.status-marker-large {
+.chat__status-marker-large {
     display: inline-block;
     padding: 6px 12px;
     border-radius: 6px;
@@ -367,11 +779,11 @@
     transition: opacity 0.2s;
 }
 
-.status-marker-large:hover {
+.chat__status-marker-large:hover {
     opacity: 0.8;
 }
 
-.status-marker-dropdown {
+.chat__status-marker-dropdown {
     position: absolute;
     top: 100%;
     left: 0;
@@ -386,11 +798,11 @@
     display: none;
 }
 
-.status-marker-dropdown.show {
+.chat__status-marker-dropdown.chat__show {
     display: block;
 }
 
-.status-marker-option {
+.chat__status-marker-option {
     padding: 8px 12px;
     cursor: pointer;
     border-bottom: 1px solid #eee;
@@ -399,77 +811,87 @@
     transition: background-color 0.2s;
 }
 
-.status-marker-option:last-child {
+.chat__status-marker-option:last-child {
     border-bottom: none;
 }
 
-.status-marker-option:hover {
+.chat__status-marker-option:hover {
     background-color: #f8f9fa;
 }
 
-.status-marker-option.none {
+.chat__status-marker-option.chat__none {
     color: #6c757d;
     font-weight: normal;
 }
 
-.status-marker-container {
+.chat__status-marker-container {
     position: relative;
     margin-bottom: 15px;
 }
 
-/* ボタン幅統一 */
-.user-action-button {
+/* =================================
+   ユーティリティ
+   ================================= */
+.chat__user-action-button {
     width: 100%;
     margin-bottom: 10px;
 }
 
-/* レスポンシブ対応 */
+/* =================================
+   レスポンシブ対応
+   ================================= */
+@media (max-width: 1200px) {
+    .chat__page-container {
+        left: 200px; /* 中サイズ画面でサイドバーが狭くなる場合 */
+    }
+}
+
 @media (max-width: 768px) {
-    .chat-page-container {
+    .chat__page-container {
         left: 0; /* 小さい画面ではサイドバーが隠れるので全幅使用 */
     }
     
-    .users-pane {
+    .chat__users-pane {
         width: 250px;
     }
     
-    .info-pane {
+    .chat__info-pane {
         width: 250px;
     }
     
-    .chat-header {
+    .chat__chat-header {
         padding: 0.75rem 1rem;
     }
     
-    .chat-header-name {
+    .chat__chat-header-name {
         font-size: 1rem;
     }
 }
 
 @media (max-width: 576px) {
-    .chat-page-container {
+    .chat__page-container {
         left: 0; /* スマートフォンでは全幅使用 */
     }
     
-    .chat-container {
+    .chat__container {
         flex-direction: column;
     }
     
-    .users-pane {
+    .chat__users-pane {
         width: 100%;
         height: 200px;
         border-right: none;
         border-bottom: 1px solid #e9ecef;
     }
     
-    .info-pane {
+    .chat__info-pane {
         width: 100%;
         height: 200px;
         border-left: none;
         border-top: 1px solid #e9ecef;
     }
     
-    .chat-pane {
+    .chat__chat-pane {
         flex: 1;
         min-height: 0;
     }

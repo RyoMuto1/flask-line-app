@@ -1,0 +1,173 @@
+/* 注文詳細画面専用CSS - 完全独立 */
+
+/* ===== レイアウト ===== */
+.orderdetail__container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.orderdetail__header {
+    background: white;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.orderdetail__header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #333;
+}
+
+.orderdetail__main {
+    display: flex;
+    height: calc(100vh - 200px);
+}
+
+/* ===== メインコンテンツ ===== */
+.orderdetail__content {
+    flex: 1;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    margin-left: 250px; /* サイドバー分のマージン */
+    overflow-y: auto;
+}
+
+/* ===== ボタン ===== */
+.orderdetail__btn {
+    padding: 0.375rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+}
+
+.orderdetail__btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.orderdetail__btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+/* ===== カード ===== */
+.orderdetail__card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.orderdetail__card-body {
+    padding: 1.5rem;
+}
+
+.orderdetail__card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* ===== グリッドレイアウト ===== */
+.orderdetail__row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: -0.5rem;
+}
+
+.orderdetail__col {
+    flex: 1;
+    min-width: 300px;
+    padding: 0.5rem;
+}
+
+.orderdetail__col-half {
+    flex: 0 0 50%;
+    padding: 0.5rem;
+}
+
+/* ===== 情報表示 ===== */
+.orderdetail__info-item {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.orderdetail__info-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.orderdetail__info-value {
+    color: #212529;
+    font-size: 1rem;
+}
+
+/* ===== セクション区切り ===== */
+.orderdetail__section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.orderdetail__section:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .orderdetail__content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+    
+    .orderdetail__header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .orderdetail__main {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .orderdetail__col,
+    .orderdetail__col-half {
+        flex: 1;
+        min-width: 100%;
+    }
+    
+    .orderdetail__row {
+        flex-direction: column;
+    }
+    
+    .orderdetail__card-body {
+        padding: 1rem;
+    }
+} 

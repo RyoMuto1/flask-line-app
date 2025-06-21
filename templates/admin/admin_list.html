@@ -1,24 +1,30 @@
 {% extends "admin/base.html" %}
 
+{% block title %}管理者一覧{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-list.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="admin-container">
+<div class="adminlist__container">
   <!-- ヘッダー -->
-  <div class="admin-header">
+  <div class="adminlist__header">
     <h1>管理者アカウント</h1>
-    <div class="admin-description">システムにアクセスできる管理者アカウントを管理できます。</div>
+    <div class="adminlist__description">システムにアクセスできる管理者アカウントを管理できます。</div>
   </div>
   
   <!-- メインコンテンツ -->
-  <div class="admin-main">
+  <div class="adminlist__main">
     <!-- メインコンテンツエリア（サイドバーなし） -->
-    <div class="admin-content" style="margin-left: 0;">
+    <div class="adminlist__content">
       <!-- ツールバー -->
-      <div class="admin-toolbar">
-        <div class="toolbar-left">
-          <span class="text-muted">管理者アカウント一覧</span>
+      <div class="adminlist__toolbar">
+        <div class="adminlist__toolbar-left">
+          <span class="adminlist__text-muted">管理者アカウント一覧</span>
         </div>
-        <div class="toolbar-right">
-          <a href="{{ url_for('first_admin') }}" class="btn btn-primary">
+        <div class="adminlist__toolbar-right">
+          <a href="{{ url_for('first_admin') }}" class="adminlist__btn adminlist__btn-primary">
             <i class="fas fa-plus"></i> 新しい管理者を追加
           </a>
         </div>
@@ -28,17 +34,17 @@
       {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
               {% for category, message in messages %}
-                  <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                  <div class="adminlist__alert adminlist__alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} adminlist__alert-dismissible fade show">
                       {{ message }}
-                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                      <button type="button" class="adminlist__btn-close" data-bs-dismiss="alert"></button>
                   </div>
               {% endfor %}
           {% endif %}
       {% endwith %}
       
       <!-- 管理者一覧 -->
-      <div class="admin-table">
-        <table class="data-table">
+      <div class="adminlist__table-container">
+        <table class="adminlist__data-table">
           <thead>
             <tr>
               <th style="width: 15%;">ID</th>
@@ -52,52 +58,32 @@
             <tr>
               <td>{{ admin.id }}</td>
               <td>
-                <div class="data-item">
-                  <div class="item-title">{{ admin.email }}</div>
+                <div class="adminlist__data-item">
+                  <div class="adminlist__item-title">{{ admin.email }}</div>
                   {% if admin.id == current_admin_id %}
-                  <div class="item-meta">
-                    <span class="status-badge active">現在のユーザー</span>
+                  <div class="adminlist__item-meta">
+                    <span class="adminlist__status-badge adminlist__status-badge--active">現在のユーザー</span>
                   </div>
                   {% endif %}
                 </div>
               </td>
-              <td class="item-date">{{ admin.created_at }}</td>
+              <td class="adminlist__item-date">{{ admin.created_at }}</td>
               <td>
                 {% if admin.id != current_admin_id %}
-                <div class="item-actions">
-                  <button class="action-btn delete-btn" data-bs-toggle="modal" data-bs-target="#deleteModal{{ admin.id }}" title="削除">
+                <div class="adminlist__item-actions">
+                  <button class="adminlist__action-btn adminlist__action-btn--delete" 
+                          data-admin-id="{{ admin.id }}" 
+                          data-admin-email="{{ admin.email }}" 
+                          onclick="adminlistShowDeleteModal(this.dataset.adminId, this.dataset.adminEmail)" 
+                          title="削除">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
                 {% else %}
-                <span class="text-muted">-</span>
+                <span class="adminlist__text-muted">-</span>
                 {% endif %}
               </td>
             </tr>
-
-            <!-- 削除確認モーダル -->
-            {% if admin.id != current_admin_id %}
-            <div class="modal fade" id="deleteModal{{ admin.id }}" tabindex="-1">
-              <div class="modal-dialog">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title">管理者アカウント削除の確認</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                  </div>
-                  <div class="modal-body">
-                    <p>管理者「{{ admin.email }}」を削除してもよろしいですか？</p>
-                    <p class="text-danger">この操作は取り消せません。</p>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <form method="POST" action="{{ url_for('delete_admin', admin_id=admin.id) }}">
-                      <button type="submit" class="btn btn-danger">削除する</button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
             {% endfor %}
           </tbody>
         </table>
@@ -105,4 +91,53 @@
     </div>
   </div>
 </div>
+
+<!-- 削除確認モーダル -->
+<div class="adminlist__modal" id="adminlistDeleteModal">
+  <div class="adminlist__modal-dialog">
+    <div class="adminlist__modal-content">
+      <div class="adminlist__modal-header">
+        <h5 class="adminlist__modal-title">管理者アカウント削除の確認</h5>
+        <button type="button" class="adminlist__btn-close" onclick="adminlistCloseModal()">×</button>
+      </div>
+      <div class="adminlist__modal-body">
+        <p id="adminlistDeleteMessage">管理者を削除してもよろしいですか？</p>
+        <p class="adminlist__text-danger">この操作は取り消せません。</p>
+      </div>
+      <div class="adminlist__modal-footer">
+        <button type="button" class="adminlist__btn adminlist__btn-secondary" onclick="adminlistCloseModal()">キャンセル</button>
+        <form id="adminlistDeleteForm" method="POST" style="display: inline;">
+          <button type="submit" class="adminlist__btn adminlist__btn-danger">削除する</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 削除モーダルを表示
+function adminlistShowDeleteModal(adminId, adminEmail) {
+    const modal = document.getElementById('adminlistDeleteModal');
+    const message = document.getElementById('adminlistDeleteMessage');
+    const form = document.getElementById('adminlistDeleteForm');
+    
+    message.textContent = `管理者「${adminEmail}」を削除してもよろしいですか？`;
+    form.action = `/admin/delete-admin/${adminId}`;
+    
+    modal.classList.add('show');
+}
+
+// モーダルを閉じる
+function adminlistCloseModal() {
+    const modal = document.getElementById('adminlistDeleteModal');
+    modal.classList.remove('show');
+}
+
+// モーダル外クリックで閉じる
+document.getElementById('adminlistDeleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        adminlistCloseModal();
+    }
+});
+</script>
 {% endblock %} 

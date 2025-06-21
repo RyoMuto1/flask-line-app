@@ -1,0 +1,19 @@
+INFO:__main__:ローカルディスクを使用します: /Users/mutouryou/Desktop/flask_order_form/orders.db
+INFO:__main__:データベースパス: /Users/mutouryou/Desktop/flask_order_form/orders.db
+INFO:__main__:user_registrationsテーブルの構造を修正します
+INFO:__main__:user_registrationsテーブルの構造を修正しました
+INFO:__main__:ordersテーブルのマイグレーションが完了しました
+INFO:__main__:データベースの初期化が完了しました
+INFO:__main__:ローカルディスクを使用します: /Users/mutouryou/Desktop/flask_order_form/orders.db
+INFO:__main__:データベースに接続します: /Users/mutouryou/Desktop/flask_order_form/orders.db
+INFO:__main__:起動時チェック: 「未分類」フォルダは既に存在します
+Traceback (most recent call last):
+  File "app.py", line 3851, in <module>
+    socketio.run(app, host='0.0.0.0', port=5000)
+  File "/Users/mutouryou/Desktop/flask_order_form/.venv/lib/python3.8/site-packages/flask_socketio/__init__.py", line 694, in run
+    run_server()
+  File "/Users/mutouryou/Desktop/flask_order_form/.venv/lib/python3.8/site-packages/flask_socketio/__init__.py", line 671, in run_server
+    eventlet_socket = eventlet.listen(addresses[0][4],
+  File "/Users/mutouryou/Desktop/flask_order_form/.venv/lib/python3.8/site-packages/eventlet/convenience.py", line 78, in listen
+    sock.bind(addr)
+OSError: [Errno 48] Address already in use

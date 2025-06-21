@@ -1,51 +1,129 @@
 {% extends "admin/base.html" %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings-profile.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>管理者プロフィール編集</h2>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">メールアドレス変更</h5>
-        </div>
-        <div class="card-body">
-            <p class="card-text">管理者ログイン用のメールアドレスを変更できます。新しいメールアドレスは次回ログイン時から有効になります。</p>
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="email" class="form-label">新しいメールアドレス</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ admin.email }}" required>
-                    <div class="form-text">このメールアドレスは管理者ログインに使用されます</div>
+<div class="settings__page-container">
+    <div class="settings__main-content">
+        <h2 class="settings__page-title">管理者プロフィール編集</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="settings__alert settings__alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="settings__card settings__mb-4">
+            <div class="settings__card-header settings__bg-primary settings__text-white">
+                <h5 class="settings__mb-0">
+                    <i class="fas fa-envelope"></i> メールアドレス変更
+                </h5>
+            </div>
+            <div class="settings__card-body">
+                <p class="settings__card-text">管理者ログイン用のメールアドレスを変更できます。新しいメールアドレスは次回ログイン時から有効になります。</p>
+                
+                <div class="settings__security-notice">
+                    <p class="settings__security-notice-text">
+                        <i class="fas fa-info-circle settings__security-notice-icon"></i>
+                        セキュリティのため、メールアドレス変更には現在のパスワードの入力が必要です。
+                    </p>
                 </div>
-                <div class="mb-3">
-                    <label for="current_password" class="form-label">現在のパスワード（確認用）</label>
-                    <input type="password" class="form-control" id="current_password" name="current_password" required>
-                    <div class="form-text">セキュリティのため、変更を確認するには現在のパスワードが必要です</div>
+                
+                <form method="POST" class="settings__profile-form">
+                    <div class="settings__form-group settings__mb-3">
+                        <label for="email" class="settings__form-label">新しいメールアドレス</label>
+                        <input type="email" class="settings__form-control" id="email" name="email" value="{{ admin.email }}" required autocomplete="email">
+                        <div class="settings__form-text">このメールアドレスは管理者ログインに使用されます</div>
+                    </div>
+                    
+                    <div class="settings__form-group settings__mb-4">
+                        <label for="current_password" class="settings__form-label">現在のパスワード（確認用）</label>
+                        <input type="password" class="settings__form-control" id="current_password" name="current_password" required autocomplete="current-password">
+                        <div class="settings__form-text">セキュリティのため、変更を確認するには現在のパスワードが必要です</div>
+                    </div>
+                    
+                    <div class="settings__form-actions">
+                        <button type="submit" class="settings__btn settings__btn-primary">
+                            <i class="fas fa-save"></i> メールアドレスを更新
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="settings__btn settings__btn-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="settings__card">
+            <div class="settings__card-header settings__bg-info settings__text-white">
+                <h5 class="settings__mb-0">
+                    <i class="fas fa-user-cog"></i> アカウント情報
+                </h5>
+            </div>
+            <div class="settings__card-body">
+                <div class="settings__info-section">
+                    <div class="settings__info-title">
+                        <i class="fas fa-info-circle settings__info-icon"></i>
+                        現在の設定内容
+                    </div>
+                    
+                    <div class="settings__info-item">
+                        <span class="settings__info-label">現在のメールアドレス:</span>
+                        <span class="settings__info-value">{{ admin.email }}</span>
+                    </div>
+                    
+                    <div class="settings__info-item">
+                        <span class="settings__info-label">アカウント作成日:</span>
+                        <span class="settings__info-value">{{ admin.created_at }}</span>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">メールアドレスを更新</button>
-                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">キャンセル</a>
-            </form>
+                
+                <div class="settings__form-actions settings__mt-3">
+                    <a href="{{ url_for('admin_change_password') }}" class="settings__btn settings__btn-outline-primary">
+                        <i class="fas fa-key"></i> パスワード変更へ
+                    </a>
+                    <a href="{{ url_for('admin_dashboard') }}" class="settings__btn settings__btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">アカウント情報</h5>
-        </div>
-        <div class="card-body">
-            <p><strong>現在のメールアドレス:</strong> {{ admin.email }}</p>
-            <p><strong>アカウント作成日:</strong> {{ admin.created_at }}</p>
-            <div class="mt-3">
-                <a href="{{ url_for('admin_change_password') }}" class="btn btn-outline-primary">パスワード変更へ</a>
+        
+        <div class="settings__card">
+            <div class="settings__card-body">
+                <h5 class="settings__card-title">セキュリティに関する推奨事項</h5>
+                <ul class="settings__text-muted settings__small">
+                    <li>定期的にパスワードを変更することを推奨します（90日に1回程度）</li>
+                    <li>メールアドレスは必ず管理者本人がアクセス可能なものを使用してください</li>
+                    <li>共有アカウントの使用は避け、管理者ごとに個別のアカウントを作成してください</li>
+                    <li>不審なログイン履歴がないか定期的に確認してください</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// メールアドレス変更時の確認
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[method="POST"]');
+    const emailInput = document.getElementById('email');
+    const originalEmail = '{{ admin.email }}';
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (emailInput.value !== originalEmail) {
+                const confirmed = confirm('メールアドレスを変更しますか？\n\n新しいアドレス: ' + emailInput.value + '\n\n次回ログイン時から新しいメールアドレスが必要になります。');
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %} 
