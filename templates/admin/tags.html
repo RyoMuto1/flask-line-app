@@ -18,7 +18,7 @@
     <!-- 左サイドバー（フォルダ一覧） -->
     <div class="tags__sidebar">
       <div class="tags__sidebar-header">
-        <button class="tags__btn tags__btn-success" data-bs-toggle="modal" data-bs-target="#tagsCreateFolderModal">
+        <button class="tags__btn tags__btn-success" onclick="showCreateFolderModal()">
           <i class="fas fa-plus"></i> 新しいフォルダ
         </button>
         <button class="tags__btn-sm" id="tags__reorderBtn">並べ替え</button>
@@ -34,11 +34,11 @@
       <!-- ツールバー -->
       <div class="tags__toolbar">
         <div class="tags__toolbar-left">
-          <button class="tags__btn tags__btn-primary" data-bs-toggle="modal" data-bs-target="#tagsCreateTagModal">
+          <button class="tags__btn tags__btn-primary" onclick="showCreateTagModal()">
             <i class="fas fa-plus"></i> 新しいタグ
           </button>
           <button class="tags__btn-sm" id="tags__reorderTagsBtn">並べ替え</button>
-          <button class="tags__btn tags__btn-warning" data-bs-toggle="modal" data-bs-target="#tagsImportModal">
+          <button class="tags__btn tags__btn-warning" onclick="showImportModal()">
             <i class="fas fa-file-upload"></i> CSVアップロード
           </button>
         </div>
@@ -80,32 +80,31 @@
 </div>
 
 <!-- 新規タグ作成モーダル -->
-<div class="modal fade" id="tagsCreateTagModal" tabindex="-1" aria-labelledby="tagsCreateTagModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
+<div class="tags__modal" id="tagsCreateTagModal">
+  <div class="tags__modal-dialog">
+    <div class="tags__modal-content">
       <form id="tags__createTagForm">
-        <div class="modal-header">
-          <h5 class="modal-title" id="tagsCreateTagModalLabel">新規タグ作成</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="tags__modal-header">
+          <h5 class="tags__modal-title">新規タグ作成</h5>
+          <button type="button" class="tags__btn-close" onclick="closeTagModal('tagsCreateTagModal')">&times;</button>
         </div>
-        <div class="modal-body">
-          <div class="tags__form-group mb-3">
-            <label for="tags__tagName" class="form-label">タグ名</label>
-            <input type="text" class="tags__form-control form-control" id="tags__tagName" name="name" placeholder="例: VIP, 購入見込み, 友人など" required>
+        <div class="tags__modal-body">
+          <div class="tags__form-group">
+            <label for="tags__tagName" class="tags__form-label">タグ名</label>
+            <input type="text" class="tags__form-control" id="tags__tagName" name="name" placeholder="例: VIP, 購入見込み, 友人など" required>
           </div>
-          <div class="tags__form-group mb-3">
-            <label for="tags__parentTag" class="form-label">親フォルダ</label>
-            <select class="tags__form-control form-select" id="tags__parentTag" name="parent_id">
-              <option value="">(トップレベル)</option>
-              {% for tag in tags if not tag.parent_id %}
-                <option value="{{ tag.id }}">{{ tag.name }}</option>
+          <div class="tags__form-group">
+            <label for="tags__parentTag" class="tags__form-label">フォルダ</label>
+            <select class="tags__form-control" id="tags__parentTag" name="folder_id">
+              {% for folder in folders %}
+                <option value="{{ folder.id }}">{{ folder.name }}</option>
               {% endfor %}
             </select>
           </div>
-          <div id="tags__createTagError" class="text-danger small"></div>
+          <div id="tags__createTagError" class="tags__error-message"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+        <div class="tags__modal-footer">
+          <button type="button" class="tags__btn tags__btn-secondary" onclick="closeTagModal('tagsCreateTagModal')">閉じる</button>
           <button type="submit" class="tags__btn tags__btn-primary">作成</button>
         </div>
       </form>
@@ -114,23 +113,23 @@
 </div>
 
 <!-- フォルダ作成モーダル -->
-<div class="modal fade" id="tagsCreateFolderModal" tabindex="-1" aria-labelledby="tagsCreateFolderModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
+<div class="tags__modal" id="tagsCreateFolderModal">
+  <div class="tags__modal-dialog">
+    <div class="tags__modal-content">
       <form id="tags__createFolderForm">
-        <div class="modal-header">
-          <h5 class="modal-title" id="tagsCreateFolderModalLabel">新規フォルダ作成</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="tags__modal-header">
+          <h5 class="tags__modal-title">新規フォルダ作成</h5>
+          <button type="button" class="tags__btn-close" onclick="closeTagModal('tagsCreateFolderModal')">&times;</button>
         </div>
-        <div class="modal-body">
-          <div class="tags__form-group mb-3">
-            <label for="tags__folderName" class="form-label">フォルダ名</label>
-            <input type="text" class="tags__form-control form-control" id="tags__folderName" name="name" placeholder="例: 顧客ランク、興味カテゴリなど" required>
+        <div class="tags__modal-body">
+          <div class="tags__form-group">
+            <label for="tags__folderName" class="tags__form-label">フォルダ名</label>
+            <input type="text" class="tags__form-control" id="tags__folderName" name="name" placeholder="例: 顧客ランク、興味カテゴリなど" required>
           </div>
-          <div id="tags__createFolderError" class="text-danger small"></div>
+          <div id="tags__createFolderError" class="tags__error-message"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+        <div class="tags__modal-footer">
+          <button type="button" class="tags__btn tags__btn-secondary" onclick="closeTagModal('tagsCreateFolderModal')">閉じる</button>
           <button type="submit" class="tags__btn tags__btn-primary">作成</button>
         </div>
       </form>
@@ -139,28 +138,28 @@
 </div>
 
 <!-- CSVインポートモーダル -->
-<div class="modal fade" id="tagsImportModal" tabindex="-1" aria-labelledby="tagsImportModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
+<div class="tags__modal" id="tagsImportModal">
+  <div class="tags__modal-dialog">
+    <div class="tags__modal-content">
       <form id="tags__importForm">
-        <div class="modal-header">
-          <h5 class="modal-title" id="tagsImportModalLabel">CSVからタグをインポート</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="tags__modal-header">
+          <h5 class="tags__modal-title">CSVからタグをインポート</h5>
+          <button type="button" class="tags__btn-close" onclick="closeTagModal('tagsImportModal')">&times;</button>
         </div>
-        <div class="modal-body">
-          <div class="tags__form-group mb-3">
-            <label for="tags__csvFile" class="form-label">CSVファイル</label>
-            <input type="file" class="tags__form-control form-control" id="tags__csvFile" name="csv_file" accept=".csv" required>
+        <div class="tags__modal-body">
+          <div class="tags__form-group">
+            <label for="tags__csvFile" class="tags__form-label">CSVファイル</label>
+            <input type="file" class="tags__form-control" id="tags__csvFile" name="csv_file" accept=".csv" required>
           </div>
-          <div class="alert alert-info">
+          <div class="tags__info-message">
             <small>CSVフォーマット: タグ名,親フォルダID（オプション）<br>
             例: VIP顧客<br>
             例: 新規顧客,1</small>
           </div>
-          <div id="tags__importError" class="text-danger small"></div>
+          <div id="tags__importError" class="tags__error-message"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+        <div class="tags__modal-footer">
+          <button type="button" class="tags__btn tags__btn-secondary" onclick="closeTagModal('tagsImportModal')">閉じる</button>
           <button type="submit" class="tags__btn tags__btn-primary">インポート</button>
         </div>
       </form>
@@ -169,635 +168,32 @@
 </div>
 
 <!-- タグ編集モーダル -->
-<div class="modal fade" id="tagsEditModal" tabindex="-1" aria-labelledby="tagsEditModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
+<div class="tags__modal" id="tagsEditModal">
+  <div class="tags__modal-dialog">
+    <div class="tags__modal-content">
       <form id="tags__editForm">
-        <div class="modal-header">
-          <h5 class="modal-title" id="tagsEditModalLabel">タグ編集</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="tags__modal-header">
+          <h5 class="tags__modal-title">タグ編集</h5>
+          <button type="button" class="tags__btn-close" onclick="closeTagModal('tagsEditModal')">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="tags__modal-body">
           <input type="hidden" id="tags__editTagId" name="tag_id">
-          <div class="tags__form-group mb-3">
-            <label for="tags__editTagName" class="form-label">タグ名</label>
-            <input type="text" class="tags__form-control form-control" id="tags__editTagName" name="name" required>
+          <div class="tags__form-group">
+            <label for="tags__editTagName" class="tags__form-label">タグ名</label>
+            <input type="text" class="tags__form-control" id="tags__editTagName" name="name" required>
           </div>
-          <div id="tags__editError" class="text-danger small"></div>
+          <div id="tags__editError" class="tags__error-message"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+        <div class="tags__modal-footer">
+          <button type="button" class="tags__btn tags__btn-secondary" onclick="closeTagModal('tagsEditModal')">閉じる</button>
           <button type="submit" class="tags__btn tags__btn-primary">保存</button>
         </div>
       </form>
     </div>
   </div>
 </div>
-
-<!-- フォルダ並び替えモーダル -->
-<div class="modal fade" id="tagsReorderFoldersModal" tabindex="-1" aria-labelledby="tagsReorderFoldersModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="tagsReorderFoldersModalLabel">タグフォルダ並び替え</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div id="tags__folderSortList">
-          <!-- フォルダリストはJavaScriptで生成 -->
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-        <button type="button" class="tags__btn tags__btn-success" onclick="TagsManager.saveFolderOrder()">この順番で決定する</button>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
-
-<script>
-// タグ管理専用の名前空間
-const TagsManager = (function() {
-    'use strict';
-    
-    // プライベート変数
-    let tagData = [];
-    
-    // 初期化
-    function init() {
-        try {
-            tagData = JSON.parse('{{ tags|tojson|safe }}');
-        } catch (e) {
-            console.error('タグデータの解析エラー:', e);
-            tagData = [];
-        }
-        
-        setupEventListeners();
-        renderFolderList();
-        
-        // 初期表示（未分類フォルダ）
-        renderFolderContent('unclassified');
-    }
-    
-    // イベントリスナーの設定
-    function setupEventListeners() {
-        // フォルダ作成フォーム
-        $('#tags__createFolderForm').on('submit', function(e) {
-            e.preventDefault();
-            handleCreateFolder();
-        });
-        
-        // タグ作成フォーム
-        $('#tags__createTagForm').on('submit', function(e) {
-            e.preventDefault();
-            handleCreateTag();
-        });
-        
-        // タグ編集フォーム
-        $('#tags__editForm').on('submit', function(e) {
-            e.preventDefault();
-            handleEditTag();
-        });
-        
-        // CSVインポートフォーム
-        $('#tags__importForm').on('submit', function(e) {
-            e.preventDefault();
-            handleImportTags();
-        });
-        
-        // 並び替えボタン
-        $('#tags__reorderBtn').on('click', function() {
-            showReorderModal();
-        });
-        
-        // 全選択チェックボックス
-        $('#tags__selectAll').on('change', function() {
-            const isChecked = $(this).is(':checked');
-            $('.tags__tag-checkbox').prop('checked', isChecked);
-        });
-        
-        // 検索ボックス
-        $('#tags__searchBox').on('input', function() {
-            handleSearch($(this).val());
-        });
-    }
-    
-    // フォルダーツリーを表示
-    function renderFolderList() {
-        let html = '';
-        
-        // まずトップレベルのフォルダーを表示 (parent_id が null または undefined のもの)
-        const topLevelFolders = tagData.filter(t => !t.parent_id);
-        
-        // 未分類（フォルダに属さないタグ）を先頭に追加
-        html += '<li class="tags__sidebar-item active tags__folder-item" data-id="unclassified" onclick="TagsManager.selectFolder(\'unclassified\')">';
-        html += '<i class="fas fa-folder tags__sidebar-icon"></i>';
-        html += '<span class="tags__sidebar-name">未分類</span>';
-        html += '<span class="tags__sidebar-count">(' + getUnclassifiedTagCount() + ')</span>';
-        html += '<div class="tags__folder-dropdown">';
-        html += '<button class="tags__folder-edit-btn" onclick="event.stopPropagation(); TagsManager.toggleFolderDropdown(\'unclassified\')">編集</button>';
-        html += '<div class="tags__folder-dropdown-content" id="tags__dropdown-unclassified">';
-        html += '<a onclick="TagsManager.editFolderName(\'unclassified\', \'未分類\', \'#FFA500\')">名前を変更</a>';
-        html += '</div>';
-        html += '</div>';
-        html += '</li>';
-        
-        // トップレベルフォルダーを表示
-        topLevelFolders.forEach(folder => {
-            const childTags = getChildTags(folder.id);
-            html += '<li class="tags__sidebar-item tags__folder-item" data-id="' + folder.id + '" onclick="TagsManager.selectFolder(' + folder.id + ')">';
-            html += '<i class="fas fa-folder tags__sidebar-icon" style="color: ' + (folder.color || '#FFA500') + '"></i>';
-            html += '<span class="tags__sidebar-name">' + folder.name + '</span>';
-            html += '<span class="tags__sidebar-count">(' + childTags.length + ')</span>';
-            html += '<div class="tags__folder-dropdown">';
-            html += '<button class="tags__folder-edit-btn" onclick="event.stopPropagation(); TagsManager.toggleFolderDropdown(' + folder.id + ')">編集</button>';
-            html += '<div class="tags__folder-dropdown-content" id="tags__dropdown-' + folder.id + '">';
-            html += '<a onclick="TagsManager.editFolderName(' + folder.id + ', \'' + folder.name + '\', \'' + (folder.color || '#FFA500') + '\')">名前を変更</a>';
-            html += '<a onclick="TagsManager.deleteFolder(' + folder.id + ')">削除</a>';
-            html += '</div>';
-            html += '</div>';
-            html += '</li>';
-        });
-        
-        $('#tags__folderList').html(html);
-    }
-    
-    // 未分類のタグを取得（親IDを持たず、かつ自身が親でないもの（＝純粋なタグ）だけをカウント
-    function getUnclassifiedTagCount() {
-        return tagData.filter(t => !t.parent_id && !isFolder(t.id)).length;
-    }
-    
-    // 指定したタグがフォルダかどうか判定（子タグを持つかどうか）
-    function isFolder(tagId) {
-        return tagData.some(t => t.parent_id == tagId);
-    }
-    
-    // 指定されたフォルダに属する子タグを取得
-    function getChildTags(folderId) {
-        return tagData.filter(t => t.parent_id == folderId);
-    }
-    
-    // フォルダが選択されたときの表示
-    function renderFolderContent(folderId) {
-        // アクティブ状態の更新
-        $('.tags__folder-item').removeClass('active');
-        $(`.tags__folder-item[data-id="${folderId}"]`).addClass('active');
-        
-        // 未分類フォルダの場合はトップレベルタグを表示
-        const isUnclassified = (folderId === 'unclassified');
-        const folderName = isUnclassified ? '未分類' : tagData.find(t => t.id == folderId)?.name;
-        
-        // 表示するタグ
-        let tagsToShow = [];
-        if (isUnclassified) {
-            // 未分類フォルダの場合は、親IDがなく、かつ自身が親でない（＝子タグを持たない）タグを表示
-            tagsToShow = tagData.filter(t => !t.parent_id && !isFolder(t.id));
-        } else {
-            tagsToShow = getChildTags(folderId);
-        }
-        
-        // タグリスト表示
-        let html = '';
-        if (tagsToShow.length > 0) {
-            tagsToShow.forEach((tag, index) => {
-                html += '<tr>';
-                html += '<td><input type="checkbox" class="tags__tag-checkbox" value="' + tag.id + '"></td>';
-                html += '<td>';
-                html += '<div class="tags__tag-item">';
-                html += '<span class="tags__tag-name">' + tag.name + '</span>';
-                html += '</div>';
-                html += '</td>';
-                html += '<td>';
-                html += '<a href="#" class="tags__tag-users-link tags__user-count" data-id="' + tag.id + '">' + tag.user_count + '人</a>';
-                html += '</td>';
-                html += '<td>';
-                html += '<span class="tags__item-date">' + formatDate(tag.created_at) + '</span>';
-                html += '</td>';
-                html += '<td>';
-                html += '<div class="tags__dropdown">';
-                html += '<button class="tags__action-btn" onclick="TagsManager.toggleTagDropdown(' + tag.id + ')" title="操作">';
-                html += '<i class="fas fa-ellipsis-v"></i>';
-                html += '</button>';
-                html += '<div class="tags__dropdown-content" id="tags__tag-dropdown-' + tag.id + '">';
-                html += '<a onclick="TagsManager.editTag(' + tag.id + ', \'' + tag.name + '\')"><i class="fas fa-edit"></i> 名前を変更</a>';
-                html += '<a onclick="TagsManager.copyTagName(\'' + tag.name + '\')"><i class="fas fa-copy"></i> タグ名をコピー</a>';
-                html += '<a onclick="TagsManager.deleteTag(' + tag.id + ', \'' + tag.name + '\')" class="text-danger"><i class="fas fa-trash"></i> 削除</a>';
-                html += '</div>';
-                html += '</div>';
-                html += '</td>';
-                html += '</tr>';
-            });
-        } else {
-            html = '<tr><td colspan="5" class="text-center py-3">このフォルダにはタグがありません</td></tr>';
-        }
-        
-        $('#tags__listContainer').html(html);
-        
-        // 友だち数クリックイベントを設定
-        $('.tags__tag-users-link').on('click', function(e) {
-            e.preventDefault();
-            const tagId = $(this).data('id');
-            showTagUsers(tagId);
-        });
-    }
-    
-    // タグに紐づくユーザー一覧を表示
-    function showTagUsers(tagId) {
-        const tag = tagData.find(t => t.id == tagId);
-        if (!tag) return;
-        
-        // ユーザー一覧を取得してモーダルで表示
-        $.getJSON('/admin/tags/users/' + tagId)
-            .done(function(res) {
-                if (res.success && res.users) {
-                    const modal = $('<div class="modal fade" tabindex="-1">');
-                    const modalContent = $('<div class="modal-dialog modal-lg"><div class="modal-content"></div></div>');
-                    const header = $('<div class="modal-header"><h5 class="modal-title">タグ「' + tag.name + '」が付与されている友だち</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>');
-                    const body = $('<div class="modal-body">');
-                    
-                    if (res.users.length > 0) {
-                        const table = $('<table class="table table-hover">');
-                        const tbody = $('<tbody>');
-                        
-                        res.users.forEach(user => {
-                            const tr = $('<tr>');
-                            const tdName = $('<td>');
-                            if (user.profile_image_url) {
-                                tdName.append($('<img>').attr('src', user.profile_image_url).addClass('rounded-circle me-2').css({width: '30px', height: '30px'}));
-                            }
-                            tdName.append(document.createTextNode(user.name));
-                            
-                            tr.append(tdName);
-                            tr.append($('<td class="text-end">').text(formatDate(user.created_at)));
-                            tr.append($('<td class="text-end">').append(
-                                $('<a>').attr('href', '/admin/user/' + user.line_user_id).attr('target', '_blank').addClass('btn btn-sm btn-outline-primary').append(
-                                    $('<i>').addClass('fas fa-user me-1')
-                                ).append('詳細')
-                            ));
-                            
-                            tbody.append(tr);
-                        });
-                        
-                        table.append(tbody);
-                        body.append(table);
-                    } else {
-                        body.append($('<p class="text-center">').text('このタグが付与されている友だちはいません'));
-                    }
-                    
-                    modalContent.find('.modal-content').append(header).append(body);
-                    modal.append(modalContent);
-                    
-                    $('body').append(modal);
-                    const modalObj = new bootstrap.Modal(modal[0]);
-                    modalObj.show();
-                    
-                    modal.on('hidden.bs.modal', function() {
-                        modal.remove();
-                    });
-                } else {
-                    alert('ユーザー情報の取得に失敗しました');
-                }
-            })
-            .fail(function() {
-                alert('エラーが発生しました');
-            });
-    }
-    
-    // 日付フォーマット
-    function formatDate(dateStr) {
-        if (!dateStr) return '';
-        const date = new Date(dateStr.replace(' ', 'T') + 'Z');
-        return date.getFullYear() + '.' + 
-               (date.getMonth() + 1).toString().padStart(2, '0') + '.' + 
-               date.getDate().toString().padStart(2, '0');
-    }
-    
-    // フォルダ作成ハンドラ
-    function handleCreateFolder() {
-        const name = $('#tags__folderName').val().trim();
-        if (!name) {
-            $('#tags__createFolderError').text('フォルダ名を入力してください');
-            return;
-        }
-        
-        $.post('/admin/tags/create', {
-            name: name,
-            parent_id: null
-        })
-        .done(function(res) {
-            if (res.success) {
-                location.reload();
-            } else {
-                $('#tags__createFolderError').text(res.error || 'フォルダの作成に失敗しました');
-            }
-        })
-        .fail(function() {
-            $('#tags__createFolderError').text('エラーが発生しました');
-        });
-    }
-    
-    // タグ作成ハンドラ
-    function handleCreateTag() {
-        const name = $('#tags__tagName').val().trim();
-        const parentId = $('#tags__parentTag').val() || null;
-        
-        if (!name) {
-            $('#tags__createTagError').text('タグ名を入力してください');
-            return;
-        }
-        
-        $.post('/admin/tags/create', {
-            name: name,
-            parent_id: parentId
-        })
-        .done(function(res) {
-            if (res.success) {
-                location.reload();
-            } else {
-                $('#tags__createTagError').text(res.error || 'タグの作成に失敗しました');
-            }
-        })
-        .fail(function() {
-            $('#tags__createTagError').text('エラーが発生しました');
-        });
-    }
-    
-    // タグ編集ハンドラ
-    function handleEditTag() {
-        const tagId = $('#tags__editTagId').val();
-        const name = $('#tags__editTagName').val().trim();
-        
-        if (!name) {
-            $('#tags__editError').text('タグ名を入力してください');
-            return;
-        }
-        
-        $.post('/admin/tags/edit/' + tagId, {
-            name: name
-        })
-        .done(function(res) {
-            if (res.success) {
-                location.reload();
-            } else {
-                $('#tags__editError').text(res.error || 'タグの更新に失敗しました');
-            }
-        })
-        .fail(function() {
-            $('#tags__editError').text('エラーが発生しました');
-        });
-    }
-    
-    // CSVインポートハンドラ
-    function handleImportTags() {
-        const fileInput = $('#tags__csvFile')[0];
-        if (!fileInput.files.length) {
-            $('#tags__importError').text('CSVファイルを選択してください');
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('csv_file', fileInput.files[0]);
-        
-        $.ajax({
-            url: '/admin/tags/import',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false
-        })
-        .done(function(res) {
-            if (res.success) {
-                alert(res.message || 'インポートが完了しました');
-                location.reload();
-            } else {
-                $('#tags__importError').text(res.error || 'インポートに失敗しました');
-            }
-        })
-        .fail(function() {
-            $('#tags__importError').text('エラーが発生しました');
-        });
-    }
-    
-    // 検索ハンドラ
-    function handleSearch(query) {
-        const rows = $('#tags__listContainer tr');
-        
-        if (!query.trim()) {
-            rows.show();
-            return;
-        }
-        
-        rows.each(function() {
-            const tagName = $(this).find('.tags__tag-name').text().toLowerCase();
-            const matches = tagName.includes(query.toLowerCase());
-            $(this).toggle(matches);
-        });
-    }
-    
-    // パブリックメソッド
-    return {
-        init: init,
-        
-        // フォルダ選択
-        selectFolder: function(folderId) {
-            renderFolderContent(folderId);
-        },
-        
-        // フォルダドロップダウンの表示切り替え
-        toggleFolderDropdown: function(folderId) {
-            const dropdown = document.getElementById('tags__dropdown-' + folderId);
-            const folderDropdown = dropdown.closest('.folder-dropdown');
-            
-            // 他のドロップダウンを閉じる
-            document.querySelectorAll('.folder-dropdown.show').forEach(el => {
-                if (el !== folderDropdown) {
-                    el.classList.remove('show');
-                }
-            });
-            
-            // 対象のドロップダウンを切り替え
-            folderDropdown.classList.toggle('show');
-        },
-        
-        // フォルダ名編集
-        editFolderName: function(folderId, currentName, currentColor) {
-            if (folderId === 'unclassified') {
-                alert('未分類フォルダの名前は変更できません');
-                return;
-            }
-            
-            const newName = prompt('新しいフォルダ名を入力してください:', currentName);
-            if (newName && newName !== currentName) {
-                // フォルダ名を更新
-                $.post('/admin/tags/folders/edit/' + folderId, {
-                    name: newName,
-                    color: currentColor
-                })
-                .done(function(res) {
-                    if (res.success) {
-                        location.reload();
-                    } else {
-                        alert(res.message || 'フォルダ名の変更に失敗しました');
-                    }
-                })
-                .fail(function() {
-                    alert('エラーが発生しました');
-                });
-            }
-        },
-        
-        // フォルダ削除
-        deleteFolder: function(folderId) {
-            const folder = tagData.find(t => t.id == folderId);
-            if (!folder) return;
-            
-            if (!confirm('フォルダ「' + folder.name + '」を削除しますか？\n※フォルダ内のタグも削除されます。')) {
-                return;
-            }
-            
-            $.post('/admin/tags/folders/delete/' + folderId)
-                .done(function(res) {
-                    if (res.success) {
-                        location.reload();
-                    } else {
-                        alert(res.message || 'フォルダの削除に失敗しました');
-                    }
-                })
-                .fail(function() {
-                    alert('エラーが発生しました');
-                });
-        },
-        
-        // タグドロップダウンの表示切り替え
-        toggleTagDropdown: function(tagId) {
-            const dropdown = document.getElementById('tags__tag-dropdown-' + tagId);
-            const tagDropdown = dropdown.closest('.dropdown');
-            
-            // 他のドロップダウンを閉じる
-            document.querySelectorAll('.dropdown.show').forEach(el => {
-                if (el !== tagDropdown) {
-                    el.classList.remove('show');
-                }
-            });
-            
-            // 対象のドロップダウンを切り替え
-            tagDropdown.classList.toggle('show');
-        },
-        
-        // タグ編集
-        editTag: function(tagId, currentName) {
-            $('#tags__editTagId').val(tagId);
-            $('#tags__editTagName').val(currentName);
-            $('#tags__editError').text('');
-            $('#tagsEditModal').modal('show');
-        },
-        
-        // タグ名をクリップボードにコピー
-        copyTagName: function(tagName) {
-            navigator.clipboard.writeText(tagName)
-                .then(function() {
-                    alert('タグ名「' + tagName + '」をクリップボードにコピーしました');
-                })
-                .catch(function() {
-                    alert('クリップボードへのコピーに失敗しました');
-                });
-        },
-        
-        // タグ削除
-        deleteTag: function(tagId, tagName) {
-            if (!confirm('タグ「' + tagName + '」を削除しますか？')) {
-                return;
-            }
-            
-            $.post('/admin/tags/delete/' + tagId)
-                .done(function(res) {
-                    if (res.success) {
-                        location.reload();
-                    } else {
-                        alert(res.error || 'タグの削除に失敗しました');
-                    }
-                })
-                .fail(function() {
-                    alert('エラーが発生しました');
-                });
-        },
-        
-        // 選択したタグを削除
-        deleteSelectedTags: function() {
-            const selectedIds = [];
-            $('.tags__tag-checkbox:checked').each(function() {
-                selectedIds.push($(this).val());
-            });
-            
-            if (selectedIds.length === 0) {
-                alert('削除するタグを選択してください');
-                return;
-            }
-            
-            if (!confirm(selectedIds.length + '個のタグを削除しますか？')) {
-                return;
-            }
-            
-            $.post('/admin/tags/delete-multiple', {
-                tag_ids: selectedIds
-            })
-            .done(function(res) {
-                if (res.success) {
-                    alert(res.message || '削除が完了しました');
-                    location.reload();
-                } else {
-                    alert(res.error || '削除に失敗しました');
-                }
-            })
-            .fail(function() {
-                alert('エラーが発生しました');
-            });
-        },
-        
-        // フォルダ順序保存
-        saveFolderOrder: function() {
-            const folderItems = document.querySelectorAll('#tags__folderSortList .sortable-item');
-            const folderOrder = Array.from(folderItems).map(item => item.dataset.id);
-            
-            fetch('/admin/tags/reorder', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    folder_order: folderOrder
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('並び替えに失敗しました: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('エラーが発生しました');
-            });
-        }
-    };
-})();
-
-// ドキュメント読み込み完了後に初期化
-$(document).ready(function() {
-    TagsManager.init();
-    
-    // 外部クリックでドロップダウンを閉じる
-    $(document).on('click', function(event) {
-        if (!$(event.target).closest('.folder-dropdown, .dropdown').length) {
-            $('.folder-dropdown.show, .dropdown.show').removeClass('show');
-        }
-    });
-});
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tags.js') }}"></script>
 {% endblock %} 

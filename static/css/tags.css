@@ -149,6 +149,15 @@
     background: #1976d2;
 }
 
+.tags__btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.tags__btn-secondary:hover {
+    background: #5a6268;
+}
+
 .tags__btn-warning {
     background: #ffc107;
     color: #333;
@@ -405,10 +414,12 @@
     margin-bottom: 1rem;
 }
 
-.tags__form-group label {
+.tags__form-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
 }
 
 .tags__form-control {
@@ -417,12 +428,111 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 0.9rem;
+    box-sizing: border-box;
 }
 
 .tags__form-control:focus {
     outline: none;
     border-color: #2196f3;
     box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+/* ===== モーダル ===== */
+.tags__modal {
+    display: none;
+    position: fixed;
+    z-index: 1050;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.tags__modal.show {
+    display: block;
+}
+
+.tags__modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 2% auto;
+    max-width: 500px;
+}
+
+.tags__modal-content {
+    position: relative;
+    background-color: white;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    outline: 0;
+}
+
+.tags__modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.tags__modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.tags__modal-body {
+    padding: 1.5rem;
+}
+
+.tags__modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+    gap: 0.5rem;
+}
+
+.tags__btn-close {
+    position: relative;
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tags__btn-close:hover {
+    color: #333;
+}
+
+/* ===== エラーメッセージ ===== */
+.tags__error-message {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+/* ===== 情報メッセージ ===== */
+.tags__info-message {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
 }
 
 /* ===== 下部ツールバー ===== */
@@ -508,15 +618,19 @@
     }
     
     .tags__tag-name {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
     }
     
     .tags__user-count {
         font-size: 0.7rem;
-        padding: 0.1rem 0.4rem;
     }
     
     .tags__search-box {
         width: 100%;
+    }
+    
+    .tags__modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
     }
 } 

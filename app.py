@@ -417,30 +417,82 @@ def init_db():
         conn.commit()
         logger.info("ordersテーブルのマイグレーションが完了しました")
 
-    # タグ管理テーブルの作成
-    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tags'")
+    # タグフォルダテーブルの作成
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tag_folders'")
     if not c.fetchone():
-        logger.info("tagsテーブルが存在しないため、新規作成します")
+        logger.info("tag_foldersテーブルが存在しないため、新規作成します")
         c.execute('''
-            CREATE TABLE tags (
+            CREATE TABLE tag_folders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                parent_id INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (parent_id) REFERENCES tags(id)
+                color TEXT DEFAULT '#FFA500',
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         conn.commit()
-        logger.info("tagsテーブルを作成しました")
-    else:
-        # 既存のtagsテーブルにparent_idカラムを追加（なければ）
-        c.execute("PRAGMA table_info(tags)")
-        columns = [row[1] for row in c.fetchall()]
-        if 'parent_id' not in columns:
-            logger.info("tagsテーブルにparent_idカラムを追加します")
-            c.execute('ALTER TABLE tags ADD COLUMN parent_id INTEGER')
-            conn.commit()
-            logger.info("tagsテーブルにparent_idカラムを追加しました")
+        logger.info("tag_foldersテーブルを作成しました")
+        
+        # デフォルトの「未分類」フォルダを作成
+        c.execute('''
+            INSERT INTO tag_folders (name, sort_order, created_at)
+            VALUES ('未分類', 0, datetime('now'))
+        ''')
+        conn.commit()
+        logger.info("「未分類」フォルダを作成しました")
+
+    # 新しいタグテーブル構造への移行チェック
+    c.execute("PRAGMA table_info(tags)")
+    columns = [row[1] for row in c.fetchall()]
+    
+    if 'folder_id' not in columns and 'parent_id' in columns:
+        logger.info("タグテーブルを新構造に移行します")
+        
+        # 新構造のテーブルを作成
+        c.execute('''
+            CREATE TABLE tags_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                folder_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (folder_id) REFERENCES tag_folders(id)
+            )
+        ''')
+        
+        # 未分類フォルダのIDを取得
+        c.execute("SELECT id FROM tag_folders WHERE name = '未分類' LIMIT 1")
+        uncategorized_folder_id = c.fetchone()[0]
+        
+        # 既存のタグを未分類フォルダに移行（簡単な移行）
+        c.execute("SELECT id, name, created_at FROM tags WHERE parent_id IS NULL")
+        existing_tags = c.fetchall()
+        
+        for tag in existing_tags:
+            c.execute('''
+                INSERT INTO tags_new (folder_id, name, created_at)
+                VALUES (?, ?, ?)
+            ''', (uncategorized_folder_id, tag[1], tag[2]))
+        
+        # 古いテーブルをリネーム
+        c.execute("ALTER TABLE tags RENAME TO tags_old")
+        c.execute("ALTER TABLE tags_new RENAME TO tags")
+        
+        conn.commit()
+        logger.info("タグテーブルの新構造への移行が完了しました")
+    elif 'folder_id' not in columns:
+        logger.info("新しいtagsテーブル構造を作成します")
+        c.execute("DROP TABLE IF EXISTS tags")
+        c.execute('''
+            CREATE TABLE tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                folder_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (folder_id) REFERENCES tag_folders(id)
+            )
+        ''')
+        conn.commit()
+        logger.info("新しいtagsテーブル構造を作成しました")
 
     # ユーザーとタグの紐付けテーブルの作成
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_tags'")
@@ -1278,8 +1330,7 @@ def create_registration_link():
         folder_id = request.form.get('folder_id')
         
         if not name or not source:
-            flash('リンク名と流入元は必須です', 'error')
-            return redirect(url_for('line_source_analytics'))
+            return jsonify({'success': False, 'message': 'リンク名と流入元は必須です'}), 400
         
         # フォルダIDが空文字列の場合は「未分類」フォルダのIDを取得
         if folder_id == '':
@@ -1305,18 +1356,16 @@ def create_registration_link():
                 VALUES (?, ?, ?, ?, datetime('now'))
             ''', (name, source, link_code, folder_id))
             conn.commit()
-            flash('登録リンクを作成しました', 'success')
+            return jsonify({'success': True, 'message': '登録リンクを作成しました'})
         except sqlite3.IntegrityError as e:
             logger.error(f"データベースエラー: {str(e)}")
-            flash('リンクコードの生成に失敗しました。もう一度お試しください', 'error')
+            return jsonify({'success': False, 'message': 'リンクコードの生成に失敗しました。もう一度お試しください'}), 500
         finally:
             conn.close()
         
-        return redirect(url_for('line_source_analytics'))
     except Exception as e:
         logger.error(f"登録リンク作成エラー: {str(e)}")
-        flash('エラーが発生しました。もう一度お試しください', 'error')
-        return redirect(url_for('line_source_analytics'))
+        return jsonify({'success': False, 'message': 'エラーが発生しました。もう一度お試しください'}), 500
 
 # 登録者一覧ページ
 @app.route('/admin/line-source-analytics/users/<int:link_id>')
@@ -1575,8 +1624,11 @@ def create_source_analytics_folder():
         name = request.form.get('name')
         
         if not name:
-            flash('フォルダ名は必須です', 'error')
-            return redirect(url_for('line_source_analytics'))
+            return jsonify({'success': False, 'message': 'フォルダ名は必須です'}), 400
+        
+        # 「未分類」フォルダ名は予約語として使用不可
+        if name == '未分類':
+            return jsonify({'success': False, 'message': '「未分類」は予約語のため使用できません'}), 400
         
         conn = get_db()
         cursor = conn.cursor()
@@ -1593,12 +1645,10 @@ def create_source_analytics_folder():
         conn.commit()
         conn.close()
         
-        flash('フォルダを作成しました', 'success')
+        return jsonify({'success': True, 'message': 'フォルダを作成しました'})
     except Exception as e:
         logger.error(f"フォルダ作成エラー: {str(e)}")
-        flash('フォルダの作成に失敗しました', 'error')
-    
-    return redirect(url_for('line_source_analytics'))
+        return jsonify({'success': False, 'message': 'フォルダの作成に失敗しました'}), 500
 
 # フォルダ編集
 @app.route('/admin/line-source-analytics/folders/edit/<int:folder_id>', methods=['POST'])
@@ -1609,6 +1659,11 @@ def edit_source_analytics_folder(folder_id):
         
         if not name:
             flash('フォルダ名は必須です', 'error')
+            return redirect(url_for('line_source_analytics'))
+        
+        # 「未分類」フォルダ名は予約語として使用不可
+        if name == '未分類':
+            flash('「未分類」は予約語のため使用できません', 'error')
             return redirect(url_for('line_source_analytics'))
         
         conn = get_db()
@@ -2389,56 +2444,86 @@ def admin_tags():
     conn = get_db()
     c = conn.cursor()
     
-    # order_indexカラムの存在確認
-    c.execute("PRAGMA table_info(tags)")
-    columns = [row[1] for row in c.fetchall()]
+    # フォルダ一覧を取得
+    c.execute('''
+        SELECT tf.*, COUNT(t.id) as tag_count
+        FROM tag_folders tf
+        LEFT JOIN tags t ON tf.id = t.folder_id
+        GROUP BY tf.id
+        ORDER BY tf.sort_order, tf.name
+    ''')
+    folders = [dict(row) for row in c.fetchall()]
     
-    # クエリの構築 - order_indexカラムがある場合はそれでソート
-    if 'order_index' in columns:
-        query = '''
-            SELECT t.*, COUNT(ut.id) as user_count
-            FROM tags t
-            LEFT JOIN user_tags ut ON t.id = ut.tag_id
-            GROUP BY t.id
-            ORDER BY t.order_index, t.created_at DESC
-        '''
-    else:
-        # order_indexカラムがない場合は作成日のみでソート
-        query = '''
-            SELECT t.*, COUNT(ut.id) as user_count
-            FROM tags t
-            LEFT JOIN user_tags ut ON t.id = ut.tag_id
-            GROUP BY t.id
-            ORDER BY t.created_at DESC
-        '''
-        
-        # order_indexカラムを追加
-        try:
-            c.execute('ALTER TABLE tags ADD COLUMN order_index INTEGER')
-            conn.commit()
-            logger.info("tagsテーブルにorder_indexカラムを追加しました")
-        except Exception as e:
-            logger.error(f"order_indexカラム追加エラー: {str(e)}")
-    
-    c.execute(query)
-    tags = [dict(row) for row in c.fetchall()]
     conn.close()
-    return render_template('admin/tags.html', tags=tags)
+    return render_template('admin/tags.html', folders=folders)
+
+# タグフォルダ作成API
+@app.route('/admin/tags/folders/create', methods=['POST'])
+@admin_required
+def create_tag_folder():
+    logger.info("=== タグフォルダ作成APIが呼ばれました ===")
+    name = request.form.get('name')
+    logger.info(f"受信したフォルダ名: {name}")
+    
+    if not name:
+        return jsonify({'success': False, 'error': 'フォルダ名は必須です'}), 400
+    
+    # 「未分類」フォルダ名は予約語として使用不可
+    if name == '未分類':
+        return jsonify({'success': False, 'error': '「未分類」は予約語のため使用できません'}), 400
+    
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # フォルダ名の重複確認
+        c.execute('SELECT id FROM tag_folders WHERE name = ?', (name,))
+        if c.fetchone():
+            return jsonify({'success': False, 'error': 'そのフォルダ名は既に使用されています'}), 400
+        
+        # 最大の順序を取得
+        c.execute('SELECT MAX(sort_order) FROM tag_folders')
+        max_order = c.fetchone()[0] or 0
+        
+        # フォルダを作成
+        c.execute('''
+            INSERT INTO tag_folders (name, sort_order, created_at) 
+            VALUES (?, ?, datetime("now"))
+        ''', (name, max_order + 1))
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        logger.error(f"タグフォルダ作成エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # タグ新規作成API
 @app.route('/admin/tags/create', methods=['POST'])
 @admin_required
 def create_tag():
+    logger.info("=== タグ作成APIが呼ばれました ===")
     name = request.form.get('name')
-    parent_id = request.form.get('parent_id') or None
+    folder_id = request.form.get('folder_id')
+    logger.info(f"受信したタグ名: {name}, folder_id: {folder_id}")
     
     if not name:
         return jsonify({'success': False, 'error': 'タグ名は必須です'}), 400
     
+    if not folder_id:
+        # フォルダが指定されていない場合は未分類フォルダを使用
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT id FROM tag_folders WHERE name = '未分類' LIMIT 1")
+        uncategorized_folder = c.fetchone()
+        folder_id = uncategorized_folder[0] if uncategorized_folder else 1
+        conn.close()
+    
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute('INSERT INTO tags (name, parent_id, created_at) VALUES (?, ?, datetime("now"))', (name, parent_id))
+        c.execute('INSERT INTO tags (folder_id, name, created_at) VALUES (?, ?, datetime("now"))', (folder_id, name))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
@@ -2682,6 +2767,10 @@ def delete_tag_folder(folder_id):
         if not folder:
             return jsonify({'success': False, 'message': 'フォルダが見つかりません'})
         
+        # 「未分類」フォルダは削除不可
+        if folder['name'] == '未分類':
+            return jsonify({'success': False, 'message': '「未分類」フォルダは削除できません'})
+        
         # フォルダ内のタグ数を確認
         c.execute('SELECT COUNT(*) as count FROM tags WHERE parent_id = ?', (folder_id,))
         tag_count = c.fetchone()[0]
@@ -2711,6 +2800,10 @@ def edit_tag_folder(folder_id):
         
         if not name:
             return jsonify({'success': False, 'message': 'フォルダ名は必須です'})
+        
+        # 「未分類」フォルダ名は予約語として使用不可
+        if name == '未分類':
+            return jsonify({'success': False, 'message': '「未分類」は予約語のため使用できません'})
         
         conn = get_db()
         c = conn.cursor()
@@ -2777,18 +2870,31 @@ def api_all_tags():
         conn = get_db()
         c = conn.cursor()
         
-        # すべてのタグを取得
+        # フォルダ一覧を取得
         c.execute('''
-            SELECT t.id, t.name, t.parent_id,
-                   CASE WHEN EXISTS (SELECT 1 FROM tags WHERE parent_id = t.id) THEN 1 ELSE 0 END as is_folder
-            FROM tags t
-            ORDER BY t.parent_id, t.name
+            SELECT id, name, 1 as is_folder, sort_order, created_at
+            FROM tag_folders
+            ORDER BY sort_order, name
         ''')
+        folders = [dict(row) for row in c.fetchall()]
         
+        # タグ一覧を取得
+        c.execute('''
+            SELECT t.id, t.name, t.folder_id, 0 as is_folder, t.created_at,
+                   COUNT(ut.id) as user_count
+            FROM tags t
+            LEFT JOIN user_tags ut ON t.id = ut.tag_id
+            GROUP BY t.id
+            ORDER BY t.name
+        ''')
         tags = [dict(row) for row in c.fetchall()]
+        
+        # フォルダとタグを統合
+        all_items = folders + tags
+        
         conn.close()
         
-        return jsonify({'success': True, 'tags': tags})
+        return jsonify({'success': True, 'tags': all_items, 'folders': folders})
     except Exception as e:
         logger.error(f"全タグ取得エラー: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -3204,6 +3310,10 @@ def create_template_folder():
         if not name:
             return jsonify({'success': False, 'message': 'フォルダ名は必須です'})
         
+        # 「未分類」フォルダ名は予約語として使用不可
+        if name == '未分類':
+            return jsonify({'success': False, 'message': '「未分類」は予約語のため使用できません'})
+        
         conn = get_db()
         c = conn.cursor()
         
@@ -3236,6 +3346,10 @@ def edit_template_folder(folder_id):
         
         if not name:
             return jsonify({'success': False, 'message': 'フォルダ名は必須です'})
+        
+        # 「未分類」フォルダ名は予約語として使用不可
+        if name == '未分類':
+            return jsonify({'success': False, 'message': '「未分類」は予約語のため使用できません'})
         
         conn = get_db()
         c = conn.cursor()
@@ -3270,9 +3384,14 @@ def delete_template_folder(folder_id):
         c = conn.cursor()
         
         # フォルダ存在確認
-        c.execute('SELECT id FROM template_folders WHERE id = ?', (folder_id,))
-        if not c.fetchone():
+        c.execute('SELECT id, name FROM template_folders WHERE id = ?', (folder_id,))
+        folder = c.fetchone()
+        if not folder:
             return jsonify({'success': False, 'message': 'フォルダが見つかりません'})
+        
+        # 「未分類」フォルダは削除不可
+        if folder['name'] == '未分類':
+            return jsonify({'success': False, 'message': '「未分類」フォルダは削除できません'})
         
         # フォルダ内のテンプレート数を確認
         c.execute('SELECT COUNT(*) as count FROM message_templates WHERE folder_id = ?', (folder_id,))
@@ -3848,7 +3967,7 @@ def test_send_template():
 # application = socketio.wsgi_app
 
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=8000)
 
 # SocketIOイベントハンドラ
 @socketio.on('connect')
@@ -3858,3 +3977,39 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info('Client disconnected')
+
+# 【デバッグ用】タグテーブルの詳細情報を取得
+@app.route('/admin/api/debug-tags')
+@admin_required  
+def api_debug_tags():
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # テーブル構造を確認
+        c.execute("PRAGMA table_info(tags)")
+        table_info = [dict(row) for row in c.fetchall()]
+        
+        # 全データを取得
+        c.execute('SELECT * FROM tags ORDER BY id')
+        all_tags = [dict(row) for row in c.fetchall()]
+        
+        # フォルダとタグの分類
+        folders = [tag for tag in all_tags if tag['parent_id'] is None]
+        child_tags = [tag for tag in all_tags if tag['parent_id'] is not None]
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'table_structure': table_info,
+            'total_count': len(all_tags),
+            'folder_count': len(folders),
+            'tag_count': len(child_tags),
+            'all_tags': all_tags,
+            'folders': folders,
+            'child_tags': child_tags
+        })
+    except Exception as e:
+        logger.error(f"デバッグ情報取得エラー: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
